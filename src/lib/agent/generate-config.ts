@@ -1,5 +1,7 @@
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { env } from "@/lib/env";
+import { extractPaletteFromPrompt } from "@/lib/event-theme";
+import { defaultTemplateForPrompt, normalizeGeneratedConfig } from "@/lib/template-policy";
 import type { EventConfig, EventSiteTemplate } from "@/lib/types";
 
 type GeneratedSitePlan = {
@@ -81,7 +83,7 @@ export async function generateSitePlan(prompt: string): Promise<GeneratedSitePla
         {
           role: "system",
           content:
-            "You are Eventloom's site planner. Turn a customer prompt into a complete event website plan. Use wedding-rsvp for weddings, engagements, and bilingual family celebrations. Use custom for other events. Never include real personal names from famous people; use tasteful placeholders when needed. Keep venue details generic unless the user provided them.",
+            "You are Eventloom's luxury event site planner. Build rich, editorial-quality celebration sites using the wedding-rsvp template by default for weddings, engagements, birthdays, anniversaries, galas, and family events. Only choose custom for corporate conferences or pages that explicitly should not use the premium RSVP experience. Extract the customer's desired mood and colors from their prompt (e.g. blush, navy, gold, lavender, forest, sunset) and output an intentional 4-color palette: [text, surface, accent, muted] as hex codes. Write evocative titles, subtitles, a detailed schedule, venue copy, and RSVP deadline. Never use famous real people's names.",
         },
         {
           role: "user",
@@ -118,12 +120,16 @@ export async function generateSitePlan(prompt: string): Promise<GeneratedSitePla
 
   try {
     const parsed = JSON.parse(textOutput) as Omit<EventConfig, "rsvpFields"> & { template: EventSiteTemplate };
-    return {
-      template: parsed.template,
-      config: {
+    const config = normalizeGeneratedConfig(
+      {
         ...parsed,
         rsvpFields: ["name", "attendance", "party_size", "guest_names", "note"],
       },
+      prompt,
+    );
+    return {
+      template: config.template ?? "wedding-rsvp",
+      config,
     };
   } catch {
     return fallback;
@@ -132,41 +138,40 @@ export async function generateSitePlan(prompt: string): Promise<GeneratedSitePla
 
 function fallbackSitePlan(prompt: string): GeneratedSitePlan {
   const base = defaultEventConfig(prompt);
-  const weddingLike = /wedding|engagement|zaffa|bilingual|arabic|bride|groom/i.test(prompt);
+  const palette = extractPaletteFromPrompt(prompt);
+  const template = defaultTemplateForPrompt(prompt);
 
-  if (!weddingLike) {
-    return { template: "custom", config: { ...base, template: "custom" } };
-  }
+  const richSchedule =
+    template === "wedding-rsvp"
+      ? [
+          { title: "Reception", time: "6:00 PM", location: "", description: "Welcome drinks and soft music as guests arrive." },
+          { title: "Ceremony", time: "6:45 PM", location: "Main Hall", description: "The celebration begins with a warm procession." },
+          { title: "Dinner", time: "8:00 PM", location: "Dining Hall", description: "A curated dinner service with toasts and conversation." },
+        ]
+      : base.schedule.map((item) => ({
+          title: item.title,
+          time: item.time,
+          location: item.location ?? "",
+          description: item.description ?? "",
+        }));
 
-  return {
-    template: "wedding-rsvp",
-    config: {
+  const config = normalizeGeneratedConfig(
+    {
       ...base,
-      template: "wedding-rsvp",
-      eventType: "wedding",
-      title: base.title === "Your Event" ? "Alex & Sarah" : base.title,
-      subtitle: "Request the honor of your presence at their wedding celebration.",
-      date: "Summer 2026",
-      venueName: "Private Event Hall",
-      hallInfo: "Men's Hall: A · Women's Hall: F",
-      directionsLabel: "Location shared with invited guests",
-      rsvpDeadline: "Please reply two weeks before the event",
-      schedule: [
-        { title: "Reception", time: "6:00 PM", location: "", description: "Enjoy drinks from our soft bar." },
-        { title: "Zaffa & Dabka", time: "6:45 PM", location: "Hall A — Men", description: "Traditional Zaffa procession and Dabka folk dance." },
-        { title: "Bride & Groom Entrance", time: "7:15 PM", location: "Hall F — Women", description: "The couple makes their grand entrance." },
-        {
-          title: "Dinner",
-          time: "8:00 PM (Men) · 8:30 PM (Women)",
-          location: "Hall A (Men) · Hall F (Women)",
-          description: "Dinner in the respective halls.",
-        },
-      ],
+      template,
+      subtitle:
+        template === "wedding-rsvp"
+          ? "We would be honored to celebrate this day with the people who matter most."
+          : base.subtitle,
+      schedule: richSchedule,
       theme: {
-        mood: "soft luxury wedding",
-        colors: ["#1f1a17", "#f7f2ed", "#6f3032", "#747d5c"],
+        mood: palette ? "customer palette" : template === "wedding-rsvp" ? "soft luxury celebration" : base.theme.mood,
+        colors: palette ?? (template === "wedding-rsvp" ? ["#1f1a17", "#f7f2ed", "#6f3032", "#747d5c"] : base.theme.colors),
         fontPairing: "romantic serif with clean sans",
       },
     },
-  };
+    prompt,
+  );
+
+  return { template: config.template ?? template, config };
 }

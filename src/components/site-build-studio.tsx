@@ -4,7 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, Circle, Loader2 } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { SampleInvitationTemplate } from "@/components/sample-invitation-template";
 import type { BuildProgressEvent, BuildProgressStep } from "@/lib/agent/progress";
+import { resolveEventPalette } from "@/lib/event-theme";
 import type { EventConfig } from "@/lib/types";
 
 type StepState = "pending" | "active" | "done";
@@ -66,6 +68,9 @@ export function SiteBuildStudio() {
   const [previewConfig, setPreviewConfig] = useState<EventConfig | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+
+  const moodOptions = ["blush", "navy", "gold", "lavender", "forest", "sunset"] as const;
 
   const progress = useMemo(() => {
     const current = stepIndex(currentStep);
@@ -83,7 +88,8 @@ export function SiteBuildStudio() {
     setPreviewSlug(slug.trim());
 
     const body = new FormData();
-    body.set("prompt", prompt);
+    const enrichedPrompt = selectedMood ? `${prompt.trim()} Use a ${selectedMood} color palette.` : prompt;
+    body.set("prompt", enrichedPrompt);
     body.set("slug", slug);
 
     const response = await fetch("/api/events/build", {
@@ -148,7 +154,7 @@ export function SiteBuildStudio() {
     }
   }
 
-  const colors = previewConfig?.theme.colors ?? ["#1f1a17", "#f7f2ed", "#6f3032", "#747d5c"];
+  const palette = useMemo(() => (previewConfig ? resolveEventPalette(previewConfig) : null), [previewConfig]);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start">
@@ -170,6 +176,27 @@ export function SiteBuildStudio() {
             placeholder="A warm summer wedding with RSVP, schedule, and photo gallery..."
           />
         </label>
+
+        <div className="mt-5">
+          <p className="text-[14px] font-medium text-[#1d1d1f]">Color mood</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {moodOptions.map((mood) => (
+              <button
+                key={mood}
+                type="button"
+                disabled={isBuilding}
+                onClick={() => setSelectedMood((current) => (current === mood ? null : mood))}
+                className={`rounded-full px-3.5 py-2 text-[13px] font-medium capitalize transition-colors ${
+                  selectedMood === mood
+                    ? "bg-[#1d1d1f] text-white"
+                    : "bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#ebebed]"
+                }`}
+              >
+                {mood}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <label className="mt-5 grid gap-2">
           <span className="text-[14px] font-medium text-[#1d1d1f]">Link name</span>
@@ -255,55 +282,63 @@ export function SiteBuildStudio() {
           </div>
 
           <AnimatePresence mode="wait">
-            {previewConfig ? (
+            {previewConfig && palette ? (
               <motion.div
                 key={previewConfig.title}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.35 }}
-                className="p-5"
-                style={{ background: colors[1] ?? "#f7f2ed", color: colors[0] ?? "#1f1a17" }}
+                className="wedding-rsvp p-5"
+                style={{ ...palette.cssVars, background: palette.background, color: palette.text }}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide">
-                    {previewTemplate === "wedding-rsvp" ? "Wedding RSVP" : "Custom site"}
-                  </span>
-                  <span className="rounded-full bg-white/70 px-3 py-1 text-[11px]">{previewConfig.eventType}</span>
+                <div className="mx-auto max-w-sm">
+                  <SampleInvitationTemplate
+                    compact
+                    imageAreaLabel="This area is for images."
+                    title={previewConfig.title}
+                    subtitle={previewConfig.subtitle}
+                    date={previewConfig.date}
+                  />
                 </div>
 
-                <h3 className="mt-4 font-display text-3xl leading-tight">{previewConfig.title}</h3>
-                <p className="mt-2 max-w-md text-[14px] leading-relaxed opacity-80">{previewConfig.subtitle}</p>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {colors.slice(0, 4).map((color) => (
-                    <span
-                      key={color}
-                      className="h-6 w-6 rounded-full border border-black/10"
-                      style={{ background: color }}
-                      title={color}
-                    />
-                  ))}
+                <div className="mx-auto mt-6 max-w-md">
+                  <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-[color:var(--el-muted)]">
+                    Schedule preview
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    {previewConfig.schedule.slice(0, 3).map((item, index) => (
+                      <motion.div
+                        key={`${item.title}-${item.time}`}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.08 }}
+                        className="rounded-2xl border border-white/70 bg-white/55 px-4 py-3 backdrop-blur-xl"
+                      >
+                        <p className="font-display text-xl text-[color:var(--el-accent)]">{item.title}</p>
+                        <p className="mt-1 text-[12px] text-[color:var(--el-text)]/60">{item.time}</p>
+                        {item.description ? (
+                          <p className="mt-1 text-[12px] leading-6 text-[color:var(--el-text)]/55">{item.description}</p>
+                        ) : null}
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="mt-5 grid gap-2">
-                  {previewConfig.schedule.slice(0, 3).map((item, index) => (
-                    <motion.div
-                      key={`${item.title}-${item.time}`}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.08 }}
-                      className="rounded-xl bg-white/65 px-3 py-2.5 text-[13px]"
-                    >
-                      <p className="font-medium">{item.title}</p>
-                      <p className="opacity-70">{item.time}</p>
-                    </motion.div>
-                  ))}
+                <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-3 text-[12px]">
+                  <span className="text-[color:var(--el-text)]/70">{previewConfig.venueName}</span>
+                  <div className="flex gap-1.5">
+                    {palette.cssVars &&
+                      previewConfig.theme.colors.slice(0, 4).map((color) => (
+                        <span
+                          key={color}
+                          className="h-5 w-5 rounded-full border border-black/10"
+                          style={{ background: color }}
+                          title={color}
+                        />
+                      ))}
+                  </div>
                 </div>
-
-                <p className="mt-4 text-[13px] opacity-75">
-                  {previewConfig.date} · {previewConfig.venueName}
-                </p>
               </motion.div>
             ) : (
               <motion.div

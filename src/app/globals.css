@@ -74,11 +74,14 @@ select {
 }
 
 .wedding-rsvp {
-  background:
-    radial-gradient(circle at 18% 12%, rgba(217, 163, 160, 0.26), transparent 28rem),
-    radial-gradient(circle at 86% 16%, rgba(116, 125, 92, 0.16), transparent 24rem),
-    linear-gradient(135deg, #fbf7f1 0%, #f3e7dd 45%, #efe7d8 100%);
-  color: #1f1a17;
+  --el-text: #1f1a17;
+  --el-surface: #f7f2ed;
+  --el-accent: #6f3032;
+  --el-muted: #747d5c;
+  --el-accent-hover: #5f292b;
+  --el-accent-rgb: 111, 48, 50;
+  --el-blush: #d9a3a0;
+  color: var(--el-text);
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
@@ -88,21 +91,21 @@ select {
 
 .wedding-rsvp .premium-field {
   border-radius: 1rem;
-  border: 1px solid rgba(111, 48, 50, 0.16);
+  border: 1px solid rgba(var(--el-accent-rgb), 0.16);
   background: rgba(255, 255, 255, 0.62);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .wedding-rsvp .premium-field:focus {
-  border-color: rgba(111, 48, 50, 0.42);
+  border-color: rgba(var(--el-accent-rgb), 0.42);
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 0 0 4px rgba(217, 163, 160, 0.18);
+  box-shadow: 0 0 0 4px rgba(var(--el-accent-rgb), 0.18);
 }
 
 .wedding-rsvp .premium-field::placeholder {
-  color: rgba(31, 26, 23, 0.42);
+  color: color-mix(in srgb, var(--el-text) 42%, transparent);
 }
 
 .wedding-rsvp ::selection {
-  background: rgba(111, 48, 50, 0.2);
+  background: rgba(var(--el-accent-rgb), 0.2);
 }

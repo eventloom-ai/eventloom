@@ -23,7 +23,3 @@ export function eventConfigToTemplateCopy(config: EventConfig, lang: "en" | "ar"
       : base.events,
   };
 }
-
-export function usesWeddingTemplate(config: EventConfig) {
-  return config.template === "wedding-rsvp" || config.eventType === "wedding";
-}

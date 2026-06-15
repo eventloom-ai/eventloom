@@ -2,6 +2,7 @@ import type { ImageInput } from "@/lib/ai/generator";
 import { generateSitePlan } from "@/lib/agent/generate-config";
 import type { BuildProgressReporter } from "@/lib/agent/progress";
 import { getAgentRuntime } from "@/lib/agent/runtime";
+import { normalizeGeneratedConfig } from "@/lib/template-policy";
 import {
   createEventRecord,
   createGenerationJob,
@@ -55,15 +56,18 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     await report(input.onProgress, { step: "planning", message: "Understanding your event and choosing a template…" });
 
     const plan = await generateSitePlan(input.prompt);
-    const config =
+    const config = normalizeGeneratedConfig(
       input.templateHint === "wedding"
-        ? { ...plan.config, template: "wedding-rsvp" as const, eventType: "wedding" }
-        : plan.config;
+        ? { ...plan.config, template: "wedding-rsvp", eventType: "wedding" }
+        : plan.config,
+      input.prompt,
+    );
+    const template = config.template ?? plan.template;
 
     await report(input.onProgress, {
       step: "planned",
-      message: plan.template === "wedding-rsvp" ? "Wedding template selected." : "Custom layout planned.",
-      template: plan.template,
+      message: template === "wedding-rsvp" ? "Premium celebration template selected." : "Custom layout planned.",
+      template,
       config,
     });
 
@@ -83,7 +87,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
         eventId: `demo-${input.slug}`,
         slug: input.slug,
         previewUrl: previewUrls(input.slug).slugPath,
-        template: plan.template,
+        template,
         config,
       });
       return {
@@ -138,7 +142,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
       eventId: event.id,
       slug: event.slug,
       previewUrl: preview.slugPath,
-      template: plan.template,
+      template,
       config,
     });
 

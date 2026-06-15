@@ -1,6 +1,6 @@
 import type { EventRecord } from "@/lib/types";
 import { RsvpForm } from "@/components/rsvp-form";
-import { usesWeddingTemplate } from "@/lib/template-copy";
+import { usesWeddingTemplate } from "@/lib/template-policy";
 import { WeddingDemoPage } from "@/components/wedding-demo-page";
 import { WeddingEventPage } from "@/components/wedding-event-page";
 
