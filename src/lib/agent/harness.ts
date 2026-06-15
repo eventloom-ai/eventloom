@@ -40,7 +40,7 @@ export type BuildSiteResult =
 
 export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSiteResult> {
   const runtime = getAgentRuntime();
-  const jobId = await createGenerationJob(input.prompt);
+  const jobId = await createGenerationJob(input.prompt, undefined, input.ownerId);
 
   try {
     const plan = await generateSitePlan(input.prompt);
@@ -52,7 +52,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     const artifact = await generateArtifactForConfig(config, input.prompt, input.images ?? []);
 
     if (!runtime.capabilities.persist_events) {
-      await finishGenerationJob(jobId, "succeeded");
+      await finishGenerationJob(jobId, "succeeded", undefined, input.ownerId);
       return {
         ok: true,
         mode: "demo",
@@ -70,27 +70,30 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
       };
     }
 
-    const event = await createEventRecord({
+    const created = await createEventRecord({
       slug: input.slug,
       config,
       ownerId: input.ownerId,
       publish: input.publish,
     });
 
-    if (!event) {
-      await finishGenerationJob(jobId, "failed", "create_event_failed");
-      return { ok: false, error: "create_event_failed", runtime };
+    if (!created.event) {
+      const message = created.error ?? "create_event_failed";
+      await finishGenerationJob(jobId, "failed", message, input.ownerId);
+      return { ok: false, error: message, runtime };
     }
 
+    const event = created.event;
+
     await saveEventVersion(event.id, input.prompt, config, input.ownerId ?? null);
-    await savePageArtifact(event.id, artifact, input.publish ? "published" : "draft");
-    await uploadEventImages(event.id, input.images ?? []);
+    await savePageArtifact(event.id, artifact, input.publish ? "published" : "draft", input.ownerId ?? null);
+    await uploadEventImages(event.id, input.images ?? [], input.ownerId ?? null);
 
     if (input.publish) {
       await publishEventRecord(event.id);
     }
 
-    await finishGenerationJob(jobId, "succeeded");
+    await finishGenerationJob(jobId, "succeeded", undefined, input.ownerId);
 
     return {
       ok: true,
@@ -102,7 +105,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "build_failed";
-    await finishGenerationJob(jobId, "failed", message);
+    await finishGenerationJob(jobId, "failed", message, input.ownerId);
     return { ok: false, error: message, runtime };
   }
 }

@@ -2,31 +2,18 @@ import type { ImageInput } from "@/lib/ai/generator";
 import { generatePageArtifact } from "@/lib/ai/generator";
 import { addDomainToVercelProject } from "@/lib/domains/vercel";
 import { appUrl, rootDomain } from "@/lib/env";
-import { serviceSupabase } from "@/lib/supabase/server";
+import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord, PageArtifact } from "@/lib/types";
 
-export async function createGenerationJob(prompt: string, eventId?: string) {
-  const client = serviceSupabase();
-  if (!client) return null;
+async function writableClient(ownerId?: string | null) {
+  if (ownerId) {
+    const userClient = await createSupabaseServerClient();
+    if (userClient) {
+      return userClient;
+    }
+  }
 
-  const { data } = await client
-    .from("generation_jobs")
-    .insert({ event_id: eventId ?? null, status: "running", prompt })
-    .select("id")
-    .single();
-
-  return data?.id ?? null;
-}
-
-export async function finishGenerationJob(jobId: string | null, status: "succeeded" | "failed", error?: string) {
-  if (!jobId) return;
-  const client = serviceSupabase();
-  if (!client) return;
-
-  await client
-    .from("generation_jobs")
-    .update({ status, error: error ?? null, completed_at: new Date().toISOString() })
-    .eq("id", jobId);
+  return serviceSupabase();
 }
 
 export async function createEventRecord(input: {
@@ -34,10 +21,10 @@ export async function createEventRecord(input: {
   config: EventConfig;
   ownerId?: string | null;
   publish?: boolean;
-}) {
-  const client = serviceSupabase();
+}): Promise<{ event: EventRecord | null; error?: string }> {
+  const client = await writableClient(input.ownerId);
   if (!client) {
-    return null;
+    return { event: null, error: "supabase_not_configured" };
   }
 
   const { data, error } = await client
@@ -53,22 +40,55 @@ export async function createEventRecord(input: {
     .single();
 
   if (error || !data) {
-    return null;
+    return { event: null, error: error?.message ?? "insert_failed" };
   }
 
   if (input.ownerId) {
-    await client.from("event_members").upsert({
+    const { error: memberError } = await client.from("event_members").upsert({
       event_id: data.id,
       user_id: input.ownerId,
       role: "owner",
     });
+
+    if (memberError) {
+      return { event: null, error: memberError.message };
+    }
   }
 
-  return data as EventRecord;
+  return { event: data as EventRecord };
 }
 
-export async function saveEventVersion(eventId: string, prompt: string, config: EventConfig, createdBy?: string | null) {
-  const client = serviceSupabase();
+export async function createGenerationJob(prompt: string, eventId?: string, ownerId?: string | null) {
+  const client = await writableClient(ownerId);
+  if (!client) return null;
+
+  const { data } = await client
+    .from("generation_jobs")
+    .insert({ event_id: eventId ?? null, status: "running", prompt })
+    .select("id")
+    .single();
+
+  return data?.id ?? null;
+}
+
+export async function finishGenerationJob(jobId: string | null, status: "succeeded" | "failed", error?: string, ownerId?: string | null) {
+  if (!jobId) return;
+  const client = await writableClient(ownerId);
+  if (!client) return;
+
+  await client
+    .from("generation_jobs")
+    .update({ status, error: error ?? null, completed_at: new Date().toISOString() })
+    .eq("id", jobId);
+}
+
+export async function saveEventVersion(
+  eventId: string,
+  prompt: string,
+  config: EventConfig,
+  createdBy?: string | null,
+) {
+  const client = await writableClient(createdBy);
   if (!client) return;
 
   await client.from("event_versions").insert({
@@ -79,8 +99,13 @@ export async function saveEventVersion(eventId: string, prompt: string, config: 
   });
 }
 
-export async function savePageArtifact(eventId: string, artifact: PageArtifact, status: "draft" | "published" = "draft") {
-  const client = serviceSupabase();
+export async function savePageArtifact(
+  eventId: string,
+  artifact: PageArtifact,
+  status: "draft" | "published" = "draft",
+  ownerId?: string | null,
+) {
+  const client = await writableClient(ownerId);
   if (!client) return null;
 
   const { data, error } = await client
@@ -100,8 +125,8 @@ export async function savePageArtifact(eventId: string, artifact: PageArtifact, 
   return data.id as string;
 }
 
-export async function uploadEventImages(eventId: string, images: ImageInput[]) {
-  const client = serviceSupabase();
+export async function uploadEventImages(eventId: string, images: ImageInput[], ownerId?: string | null) {
+  const client = await writableClient(ownerId);
   if (!client || !images.length) return [];
 
   const rows = images.map((image) => ({

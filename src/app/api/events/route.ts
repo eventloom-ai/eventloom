@@ -4,6 +4,8 @@ import { buildCompleteSite } from "@/lib/agent/harness";
 import { getServerUser } from "@/lib/supabase/server";
 import { slugSchema } from "@/lib/validation";
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const contentType = req.headers.get("content-type") ?? "";
   const form = contentType.includes("multipart/form-data") ? await req.formData() : null;
