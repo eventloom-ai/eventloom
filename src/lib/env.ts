@@ -41,5 +41,6 @@ export const env = {
   cloudflareRegistrarToken: () => read("CLOUDFLARE_REGISTRAR_TOKEN"),
   aiGatewayUrl: () => read("AI_GATEWAY_URL"),
   aiApiKey: () => read("AI_API_KEY"),
-  aiModel: () => read("AI_MODEL") || "gpt-5.4-mini",
+  openaiApiKey: () => read("OPENAI_API_KEY"),
+  aiModel: () => read("OPENAI_MODEL") || read("AI_MODEL") || "gpt-5.5",
 };
