@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { NewEventForm } from "@/components/new-event-form";
+import { SiteBuildStudio } from "@/components/site-build-studio";
 
 export default function NewEventPage() {
   return (
@@ -7,10 +7,10 @@ export default function NewEventPage() {
       backHref="/app"
       backLabel="My events"
       title="New event"
-      description="Describe your celebration and choose a link name. We'll create the first version for you."
-      width="narrow"
+      description="Describe your celebration and watch Eventloom plan, design, and save your first version live."
+      width="wide"
     >
-      <NewEventForm />
+      <SiteBuildStudio />
     </AppShell>
   );
 }

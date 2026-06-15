@@ -21,7 +21,7 @@ export function AppShell({
   children,
   width = "wide",
 }: AppShellProps) {
-  const maxWidth = width === "narrow" ? "max-w-2xl" : "max-w-5xl";
+  const maxWidth = width === "narrow" ? "max-w-2xl" : width === "wide" ? "max-w-6xl" : "max-w-5xl";
 
   return (
     <div className="min-h-screen text-[#1d1d1f]">

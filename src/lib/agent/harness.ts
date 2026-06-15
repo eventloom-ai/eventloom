@@ -1,5 +1,6 @@
 import type { ImageInput } from "@/lib/ai/generator";
 import { generateSitePlan } from "@/lib/agent/generate-config";
+import type { BuildProgressReporter } from "@/lib/agent/progress";
 import { getAgentRuntime } from "@/lib/agent/runtime";
 import {
   createEventRecord,
@@ -21,6 +22,7 @@ export type BuildSiteInput = {
   ownerId?: string | null;
   publish?: boolean;
   templateHint?: "wedding" | "custom";
+  onProgress?: BuildProgressReporter;
 };
 
 export type BuildSiteResult =
@@ -38,21 +40,52 @@ export type BuildSiteResult =
       runtime: ReturnType<typeof getAgentRuntime>;
     };
 
+async function report(onProgress: BuildProgressReporter | undefined, event: Parameters<BuildProgressReporter>[0]) {
+  if (onProgress) {
+    await onProgress(event);
+  }
+}
+
 export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSiteResult> {
   const runtime = getAgentRuntime();
   const jobId = await createGenerationJob(input.prompt, undefined, input.ownerId);
 
   try {
+    await report(input.onProgress, { step: "started", message: "Starting your site build…" });
+    await report(input.onProgress, { step: "planning", message: "Understanding your event and choosing a template…" });
+
     const plan = await generateSitePlan(input.prompt);
     const config =
       input.templateHint === "wedding"
         ? { ...plan.config, template: "wedding-rsvp" as const, eventType: "wedding" }
         : plan.config;
 
+    await report(input.onProgress, {
+      step: "planned",
+      message: plan.template === "wedding-rsvp" ? "Wedding template selected." : "Custom layout planned.",
+      template: plan.template,
+      config,
+    });
+
+    await report(input.onProgress, { step: "generating", message: "Generating your page content…" });
     const artifact = await generateArtifactForConfig(config, input.prompt, input.images ?? []);
+    await report(input.onProgress, {
+      step: "generating",
+      message: "Page content ready.",
+      model: artifact.model,
+    });
 
     if (!runtime.capabilities.persist_events) {
       await finishGenerationJob(jobId, "succeeded", undefined, input.ownerId);
+      await report(input.onProgress, {
+        step: "done",
+        message: "Preview ready in demo mode.",
+        eventId: `demo-${input.slug}`,
+        slug: input.slug,
+        previewUrl: previewUrls(input.slug).slugPath,
+        template: plan.template,
+        config,
+      });
       return {
         ok: true,
         mode: "demo",
@@ -70,6 +103,8 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
       };
     }
 
+    await report(input.onProgress, { step: "saving", message: "Saving your event, RSVP settings, and first version…" });
+
     const created = await createEventRecord({
       slug: input.slug,
       config,
@@ -80,6 +115,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     if (!created.event) {
       const message = created.error ?? "create_event_failed";
       await finishGenerationJob(jobId, "failed", message, input.ownerId);
+      await report(input.onProgress, { step: "error", message });
       return { ok: false, error: message, runtime };
     }
 
@@ -95,17 +131,29 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
 
     await finishGenerationJob(jobId, "succeeded", undefined, input.ownerId);
 
+    const preview = previewUrls(input.slug);
+    await report(input.onProgress, {
+      step: "done",
+      message: "Your site is ready.",
+      eventId: event.id,
+      slug: event.slug,
+      previewUrl: preview.slugPath,
+      template: plan.template,
+      config,
+    });
+
     return {
       ok: true,
       mode: "production",
       event: { ...event, artifact },
-      preview: previewUrls(input.slug),
+      preview,
       runtime,
       artifactModel: artifact.model,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "build_failed";
     await finishGenerationJob(jobId, "failed", message, input.ownerId);
+    await report(input.onProgress, { step: "error", message });
     return { ok: false, error: message, runtime };
   }
 }
