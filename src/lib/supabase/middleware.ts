@@ -1,17 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { env } from "@/lib/env";
+import { hasSupabasePublicEnv, supabasePublicEnv } from "@/lib/supabase/public-env";
 
 export async function refreshSupabaseSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const url = env.supabaseUrl();
-  const anon = env.supabaseAnonKey();
-  if (!url || !anon) {
+  if (!hasSupabasePublicEnv()) {
     return { response, user: null };
   }
 
-  const supabase = createServerClient(url, anon, {
+  const supabase = createServerClient(supabasePublicEnv.url, supabasePublicEnv.key, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { env, isSupabaseConfigured } from "@/lib/env";
+import { hasSupabasePublicEnv, supabasePublicEnv } from "@/lib/supabase/public-env";
 
 export function serviceSupabase() {
   if (!isSupabaseConfigured()) {
@@ -14,15 +15,13 @@ export function serviceSupabase() {
 }
 
 export async function createSupabaseServerClient() {
-  const url = env.supabaseUrl();
-  const anon = env.supabaseAnonKey();
-  if (!url || !anon) {
+  if (!hasSupabasePublicEnv()) {
     return null;
   }
 
   const cookieStore = await cookies();
 
-  return createServerClient(url, anon, {
+  return createServerClient(supabasePublicEnv.url, supabasePublicEnv.key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -56,13 +55,11 @@ export async function getServerUser() {
 
 export async function getAuthenticatedUser(authorizationHeader: string | null) {
   const token = authorizationHeader?.replace(/^Bearer\s+/i, "");
-  const url = env.supabaseUrl();
-  const anon = env.supabaseAnonKey();
-  if (!token || !url || !anon) {
+  if (!token || !hasSupabasePublicEnv()) {
     return null;
   }
 
-  const client = createClient(url, anon, {
+  const client = createClient(supabasePublicEnv.url, supabasePublicEnv.key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
