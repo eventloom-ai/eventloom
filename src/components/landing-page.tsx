@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LandingBuilder } from "@/components/landing-builder";
 
 export function LandingPage() {
   return (
@@ -30,30 +31,16 @@ export function LandingPage() {
               Eventloom helps you make a one-of-a-kind event website, collect guest replies, take payment, and give every paid event its own website address.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link className="rounded-full bg-[#405448] px-6 py-4 text-center font-semibold text-white" href="/app/events/new">
-                Start an event
-              </Link>
+              <a className="rounded-full bg-[#405448] px-6 py-4 text-center font-semibold text-white" href="#start">
+                Start building
+              </a>
               <Link className="rounded-full border border-black/15 px-6 py-4 text-center font-semibold" href="/demo-wedding">
                 View sample page
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[8px] border border-black/10 bg-white p-4 shadow-[0_24px_70px_rgba(25,23,19,0.12)]">
-            <div className="rounded-[6px] bg-[#191713] p-5 text-white">
-              <p className="text-xs uppercase tracking-[0.22em] text-[#d7bd8d]">What you ask for</p>
-              <p className="mt-5 text-2xl leading-10">
-                “Create a luxury bilingual wedding website with guest replies, a personal website address, and a formal evening schedule.”
-              </p>
-            </div>
-            <div className="grid gap-3 pt-4 sm:grid-cols-3">
-              {["Custom design", "Guest replies", "Website address"].map((label) => (
-                <div key={label} className="rounded-[6px] bg-[#f7f4ee] p-4 text-sm font-semibold">
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
+          <LandingBuilder />
         </div>
       </section>
     </main>
