@@ -33,6 +33,8 @@ export type EventConfig = {
   hallInfo?: string;
   directionsLabel?: string;
   rsvpDeadline?: string;
+  heroImageUrl?: string;
+  galleryImageUrls?: string[];
 };
 
 export type PageArtifact = {

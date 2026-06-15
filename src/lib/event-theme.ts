@@ -14,7 +14,7 @@ export type EventPalette = {
 
 const DEFAULT_COLORS = ["#1f1a17", "#f7f2ed", "#6f3032", "#747d5c"] as const;
 
-const MOOD_PALETTES: Record<string, string[]> = {
+export const MOOD_PALETTES: Record<string, string[]> = {
   blush: ["#2a1f1f", "#fdf6f4", "#b85c6d", "#8f7d6b"],
   navy: ["#0f1b2d", "#f4f7fb", "#1e4d8c", "#6b7f9e"],
   gold: ["#2c2418", "#faf6ef", "#9a7b3f", "#6f5f4a"],
@@ -103,6 +103,37 @@ export function resolveEventPalette(config: EventConfig): EventPalette {
       "--el-blush": blush,
     },
     background: `radial-gradient(circle at 18% 12%, rgba(${hexToRgbTuple(blush)}, 0.34), transparent 28rem), radial-gradient(circle at 86% 16%, rgba(${hexToRgbTuple(muted)}, 0.18), transparent 24rem), linear-gradient(135deg, ${shadeHex(surface, 0.03)} 0%, ${surface} 45%, ${shadeHex(surface, -0.03)} 100%)`,
+  };
+}
+
+export function paletteForMood(mood: string): string[] | null {
+  const key = mood.trim().toLowerCase();
+  return MOOD_PALETTES[key] ?? null;
+}
+
+export type ThemeOverrides = {
+  mood?: string;
+  colors?: string[];
+};
+
+export function applyThemeOverrides(config: EventConfig, overrides?: ThemeOverrides): EventConfig {
+  if (!overrides) return config;
+
+  const moodPalette = overrides.mood ? paletteForMood(overrides.mood) : null;
+  const explicitColors = overrides.colors
+    ?.map((color) => normalizeHex(color))
+    .filter((color): color is string => Boolean(color));
+
+  const colors = moodPalette ?? (explicitColors && explicitColors.length >= 2 ? explicitColors : null);
+  if (!colors) return config;
+
+  return {
+    ...config,
+    theme: {
+      ...config.theme,
+      mood: overrides.mood ?? config.theme.mood,
+      colors: colors.length >= 4 ? colors : [...colors, ...DEFAULT_COLORS].slice(0, 4),
+    },
   };
 }
 

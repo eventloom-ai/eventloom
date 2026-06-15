@@ -58,6 +58,47 @@ export async function createEventRecord(input: {
   return { event: data as EventRecord };
 }
 
+export async function getEventRecord(eventId: string, ownerId?: string | null): Promise<EventRecord | null> {
+  const client = await writableClient(ownerId);
+  if (!client) return null;
+
+  const { data, error } = await client
+    .from("events")
+    .select("id, owner_id, slug, status, rsvp_open, config")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as EventRecord;
+}
+
+export async function updateEventRecord(input: {
+  eventId: string;
+  slug?: string;
+  config: EventConfig;
+  ownerId?: string | null;
+}) {
+  const client = await writableClient(input.ownerId);
+  if (!client) return { event: null as EventRecord | null, error: "supabase_not_configured" };
+
+  const { data, error } = await client
+    .from("events")
+    .update({
+      ...(input.slug ? { slug: input.slug } : {}),
+      config: input.config,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.eventId)
+    .select("id, owner_id, slug, status, rsvp_open, config")
+    .single();
+
+  if (error || !data) {
+    return { event: null, error: error?.message ?? "update_failed" };
+  }
+
+  return { event: data as EventRecord };
+}
+
 export async function createGenerationJob(prompt: string, eventId?: string, ownerId?: string | null) {
   const client = await writableClient(ownerId);
   if (!client) return null;
@@ -123,6 +164,18 @@ export async function savePageArtifact(
 
   if (error) return null;
   return data.id as string;
+}
+
+export async function updateEventConfig(eventId: string, config: EventConfig, ownerId?: string | null) {
+  const client = await writableClient(ownerId);
+  if (!client) return false;
+
+  const { error } = await client
+    .from("events")
+    .update({ config, updated_at: new Date().toISOString() })
+    .eq("id", eventId);
+
+  return !error;
 }
 
 export async function uploadEventImages(eventId: string, images: ImageInput[], ownerId?: string | null) {

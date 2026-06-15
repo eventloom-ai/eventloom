@@ -1,5 +1,6 @@
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { env } from "@/lib/env";
+import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt } from "@/lib/event-theme";
 import { defaultTemplateForPrompt, normalizeGeneratedConfig } from "@/lib/template-policy";
 import type { EventConfig, EventSiteTemplate } from "@/lib/types";
@@ -64,8 +65,8 @@ const eventConfigSchema = {
   ],
 } as const;
 
-export async function generateSitePlan(prompt: string): Promise<GeneratedSitePlan> {
-  const fallback = fallbackSitePlan(prompt);
+export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOverrides): Promise<GeneratedSitePlan> {
+  const fallback = fallbackSitePlan(prompt, themeOverrides);
   const openaiKey = env.openaiApiKey();
   if (!openaiKey) {
     return fallback;
@@ -126,6 +127,7 @@ export async function generateSitePlan(prompt: string): Promise<GeneratedSitePla
         rsvpFields: ["name", "attendance", "party_size", "guest_names", "note"],
       },
       prompt,
+      themeOverrides,
     );
     return {
       template: config.template ?? "wedding-rsvp",
@@ -136,7 +138,7 @@ export async function generateSitePlan(prompt: string): Promise<GeneratedSitePla
   }
 }
 
-function fallbackSitePlan(prompt: string): GeneratedSitePlan {
+function fallbackSitePlan(prompt: string, themeOverrides?: ThemeOverrides): GeneratedSitePlan {
   const base = defaultEventConfig(prompt);
   const palette = extractPaletteFromPrompt(prompt);
   const template = defaultTemplateForPrompt(prompt);
@@ -171,6 +173,7 @@ function fallbackSitePlan(prompt: string): GeneratedSitePlan {
       },
     },
     prompt,
+    themeOverrides,
   );
 
   return { template: config.template ?? template, config };

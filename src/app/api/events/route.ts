@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { ImageInput } from "@/lib/ai/generator";
 import { buildCompleteSite } from "@/lib/agent/harness";
+import { enrichPromptWithTheme, parseBuildForm } from "@/lib/agent/parse-build-form";
 import { getServerUser } from "@/lib/supabase/server";
-import { slugSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -14,21 +13,19 @@ export async function POST(req: NextRequest) {
     : contentType.includes("application/json")
       ? await req.json()
       : Object.fromEntries((await req.formData()).entries());
-  const images = form ? await readImages(form) : [];
 
-  const slug = slugSchema.safeParse(body.slug);
-  const prompt = typeof body.prompt === "string" ? body.prompt : "";
-  const templateHint = body.template === "wedding" ? ("wedding" as const) : undefined;
+  const parsed = await parseBuildForm(form, body);
 
-  if (!slug.success || !prompt.trim()) {
+  if (!parsed.slug || !parsed.prompt.trim()) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
   const result = await buildCompleteSite({
-    prompt,
-    slug: slug.data,
-    images,
-    templateHint,
+    prompt: enrichPromptWithTheme(parsed.prompt, parsed.themeOverrides),
+    slug: parsed.slug,
+    images: parsed.images,
+    templateHint: parsed.templateHint,
+    themeOverrides: parsed.themeOverrides,
     ownerId: (await getServerUser())?.id ?? null,
   });
 
@@ -41,18 +38,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.redirect(new URL(`/app/events/${result.event.id}`, req.url), { status: 303 });
-}
-
-async function readImages(form: FormData): Promise<ImageInput[]> {
-  return Promise.all(
-    form
-      .getAll("images")
-      .filter((file): file is File => file instanceof File && file.type.startsWith("image/"))
-      .slice(0, 4)
-      .map(async (file) => ({
-        name: file.name,
-        mediaType: file.type,
-        dataUrl: `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`,
-      })),
-  );
 }

@@ -79,6 +79,7 @@ function HeroSection({ event, t }: { event: EventRecord; t: WeddingTemplateCopy 
               title={event.config.title}
               subtitle={event.config.subtitle}
               date={event.config.date}
+              imageUrl={event.config.heroImageUrl}
             />
           </div>
         </div>

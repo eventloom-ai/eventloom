@@ -1,17 +1,22 @@
 import type { ImageInput } from "@/lib/ai/generator";
 import { generateSitePlan } from "@/lib/agent/generate-config";
 import type { BuildProgressReporter } from "@/lib/agent/progress";
+import { applyImagesToConfig } from "@/lib/agent/parse-build-form";
 import { getAgentRuntime } from "@/lib/agent/runtime";
+import type { ThemeOverrides } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
 import {
   createEventRecord,
   createGenerationJob,
   finishGenerationJob,
   generateArtifactForConfig,
+  getEventRecord,
   previewUrls,
   publishEventRecord,
   saveEventVersion,
   savePageArtifact,
+  updateEventConfig,
+  updateEventRecord,
   uploadEventImages,
 } from "@/lib/agent/tools";
 import type { EventRecord } from "@/lib/types";
@@ -23,6 +28,8 @@ export type BuildSiteInput = {
   ownerId?: string | null;
   publish?: boolean;
   templateHint?: "wedding" | "custom";
+  themeOverrides?: ThemeOverrides;
+  existingEventId?: string;
   onProgress?: BuildProgressReporter;
 };
 
@@ -55,13 +62,23 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     await report(input.onProgress, { step: "started", message: "Starting your site build…" });
     await report(input.onProgress, { step: "planning", message: "Understanding your event and choosing a template…" });
 
-    const plan = await generateSitePlan(input.prompt);
-    const config = normalizeGeneratedConfig(
+    const plan = await generateSitePlan(input.prompt, input.themeOverrides);
+    const existingEvent = input.existingEventId ? await getEventRecord(input.existingEventId, input.ownerId) : null;
+    let config = normalizeGeneratedConfig(
       input.templateHint === "wedding"
         ? { ...plan.config, template: "wedding-rsvp", eventType: "wedding" }
         : plan.config,
       input.prompt,
+      input.themeOverrides,
     );
+    config = applyImagesToConfig(config, input.images ?? []);
+    if (!input.images?.length && existingEvent?.config.heroImageUrl) {
+      config = {
+        ...config,
+        heroImageUrl: existingEvent.config.heroImageUrl,
+        galleryImageUrls: existingEvent.config.galleryImageUrls,
+      };
+    }
     const template = config.template ?? plan.template;
 
     await report(input.onProgress, {
@@ -107,27 +124,55 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
       };
     }
 
-    await report(input.onProgress, { step: "saving", message: "Saving your event, RSVP settings, and first version…" });
+    await report(input.onProgress, { step: "saving", message: input.existingEventId ? "Updating your site…" : "Saving your event, RSVP settings, and first version…" });
 
-    const created = await createEventRecord({
-      slug: input.slug,
-      config,
-      ownerId: input.ownerId,
-      publish: input.publish,
-    });
+    let event: EventRecord;
 
-    if (!created.event) {
-      const message = created.error ?? "create_event_failed";
-      await finishGenerationJob(jobId, "failed", message, input.ownerId);
-      await report(input.onProgress, { step: "error", message });
-      return { ok: false, error: message, runtime };
+    if (input.existingEventId) {
+      if (!existingEvent) {
+        const message = "event_not_found";
+        await finishGenerationJob(jobId, "failed", message, input.ownerId);
+        await report(input.onProgress, { step: "error", message });
+        return { ok: false, error: message, runtime };
+      }
+
+      const updated = await updateEventRecord({
+        eventId: existingEvent.id,
+        slug: input.slug !== existingEvent.slug ? input.slug : undefined,
+        config,
+        ownerId: input.ownerId,
+      });
+
+      if (!updated.event) {
+        const message = updated.error ?? "update_event_failed";
+        await finishGenerationJob(jobId, "failed", message, input.ownerId);
+        await report(input.onProgress, { step: "error", message });
+        return { ok: false, error: message, runtime };
+      }
+
+      event = updated.event;
+    } else {
+      const created = await createEventRecord({
+        slug: input.slug,
+        config,
+        ownerId: input.ownerId,
+        publish: input.publish,
+      });
+
+      if (!created.event) {
+        const message = created.error ?? "create_event_failed";
+        await finishGenerationJob(jobId, "failed", message, input.ownerId);
+        await report(input.onProgress, { step: "error", message });
+        return { ok: false, error: message, runtime };
+      }
+
+      event = created.event;
     }
-
-    const event = created.event;
 
     await saveEventVersion(event.id, input.prompt, config, input.ownerId ?? null);
     await savePageArtifact(event.id, artifact, input.publish ? "published" : "draft", input.ownerId ?? null);
     await uploadEventImages(event.id, input.images ?? [], input.ownerId ?? null);
+    await updateEventConfig(event.id, config, input.ownerId ?? null);
 
     if (input.publish) {
       await publishEventRecord(event.id);

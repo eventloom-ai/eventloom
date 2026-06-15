@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Globe, MessageSquare, Palette, Sparkles } from "lucide-react";
-import { LandingBuilder } from "@/components/landing-builder";
+import { SiteBuildStudio } from "@/components/site-build-studio";
 import { FadeIn } from "@/components/ui/fade-in";
 
 const features = [
@@ -126,20 +126,20 @@ export function LandingPage({ initialTemplate }: { initialTemplate?: string }) {
       </section>
 
       <section id="create" className="border-t border-black/[0.06] bg-white py-20 md:py-24">
-        <div className="mx-auto max-w-2xl px-6">
+        <div className="mx-auto max-w-6xl px-6">
           <FadeIn>
-            <div className="text-center">
+            <div className="mx-auto max-w-2xl text-center">
               <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#f5f5f7]">
                 <Sparkles className="h-5 w-5 text-[#1d1d1f]" strokeWidth={1.75} />
               </div>
               <h2 className="mt-6 text-[32px] font-semibold tracking-[-0.02em] md:text-[40px]">Start with a sentence</h2>
               <p className="mt-4 text-[17px] leading-relaxed text-[#6e6e73] md:text-[19px]">
-                Tell us about your event. Add photos if you like. We&apos;ll draft your first version right away.
+                Tell us about your event. Add photos if you like. Watch your site take shape in the live canvas as you refine it.
               </p>
             </div>
           </FadeIn>
           <FadeIn delay={100} className="mt-10">
-            <LandingBuilder initialTemplate={initialTemplate} />
+            <SiteBuildStudio initialTemplate={initialTemplate} variant="home" />
           </FadeIn>
         </div>
       </section>
