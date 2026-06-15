@@ -1,9 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rootDomain } from "@/lib/env";
+import { isSupabaseConfigured, rootDomain } from "@/lib/env";
+import { refreshSupabaseSession } from "@/lib/supabase/middleware";
 import { normalizeHost, slugFromHost } from "@/lib/tenancy";
 
-export function middleware(req: NextRequest) {
+const authRoutes = ["/login", "/signup", "/auth"];
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith("/app") || authRoutes.some((route) => pathname.startsWith(route))) {
+    if (isSupabaseConfigured()) {
+      const { response, user } = await refreshSupabaseSession(req);
+
+      if (pathname.startsWith("/app") && !user) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/login";
+        url.searchParams.set("next", pathname);
+        return NextResponse.redirect(url);
+      }
+
+      if ((pathname === "/login" || pathname === "/signup") && user) {
+        return NextResponse.redirect(new URL("/app", req.url));
+      }
+
+      return response;
+    }
+  }
+
   if (
     pathname.startsWith("/api") ||
     pathname.startsWith("/app") ||

@@ -2,11 +2,16 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { FadeIn } from "@/components/ui/fade-in";
 import { demoEvents } from "@/lib/sample-data";
-import { serviceSupabase } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { EventRecord } from "@/lib/types";
 
 async function loadEvents(): Promise<EventRecord[]> {
-  const client = serviceSupabase();
+  if (!isSupabaseConfigured()) {
+    return demoEvents;
+  }
+
+  const client = await createSupabaseServerClient();
   if (!client) {
     return demoEvents;
   }

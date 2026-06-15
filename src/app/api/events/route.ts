@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ImageInput } from "@/lib/ai/generator";
 import { buildCompleteSite } from "@/lib/agent/harness";
+import { getServerUser } from "@/lib/supabase/server";
 import { slugSchema } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
     slug: slug.data,
     images,
     templateHint,
+    ownerId: (await getServerUser())?.id ?? null,
   });
 
   if (!result.ok) {

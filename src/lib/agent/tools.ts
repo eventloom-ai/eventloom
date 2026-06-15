@@ -56,6 +56,14 @@ export async function createEventRecord(input: {
     return null;
   }
 
+  if (input.ownerId) {
+    await client.from("event_members").upsert({
+      event_id: data.id,
+      user_id: input.ownerId,
+      role: "owner",
+    });
+  }
+
   return data as EventRecord;
 }
 
