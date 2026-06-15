@@ -1,5 +1,6 @@
 import { LandingPage } from "@/components/landing-page";
 
-export default function Home() {
-  return <LandingPage />;
+export default async function Home({ searchParams }: { searchParams: Promise<{ template?: string }> }) {
+  const { template } = await searchParams;
+  return <LandingPage initialTemplate={template} />;
 }

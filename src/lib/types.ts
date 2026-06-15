@@ -8,6 +8,8 @@ export type EventTheme = {
   fontPairing: string;
 };
 
+export type EventSiteTemplate = "wedding-rsvp" | "custom";
+
 export type EventScheduleItem = {
   title: string;
   time: string;
@@ -27,6 +29,10 @@ export type EventConfig = {
   schedule: EventScheduleItem[];
   rsvpFields: RsvpField[];
   theme: EventTheme;
+  template?: EventSiteTemplate;
+  hallInfo?: string;
+  directionsLabel?: string;
+  rsvpDeadline?: string;
 };
 
 export type PageArtifact = {

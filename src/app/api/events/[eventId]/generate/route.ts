@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generatePageArtifact } from "@/lib/ai/generator";
+import { generateSitePlan } from "@/lib/agent/generate-config";
+import { generateArtifactForConfig, saveEventVersion, savePageArtifact } from "@/lib/agent/tools";
 import { demoEvent } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig } from "@/lib/types";
 
-export async function POST(_req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
   const client = serviceSupabase();
+  const body = (await req.json().catch(() => ({}))) as { prompt?: string };
 
   if (!client) {
-    return NextResponse.json({ event_id: eventId, artifact: await generatePageArtifact(demoEvent.config, demoEvent.config.title) });
+    const plan = await generateSitePlan(body.prompt ?? demoEvent.config.title);
+    const artifact = await generateArtifactForConfig(plan.config, body.prompt ?? demoEvent.config.title);
+    return NextResponse.json({ event_id: eventId, config: plan.config, artifact });
   }
 
   const { data: event } = await client.from("events").select("config").eq("id", eventId).maybeSingle();
@@ -17,20 +21,27 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ ev
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const config = event.config as EventConfig;
-  const artifact = await generatePageArtifact(config, config.title);
-  const { error } = await client.from("page_artifacts").insert({
-    event_id: eventId,
-    status: "draft",
-    html: artifact.html,
-    css: artifact.css,
-    model: artifact.model,
-    generated_at: artifact.generatedAt,
-  });
+  const existing = event.config as EventConfig;
+  const prompt = body.prompt?.trim() || existing.title;
+  const plan = body.prompt?.trim() ? await generateSitePlan(prompt) : { config: existing, template: existing.template ?? "custom" };
+  const config = plan.config;
+  const artifact = await generateArtifactForConfig(config, prompt);
 
-  if (error) {
+  const { error: updateError } = await client
+    .from("events")
+    .update({ config, updated_at: new Date().toISOString() })
+    .eq("id", eventId);
+
+  if (updateError) {
     return NextResponse.json({ error: "server" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, artifact });
+  await saveEventVersion(eventId, prompt, config);
+  const artifactId = await savePageArtifact(eventId, artifact, "draft");
+
+  if (!artifactId) {
+    return NextResponse.json({ error: "server" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, config, artifact });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { defaultEventConfig, generatePageArtifact } from "@/lib/ai/generator";
+import { generateSitePlan } from "@/lib/agent/generate-config";
+import { generateArtifactForConfig } from "@/lib/agent/tools";
 import { validateGeneratedArtifact } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
@@ -10,15 +11,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing_message" }, { status: 400 });
   }
 
-  const config = defaultEventConfig(message);
-  const artifact = await generatePageArtifact(config, message, body.images);
+  const plan = await generateSitePlan(message);
+  const artifact = await generateArtifactForConfig(plan.config, message, body.images);
+
+  if (plan.template === "wedding-rsvp") {
+    return NextResponse.json({
+      config: plan.config,
+      template: plan.template,
+      artifact,
+      next: "preview",
+    });
+  }
+
   const validation = validateGeneratedArtifact(artifact);
   if (!validation.ok) {
     return NextResponse.json({ error: validation.error }, { status: 422 });
   }
 
   return NextResponse.json({
-    config,
+    config: plan.config,
+    template: plan.template,
     artifact: validation.artifact,
     next: "preview",
   });

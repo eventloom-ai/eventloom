@@ -24,6 +24,18 @@ export function isSupabaseConfigured() {
   );
 }
 
+export function isVercelConfigured() {
+  return Boolean(read("VERCEL_API_TOKEN") && read("VERCEL_PROJECT_ID"));
+}
+
+export function isAiConfigured() {
+  return Boolean(read("OPENAI_API_KEY") || (read("AI_GATEWAY_URL") && read("AI_API_KEY")));
+}
+
+export function isStripeConfigured() {
+  return Boolean(read("STRIPE_SECRET_KEY") && read("STRIPE_PRICE_ID"));
+}
+
 export const env = {
   appUrl,
   rootDomain,

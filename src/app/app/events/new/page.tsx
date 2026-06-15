@@ -1,29 +1,50 @@
-import Link from "next/link";
+import { AppShell } from "@/components/app-shell";
 
 export default function NewEventPage() {
   return (
-    <main className="min-h-screen bg-[#f7f4ee] px-6 py-8 text-[#191713]">
-      <section className="mx-auto max-w-3xl">
-        <Link className="text-sm font-semibold text-stone-600" href="/app">
-          Back to my events
-        </Link>
-        <h1 className="mt-6 text-5xl font-semibold">Create an event page</h1>
-        <p className="mt-4 text-lg leading-8 text-stone-700">
-          Describe the event you want, choose the link name, and Eventloom will create the first version for you.
-        </p>
+    <AppShell
+      backHref="/app"
+      backLabel="My events"
+      title="New event"
+      description="Describe your celebration and choose a link name. We'll create the first version for you."
+      width="narrow"
+    >
+      <form
+        action="/api/events"
+        method="post"
+        className="rounded-2xl border border-black/[0.06] bg-white p-6 shadow-[0_2px_24px_rgba(0,0,0,0.04)] md:p-8"
+      >
+        <label className="grid gap-2">
+          <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Event description</span>
+          <textarea
+            name="prompt"
+            required
+            rows={5}
+            className="resize-none rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] leading-relaxed outline-none transition-all placeholder:text-[#6e6e73]/60 focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
+            placeholder="A warm summer wedding with RSVP, schedule, and photo gallery..."
+          />
+        </label>
 
-        <form action="/api/events" method="post" className="mt-8 grid gap-4 rounded-[8px] border border-black/10 bg-white p-5">
-          <label className="grid gap-2 text-sm font-medium">
-            Event description
-            <textarea name="prompt" required rows={5} className="rounded-[6px] border border-black/15 px-3 py-3" placeholder="Create a luxury launch party for Eventloom AI..." />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            Link name
-            <input name="slug" required className="rounded-[6px] border border-black/15 px-3 py-3" placeholder="eventloom-launch" />
-          </label>
-          <button className="rounded-full bg-[#191713] px-5 py-3 font-semibold text-white">Create first version</button>
-        </form>
-      </section>
-    </main>
+        <label className="mt-5 grid gap-2">
+          <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Link name</span>
+          <div className="flex items-center gap-2 rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 focus-within:border-[#0071e3]/50 focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]">
+            <span className="shrink-0 text-[15px] text-[#6e6e73]">eventloom.ai/</span>
+            <input
+              name="slug"
+              required
+              className="min-w-0 flex-1 bg-transparent text-[17px] outline-none placeholder:text-[#6e6e73]/60"
+              placeholder="summer-wedding"
+            />
+          </div>
+        </label>
+
+        <button
+          type="submit"
+          className="mt-8 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99]"
+        >
+          Create first version
+        </button>
+      </form>
+    </AppShell>
   );
 }

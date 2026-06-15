@@ -1,10 +1,16 @@
 import type { EventRecord } from "@/lib/types";
 import { RsvpForm } from "@/components/rsvp-form";
+import { usesWeddingTemplate } from "@/lib/template-copy";
 import { WeddingDemoPage } from "@/components/wedding-demo-page";
+import { WeddingEventPage } from "@/components/wedding-event-page";
 
 export function EventPage({ event }: { event: EventRecord }) {
   if (event.slug === "demo-wedding") {
     return <WeddingDemoPage event={event} />;
+  }
+
+  if (usesWeddingTemplate(event.config)) {
+    return <WeddingEventPage event={event} />;
   }
 
   const { config } = event;

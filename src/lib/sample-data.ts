@@ -6,7 +6,7 @@ export const demoEvent: EventRecord = {
   status: "published",
   rsvp_open: true,
   config: {
-    title: "A & N",
+    title: "Alex & Sarah",
     subtitle: "A private wedding celebration page with bilingual details, guest replies, and a personal website address.",
     eventType: "wedding",
     date: "Summer 2026",
@@ -34,7 +34,7 @@ export const demoEvent: EventRecord = {
         <p class="text-sm uppercase tracking-[0.28em] text-[#b98079]">English · العربية</p>
         <div class="max-w-xl rounded-[8px] border border-[#6f3032]/20 bg-white/75 p-8 shadow-[0_24px_80px_rgba(111,48,50,0.12)]">
           <p class="text-sm uppercase tracking-[0.24em] text-[#6f3032]">Together with their families</p>
-          <h1 class="mt-5">A & N</h1>
+          <h1 class="mt-5">Alex & Sarah</h1>
           <p class="mt-5 text-xl text-stone-700">Request the honor of your presence at their wedding celebration.</p>
           <div class="mt-8 grid gap-3 text-stone-700">
             <p><strong>Guest reply deadline:</strong> Two weeks before the event</p>
