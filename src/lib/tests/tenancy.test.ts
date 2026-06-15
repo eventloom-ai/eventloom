@@ -15,6 +15,11 @@ describe("tenant host resolution", () => {
     expect(slugFromHost("localhost:3000", "eventloom.ai")).toBeNull();
   });
 
+  it("ignores Vercel platform aliases", () => {
+    expect(slugFromHost("eventloom-beta.vercel.app", "eventloom.ai")).toBeNull();
+    expect(slugFromHost("eventloom-gkb0h7t2v-yousef20920s-projects.vercel.app", "eventloom.ai")).toBeNull();
+  });
+
   it("normalizes host ports", () => {
     expect(normalizeHost("Mira-Adam.Eventloom.AI:443")).toBe("mira-adam.eventloom.ai");
   });

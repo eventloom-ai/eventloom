@@ -5,6 +5,7 @@ import { serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord, EventStatus, PageArtifact } from "@/lib/types";
 
 const INTERNAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
+const PLATFORM_HOST_SUFFIXES = [".vercel.app"];
 
 export function normalizeHost(rawHost: string) {
   return rawHost.split(":")[0]?.toLowerCase() ?? "";
@@ -13,6 +14,10 @@ export function normalizeHost(rawHost: string) {
 export function slugFromHost(host: string, root = rootDomain()) {
   const normalized = normalizeHost(host);
   if (!normalized || INTERNAL_HOSTS.has(normalized)) {
+    return null;
+  }
+
+  if (PLATFORM_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix))) {
     return null;
   }
 
