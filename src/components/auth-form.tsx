@@ -104,7 +104,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
     setIsSubmitting(true);
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/app")}`,
+      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/auth/reset-password")}`,
     });
     setIsSubmitting(false);
 
