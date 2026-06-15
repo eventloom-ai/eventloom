@@ -17,11 +17,11 @@ export function domainPriceCapUsd() {
 }
 
 export function isSupabaseConfigured() {
-  return Boolean(
-    read("NEXT_PUBLIC_SUPABASE_URL") &&
-      read("NEXT_PUBLIC_SUPABASE_ANON_KEY") &&
-      read("SUPABASE_SERVICE_ROLE_KEY"),
-  );
+  return Boolean(read("NEXT_PUBLIC_SUPABASE_URL") && supabasePublicKey() && read("SUPABASE_SERVICE_ROLE_KEY"));
+}
+
+function supabasePublicKey() {
+  return read("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || read("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
 export function isVercelConfigured() {
@@ -41,7 +41,8 @@ export const env = {
   rootDomain,
   domainPriceCapUsd,
   supabaseUrl: () => read("NEXT_PUBLIC_SUPABASE_URL"),
-  supabaseAnonKey: () => read("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  supabaseAnonKey: supabasePublicKey,
+  supabasePublicKey,
   supabaseServiceRoleKey: () => read("SUPABASE_SERVICE_ROLE_KEY"),
   stripeSecretKey: () => read("STRIPE_SECRET_KEY"),
   stripeWebhookSecret: () => read("STRIPE_WEBHOOK_SECRET"),
