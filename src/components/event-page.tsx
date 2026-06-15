@@ -1,7 +1,12 @@
 import type { EventRecord } from "@/lib/types";
 import { RsvpForm } from "@/components/rsvp-form";
+import { WeddingDemoPage } from "@/components/wedding-demo-page";
 
 export function EventPage({ event }: { event: EventRecord }) {
+  if (event.slug === "demo-wedding") {
+    return <WeddingDemoPage event={event} />;
+  }
+
   const { config } = event;
   const colors = config.theme.colors.length >= 4 ? config.theme.colors : ["#191713", "#f7f4ee", "#b48a5a", "#405448"];
 
