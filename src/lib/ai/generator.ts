@@ -6,7 +6,7 @@ export function defaultEventConfig(prompt: string): EventConfig {
   const title = prompt.match(/for\s+([^,.]+)/i)?.[1]?.trim() || "Your Event";
   return {
     title,
-    subtitle: "A custom AI-generated event experience with RSVP collection.",
+    subtitle: "A custom event page that helps guests reply in one simple place.",
     eventType: prompt.toLowerCase().includes("wedding") ? "wedding" : "event",
     date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString().slice(0, 10),
     venueName: "Venue to be announced",

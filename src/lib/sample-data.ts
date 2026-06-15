@@ -7,7 +7,7 @@ export const demoEvent: EventRecord = {
   rsvp_open: true,
   config: {
     title: "Mira & Adam",
-    subtitle: "An AI-generated celebration page with RSVP collection, custom design, and domain-ready publishing.",
+    subtitle: "A custom celebration page with guest replies, a polished look, and a personal website address.",
     eventType: "wedding",
     date: "2026-09-12",
     venueName: "The Glasshouse",
@@ -31,9 +31,9 @@ export const demoEvent: EventRecord = {
     css: "",
     html: `
       <section class="space-y-8">
-        <p class="text-sm uppercase tracking-[0.28em] text-[#b48a5a]">AI event website preview</p>
+        <p class="text-sm uppercase tracking-[0.28em] text-[#b48a5a]">Event website preview</p>
         <h1>Mira & Adam</h1>
-        <p class="max-w-2xl text-xl text-stone-700">A polished custom event site generated from a conversation, backed by Eventloom RSVP infrastructure.</p>
+        <p class="max-w-2xl text-xl text-stone-700">A polished custom event site created from a conversation, with guest replies handled by Eventloom.</p>
       </section>
     `,
   },
@@ -51,7 +51,7 @@ export const demoEvents: EventRecord[] = [
       ...demoEvent.config,
       title: "Launch Night",
       eventType: "corporate",
-      subtitle: "A product launch RSVP page waiting for payment and publication.",
+      subtitle: "A product launch page waiting to be paid for and shared.",
     },
     artifact: null,
   },

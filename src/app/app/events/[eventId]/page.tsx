@@ -28,7 +28,7 @@ export default async function EventManagePage({ params }: { params: Promise<{ ev
     <main className="min-h-screen bg-[#f7f4ee] px-6 py-8 text-[#191713]">
       <section className="mx-auto max-w-5xl">
         <Link className="text-sm font-semibold text-stone-600" href="/app">
-          Back to dashboard
+          Back to my events
         </Link>
         <div className="mt-6 grid gap-4 rounded-[8px] border border-black/10 bg-white p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -43,11 +43,11 @@ export default async function EventManagePage({ params }: { params: Promise<{ ev
 
           <div className="grid gap-3 sm:grid-cols-3">
             <form action={`/api/events/${event.id}/generate`} method="post">
-              <button className="w-full rounded-full bg-[#405448] px-4 py-3 font-semibold text-white">Generate artifact</button>
+              <button className="w-full rounded-full bg-[#405448] px-4 py-3 font-semibold text-white">Create new design</button>
             </form>
             <form action={`/api/events/${event.id}/publish`} method="post">
               <input type="hidden" name="domain" value={`${event.slug}.com`} />
-              <button className="w-full rounded-full bg-[#191713] px-4 py-3 font-semibold text-white">Start publish</button>
+              <button className="w-full rounded-full bg-[#191713] px-4 py-3 font-semibold text-white">Get website address</button>
             </form>
             <Link className="rounded-full border border-black/15 px-4 py-3 text-center font-semibold" href={`/${event.slug}`}>
               Preview page

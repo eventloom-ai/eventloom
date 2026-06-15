@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Eventloom AI",
-  description: "AI-generated event websites with RSVP, payments, and custom domains.",
+  description: "Custom event websites with guest replies, payment, and a personal website address.",
 };
 
 export default function RootLayout({

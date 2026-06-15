@@ -26,11 +26,11 @@ export async function Dashboard() {
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col justify-between gap-5 border-b border-black/10 pb-6 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#8a6a3f]">Customer dashboard</p>
-            <h1 className="mt-2 text-5xl font-semibold tracking-normal">Events</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#8a6a3f]">My events</p>
+            <h1 className="mt-2 text-5xl font-semibold tracking-normal">Your pages</h1>
           </div>
           <Link className="rounded-full bg-[#191713] px-5 py-3 font-semibold text-white" href="/app/events/new">
-            New event
+            New page
           </Link>
         </header>
 
@@ -49,7 +49,7 @@ export async function Dashboard() {
                   View
                 </Link>
                 <Link className="rounded-full bg-[#405448] px-4 py-2 font-semibold text-white" href={`/app/events/${event.id}`}>
-                  Manage
+                  Edit
                 </Link>
               </div>
             </article>

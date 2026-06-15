@@ -45,13 +45,13 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
     }
 
     setStatus("error");
-    setMessage("We could not save this RSVP. Please check the form and try again.");
+    setMessage("We could not save your reply. Please check the form and try again.");
   }
 
   if (!isOpen) {
     return (
       <section className="rounded-[8px] border border-black/10 bg-white/70 p-6">
-        <h2 className="text-2xl font-semibold">RSVPs are closed</h2>
+        <h2 className="text-2xl font-semibold">Guest replies are closed</h2>
         <p className="mt-2 text-stone-600">This event is no longer accepting responses.</p>
       </section>
     );
@@ -60,7 +60,7 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
   if (status === "done") {
     return (
       <section className="rounded-[8px] border border-[#405448]/20 bg-[#405448] p-6 text-white">
-        <h2 className="text-2xl font-semibold">RSVP received</h2>
+        <h2 className="text-2xl font-semibold">Reply received</h2>
         <p className="mt-2 text-white/80">Your response has been recorded.</p>
       </section>
     );
@@ -69,7 +69,7 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
   return (
     <form onSubmit={submit} className="rounded-[8px] border border-black/10 bg-white p-5 shadow-sm">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a3f]">RSVP</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a3f]">Guest reply</p>
         <h2 className="mt-2 text-3xl font-semibold">Confirm your details</h2>
       </div>
 
@@ -125,7 +125,7 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
       {message ? <p className="mt-4 text-sm text-red-700">{message}</p> : null}
 
       <button disabled={status === "sending"} className="mt-6 w-full rounded-full bg-[#405448] px-5 py-4 font-semibold text-white disabled:opacity-60">
-        {status === "sending" ? "Sending..." : "Submit RSVP"}
+        {status === "sending" ? "Sending..." : "Send reply"}
       </button>
     </form>
   );

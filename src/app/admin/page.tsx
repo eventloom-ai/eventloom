@@ -28,8 +28,8 @@ export default async function AdminPage() {
   return (
     <main className="min-h-screen bg-[#191713] px-6 py-8 text-white">
       <section className="mx-auto max-w-6xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d7bd8d]">Platform admin</p>
-        <h1 className="mt-2 text-5xl font-semibold">Operations</h1>
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d7bd8d]">Eventloom admin</p>
+        <h1 className="mt-2 text-5xl font-semibold">Overview</h1>
         <div className="mt-8 grid gap-4 sm:grid-cols-4">
           {Object.entries(stats).map(([label, value]) => (
             <article key={label} className="rounded-[8px] border border-white/10 bg-white/8 p-5">
