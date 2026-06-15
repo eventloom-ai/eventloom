@@ -12,11 +12,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/app";
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSignInHint, setShowSignInHint] = useState(false);
 
   const title = mode === "signup" ? "Create your account" : "Sign in";
   const subtitle = useMemo(
@@ -31,6 +32,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     event.preventDefault();
     setError("");
     setMessage("");
+    setShowSignInHint(false);
     setIsSubmitting(true);
 
     const supabase = createSupabaseBrowserClient();
@@ -53,7 +55,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       setIsSubmitting(false);
 
       if (signUpError) {
-        setError(signUpError.message);
+        if (/already registered/i.test(signUpError.message)) {
+          setShowSignInHint(true);
+          setError("This email already has an account. Sign in with your existing password, or reset it below.");
+        } else {
+          setError(signUpError.message);
+        }
         return;
       }
 
@@ -77,6 +84,36 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
     router.push(nextPath);
     router.refresh();
+  }
+
+  async function resetPassword() {
+    setError("");
+    setMessage("");
+    setShowSignInHint(false);
+
+    if (!email.trim()) {
+      setError("Enter your email first, then choose reset password.");
+      return;
+    }
+
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) {
+      setError("Authentication is not configured yet.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/app")}`,
+    });
+    setIsSubmitting(false);
+
+    if (resetError) {
+      setError(resetError.message);
+      return;
+    }
+
+    setMessage("Password reset email sent. Check your inbox, then sign in with the new password.");
   }
 
   return (
@@ -136,9 +173,19 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         </label>
 
         {error ? (
-          <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-600" role="alert">
-            {error}
-          </p>
+          <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-600" role="alert">
+            <p>{error}</p>
+            {showSignInHint ? (
+              <p className="mt-2">
+                <Link
+                  className="font-medium text-[#0071e3] hover:text-[#0077ed]"
+                  href={`/login?next=${encodeURIComponent(nextPath)}&email=${encodeURIComponent(email)}`}
+                >
+                  Go to sign in
+                </Link>
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         {message ? (
@@ -154,6 +201,17 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         >
           {isSubmitting ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
+
+        {mode === "signin" ? (
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={resetPassword}
+            className="mt-3 w-full rounded-full border border-black/[0.08] bg-[#fbfbfd] py-3 text-[15px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Forgot password?
+          </button>
+        ) : null}
       </form>
 
       <p className="mt-6 text-center text-[14px] text-[#6e6e73]">
