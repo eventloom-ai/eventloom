@@ -57,7 +57,9 @@ export class CloudflareRegistrarProvider implements DomainProvider {
     });
 
     if (!res.ok) {
-      throw new Error(`Cloudflare registrar request failed: ${res.status}`);
+      const body = (await res.json().catch(() => null)) as { errors?: Array<{ message?: string }> } | null;
+      const message = body?.errors?.map((error) => error.message).filter(Boolean).join("; ");
+      throw new Error(message ? `cloudflare_${res.status}: ${message}` : `cloudflare_${res.status}`);
     }
 
     return res.json() as Promise<{ result?: { domains?: unknown[] }; errors?: unknown[] }>;
