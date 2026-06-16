@@ -6,11 +6,11 @@ import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SampleInvitationTemplate } from "@/components/sample-invitation-template";
-import type { BuildProgressEvent, BuildProgressStep } from "@/lib/agent/progress";
+import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
 import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
-import type { EventConfig } from "@/lib/types";
+import { useBuildJob } from "@/hooks/use-build-job";
 
 export const examplePrompts = [
   {
@@ -70,27 +70,6 @@ function statusFor(step: BuildProgressStep, current: BuildProgressStep): StepSta
   return "pending";
 }
 
-function parseSseChunk(buffer: string, chunk: string) {
-  const text = buffer + chunk;
-  const events: BuildProgressEvent[] = [];
-  const parts = text.split("\n\n");
-  const remainder = parts.pop() ?? "";
-
-  for (const part of parts) {
-    const line = part
-      .split("\n")
-      .find((entry) => entry.startsWith("data: "));
-    if (!line) continue;
-    try {
-      events.push(JSON.parse(line.slice(6)) as BuildProgressEvent);
-    } catch {
-      // ignore malformed chunks
-    }
-  }
-
-  return { events, remainder };
-}
-
 function templateDefaults(template?: string) {
   const example = examplePrompts.find((item) => item.id === template);
   return {
@@ -102,22 +81,31 @@ function templateDefaults(template?: string) {
 
 export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app" }: SiteBuildStudioProps) {
   const router = useRouter();
+  const { state: buildState, startBuild, resumeStoredJob } = useBuildJob();
   const defaults = useMemo(() => templateDefaults(initialTemplate), [initialTemplate]);
   const [prompt, setPrompt] = useState(initialPrompt ?? defaults.prompt);
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [activeExample, setActiveExample] = useState<string | null>(defaults.activeExample);
   const [files, setFiles] = useState<File[]>([]);
-  const [error, setError] = useState("");
-  const [isBuilding, setIsBuilding] = useState(false);
-  const [currentStep, setCurrentStep] = useState<BuildProgressStep>("started");
-  const [statusMessage, setStatusMessage] = useState("Describe your event to begin.");
-  const [previewConfig, setPreviewConfig] = useState<EventConfig | null>(null);
-  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
-  const [completedEventId, setCompletedEventId] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(defaults.mood);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewHost = publicSiteHost();
+
+  const {
+    isBuilding,
+    error,
+    currentStep,
+    statusMessage,
+    progressPercent: progress,
+    previewConfig,
+    completedEventId,
+    slug: previewSlug,
+  } = buildState;
+
+  useEffect(() => {
+    void resumeStoredJob();
+  }, [resumeStoredJob]);
 
   useEffect(() => {
     if (slugEdited) return;
@@ -137,17 +125,11 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
     };
   }, [localPreviewImage]);
 
-  const progress = useMemo(() => {
-    const current = stepIndex(currentStep);
-    return Math.round((current / (stepOrder.length - 1)) * 100);
-  }, [currentStep]);
-
   function selectExample(example: (typeof examplePrompts)[number]) {
     setPrompt(example.prompt);
     setActiveExample(example.label);
     setSelectedMood(example.mood);
     setSlugEdited(false);
-    setError("");
   }
 
   function selectFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -162,13 +144,6 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
-    setIsBuilding(true);
-    setCompletedEventId(null);
-    setCurrentStep("started");
-    setStatusMessage("Starting your site build…");
-    setPreviewConfig(null);
-    setPreviewSlug(slug.trim());
 
     const body = new FormData();
     body.set("prompt", prompt.trim());
@@ -182,63 +157,9 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
     if (completedEventId) {
       body.set("event_id", completedEventId);
     }
+    files.forEach((file) => body.append("images", file));
 
-    const response = await fetch("/api/events/build", {
-      method: "POST",
-      body,
-    }).catch(() => null);
-
-    if (!response?.ok || !response.body) {
-      setIsBuilding(false);
-      setError("We couldn't start the build. Please try again.");
-      setCurrentStep("error");
-      return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let finished = false;
-
-    while (!finished) {
-      const { value, done } = await reader.read();
-      if (done) break;
-
-      const parsed = parseSseChunk(buffer, decoder.decode(value, { stream: true }));
-      buffer = parsed.remainder;
-
-      for (const progressEvent of parsed.events) {
-        if (progressEvent.step === "error") {
-          setError(progressEvent.message);
-          setCurrentStep("error");
-          setStatusMessage(progressEvent.message);
-          setIsBuilding(false);
-          finished = true;
-          break;
-        }
-
-        setCurrentStep(progressEvent.step);
-        setStatusMessage(progressEvent.message);
-
-        if (progressEvent.step === "planned") {
-          setPreviewConfig(progressEvent.config);
-        }
-
-        if (progressEvent.step === "done") {
-          setPreviewConfig(progressEvent.config);
-          setPreviewSlug(progressEvent.slug);
-          setCompletedEventId(progressEvent.eventId);
-          setIsBuilding(false);
-          setStatusMessage("Your first version is ready. Tweak details and build again, or open the live preview.");
-          finished = true;
-          break;
-        }
-      }
-    }
-
-    if (!finished) {
-      setIsBuilding(false);
-    }
+    await startBuild(body);
   }
 
   const palette = useMemo(() => (previewConfig ? resolveEventPalette(previewConfig) : null), [previewConfig]);
@@ -261,7 +182,6 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
             onChange={(event) => {
               setPrompt(event.target.value);
               setActiveExample(null);
-              setError("");
             }}
             disabled={isBuilding}
             className="resize-none rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[16px] leading-relaxed outline-none transition-all placeholder:text-[#6e6e73]/60 focus:border-[#0071e3]/50 focus:bg-white disabled:opacity-60"
@@ -390,7 +310,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
           {isBuilding ? "Building…" : completedEventId ? "Update site" : variant === "home" ? "Create my site" : "Create first version"}
         </button>
 
-        {completedEventId ? (
+        {completedEventId && !isBuilding ? (
           <div className="mt-4 grid gap-2">
             <a
               href={publicSlugPath(previewSlug ?? slug)}
