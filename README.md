@@ -32,3 +32,8 @@ npm run build
 ## Supabase
 
 Apply `supabase/migrations/20260615000100_eventloom_platform.sql` to create the multi-tenant schema and Row Level Security policies.
+
+For existing installations, apply migrations in order. The 2026-07-02 schema
+expansion is additive: it creates organization, invite, configurable RSVP form,
+order, and audit tables while backfilling existing events without deleting RSVP
+data. See `docs/schema-redesign.md` for the data model and migration behavior.
