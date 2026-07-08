@@ -2,6 +2,8 @@
 
 import { ImagePlus, X } from "lucide-react";
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
+import { saveEventDraft } from "@/components/event-draft-restorer";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export const examplePrompts = [
   {
@@ -71,6 +73,15 @@ export function LandingBuilder({ initialTemplate }: { initialTemplate?: string }
       body.set("template", "wedding");
     }
     files.forEach((file) => body.append("images", file));
+
+    saveEventDraft({ prompt, slug, template: initialTemplate });
+
+    const supabase = createSupabaseBrowserClient();
+    const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+    if (!data.session) {
+      window.location.href = `/signup?next=${encodeURIComponent("/app/events/new")}`;
+      return;
+    }
 
     const response = await fetch("/api/events", {
       method: "POST",

@@ -55,8 +55,8 @@ export async function Dashboard() {
 
   return (
     <AppShell
-      title={organization?.name ?? "My events"}
-      description="Create, preview, and manage this workspace's event pages in one place."
+      title="My events"
+      description={organization ? "Everything you create is saved here." : "Create, preview, and manage your event pages in one place."}
       action={
         <Link
           className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#0071e3] px-5 py-2.5 text-[15px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.98]"

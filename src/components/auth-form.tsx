@@ -19,12 +19,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSignInHint, setShowSignInHint] = useState(false);
 
-  const title = mode === "signup" ? "Create your account" : "Sign in";
+  const title = mode === "signup" ? "Save your event" : "Open your events";
   const subtitle = useMemo(
     () =>
       mode === "signup"
-        ? "Save your event sites, manage RSVPs, and publish when you are ready."
-        : "Welcome back. Pick up where you left off with your event sites.",
+        ? "Add your email and password so your site does not get lost."
+        : "Sign in to keep working on your event sites.",
     [mode],
   );
 
@@ -199,7 +199,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           disabled={isSubmitting}
           className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isSubmitting ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
+          {isSubmitting ? "Please wait…" : mode === "signup" ? "Save and continue" : "Open my events"}
         </button>
 
         {mode === "signin" ? (
@@ -217,16 +217,16 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       <p className="mt-6 text-center text-[14px] text-[#6e6e73]">
         {mode === "signup" ? (
           <>
-            Already have an account?{" "}
+            Already saved an event?{" "}
             <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href={`/login?next=${encodeURIComponent(nextPath)}`}>
               Sign in
             </Link>
           </>
         ) : (
           <>
-            New to Eventloom?{" "}
+            First time here?{" "}
             <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href={`/signup?next=${encodeURIComponent(nextPath)}`}>
-              Create an account
+              Save your event
             </Link>
           </>
         )}
