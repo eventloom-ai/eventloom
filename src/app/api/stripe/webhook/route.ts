@@ -38,12 +38,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, demo: true });
   }
 
+  const { data: eventRecord } = await client
+    .from("events")
+    .select("organization_id")
+    .eq("id", eventId)
+    .maybeSingle();
+  const organizationId = eventRecord?.organization_id ?? null;
+
+  const { data: order } = await client
+    .from("orders")
+    .upsert(
+      {
+        organization_id: organizationId,
+        event_id: eventId,
+        status: "paid",
+        kind: "custom_domain",
+        amount_total: session.amount_total ?? 0,
+        currency: session.currency ?? "usd",
+        provider: "stripe",
+        provider_reference: session.id,
+        metadata: { domain },
+      },
+      { onConflict: "provider_reference" },
+    )
+    .select("id")
+    .single();
+
   await client.from("payments").upsert({
     event_id: eventId,
+    organization_id: organizationId,
+    order_id: order?.id ?? null,
     stripe_session_id: session.id,
     status: "paid",
     amount_total: session.amount_total ?? 0,
     currency: session.currency ?? "usd",
+    provider: "stripe",
+    metadata: { domain },
   });
 
   const registration = await domainProvider().register(domain);

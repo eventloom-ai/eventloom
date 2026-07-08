@@ -42,6 +42,7 @@ export async function currentHost() {
 type EventRow = {
   id: string;
   owner_id?: string | null;
+  organization_id?: string | null;
   slug: string;
   status: EventStatus;
   rsvp_open: boolean;
@@ -56,7 +57,7 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
 
   const { data: event, error } = await client
     .from("events")
-    .select("id, owner_id, slug, status, rsvp_open, config")
+    .select("id, owner_id, organization_id, slug, status, rsvp_open, config")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -77,6 +78,7 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
   return {
     id: row.id,
     owner_id: row.owner_id,
+    organization_id: row.organization_id,
     slug: row.slug,
     status: row.status,
     rsvp_open: row.rsvp_open,

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { domainProvider } from "@/lib/domains/provider";
 import { domainPriceCapUsd } from "@/lib/env";
+import { canManageEvent } from "@/lib/organizations";
 import { createCheckoutSession } from "@/lib/payments/stripe";
-import { serviceSupabase } from "@/lib/supabase/server";
+import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { domainSchema, evaluateDomainQuote } from "@/lib/validation";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
@@ -17,13 +18,38 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
     return NextResponse.json({ error: "invalid_domain" }, { status: 400 });
   }
 
+  const client = serviceSupabase();
+  const user = await getServerUser();
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  if (client) {
+    const { data: event } = await client
+      .from("events")
+      .select("owner_id, organization_id")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    const canManage =
+      event &&
+      (await canManageEvent({
+        userId: user.id,
+        ownerId: event.owner_id,
+        organizationId: event.organization_id,
+      }));
+
+    if (!canManage) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+  }
+
   const [quote] = await domainProvider().check([parsedDomain.data]);
   const quoteResult = quote ? evaluateDomainQuote(quote, domainPriceCapUsd()) : { ok: false as const, reason: "unavailable" };
   if (!quoteResult.ok) {
     return NextResponse.json({ error: quoteResult.reason, quote }, { status: 422 });
   }
 
-  const client = serviceSupabase();
   if (client) {
     await client.from("domains").upsert({
       event_id: eventId,

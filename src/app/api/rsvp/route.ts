@@ -17,19 +17,45 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "event_not_found" }, { status: 404 });
   }
 
-  if (event && (event.status !== "published" || !event.rsvp_open)) {
-    return NextResponse.json({ error: "rsvp_closed" }, { status: 403 });
-  }
-
   const client = serviceSupabase();
   if (!client) {
     return NextResponse.json({ ok: true, demo: true });
   }
 
+  const { data: eventRow } = await client
+    .from("events")
+    .select("id, status, rsvp_open, rsvp_deadline_at")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (!eventRow) {
+    return NextResponse.json({ error: "event_not_found" }, { status: 404 });
+  }
+
+  const deadline = eventRow.rsvp_deadline_at ? new Date(eventRow.rsvp_deadline_at) : null;
+  if (
+    eventRow.status !== "published" ||
+    !eventRow.rsvp_open ||
+    (deadline && Number.isFinite(deadline.getTime()) && deadline.getTime() < Date.now())
+  ) {
+    return NextResponse.json({ error: "rsvp_closed" }, { status: 403 });
+  }
+
+  const { data: form } = await client
+    .from("rsvp_forms")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("status", "active")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   const { data: submission, error } = await client
     .from("rsvp_submissions")
     .insert({
       event_id: eventId,
+      form_id: form?.id ?? null,
+      source: payload.slug ? "public_site" : "invite_link",
       first_name: payload.first_name,
       last_name: payload.last_name,
       email: payload.email || null,

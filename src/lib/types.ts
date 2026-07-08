@@ -33,8 +33,6 @@ export type EventConfig = {
   hallInfo?: string;
   directionsLabel?: string;
   rsvpDeadline?: string;
-  heroImageUrl?: string;
-  galleryImageUrls?: string[];
 };
 
 export type PageArtifact = {
@@ -47,6 +45,7 @@ export type PageArtifact = {
 export type EventRecord = {
   id: string;
   owner_id?: string | null;
+  organization_id?: string | null;
   slug: string;
   status: EventStatus;
   rsvp_open: boolean;
