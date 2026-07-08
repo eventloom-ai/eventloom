@@ -37,8 +37,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   }
 
   const existing = event.config as EventConfig;
-  const prompt = body.prompt?.trim() || existing.title;
-  const plan = body.prompt?.trim() ? await generateSitePlan(prompt) : { config: existing, template: existing.template ?? "custom" };
+  const userPrompt = body.prompt?.trim();
+  const prompt = userPrompt
+    ? [
+        "Update this existing Eventloom site. Keep all existing details unless the user explicitly asks to change them.",
+        `Existing site config: ${JSON.stringify(existing)}`,
+        `User change request: ${userPrompt}`,
+      ].join("\n\n")
+    : existing.title;
+  const plan = userPrompt ? await generateSitePlan(prompt) : { config: existing, template: existing.template ?? "custom" };
   const config = plan.config;
   const artifact = await generateArtifactForConfig(config, prompt);
 
@@ -52,6 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   }
 
   await saveEventVersion(eventId, prompt, config, user.id);
+  await client.from("page_artifacts").update({ status: "rejected" }).eq("event_id", eventId).eq("status", "draft");
   const artifactId = await savePageArtifact(eventId, artifact, "draft", user.id);
 
   if (!artifactId) {
