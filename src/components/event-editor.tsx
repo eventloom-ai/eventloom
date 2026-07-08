@@ -110,8 +110,8 @@ export function EventEditor({ event }: { event: EventRecord }) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-      <section className="rounded-2xl border border-black/[0.06] bg-white p-5 md:p-6">
+    <div className="grid gap-4 xl:h-[calc(100vh-13.5rem)] xl:min-h-[560px] xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
+      <section className="flex min-h-0 flex-col rounded-2xl border border-black/[0.06] bg-white p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Editor</p>
@@ -128,7 +128,7 @@ export function EventEditor({ event }: { event: EventRecord }) {
           <p className="mt-1 truncate">eventloom.ai/{currentEvent.slug}</p>
         </div>
 
-        <label className="mt-5 grid gap-2">
+        <label className="mt-5 grid min-h-0 gap-2 xl:flex xl:flex-1 xl:flex-col">
           <span className="text-[14px] font-medium text-[#1d1d1f]">Tell Eventloom what to change</span>
           <textarea
             rows={8}
@@ -145,7 +145,7 @@ export function EventEditor({ event }: { event: EventRecord }) {
               }
             }}
             disabled={isGenerating}
-            className="resize-none rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[16px] leading-relaxed outline-none transition-all placeholder:text-[#6e6e73]/60 focus:border-[#0071e3]/50 focus:bg-white disabled:opacity-60"
+            className="min-h-[180px] resize-none rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[16px] leading-relaxed outline-none transition-all placeholder:text-[#6e6e73]/60 focus:border-[#0071e3]/50 focus:bg-white disabled:opacity-60 xl:flex-1"
             placeholder="Make it more elegant, add a dinner schedule, mention parking, change the colors to navy and gold..."
           />
         </label>
@@ -193,7 +193,7 @@ export function EventEditor({ event }: { event: EventRecord }) {
         </p>
       </section>
 
-      <section className="rounded-2xl border border-black/[0.06] bg-[#f5f5f7] p-4 md:p-5">
+      <section className="flex min-h-0 flex-col rounded-2xl border border-black/[0.06] bg-[#f5f5f7] p-4 md:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Live canvas</p>
@@ -205,7 +205,7 @@ export function EventEditor({ event }: { event: EventRecord }) {
           </span>
         </div>
 
-        <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-black/[0.08] bg-white shadow-[0_18px_70px_rgba(0,0,0,0.08)]">
+        <div className="mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-black/[0.08] bg-white shadow-[0_18px_70px_rgba(0,0,0,0.08)] xl:min-h-0">
           <div className="flex items-center gap-2 border-b border-black/[0.06] bg-[#fbfbfd] px-4 py-3">
             <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
@@ -220,11 +220,11 @@ export function EventEditor({ event }: { event: EventRecord }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28 }}
-              className="wedding-rsvp p-4 sm:p-5"
+              className="wedding-rsvp min-h-full flex-1 overflow-auto p-4 sm:p-5"
               style={{ ...palette.cssVars, background: palette.background, color: palette.text }}
             >
-              <div className="grid gap-5 lg:grid-cols-[minmax(220px,0.9fr)_minmax(0,1fr)] lg:items-start">
-                <div className="mx-auto w-full max-w-sm">
+              <div className="grid min-h-full gap-5 lg:grid-cols-[minmax(260px,0.75fr)_minmax(360px,1fr)] lg:items-stretch">
+                <div className="mx-auto flex w-full max-w-md items-stretch">
                   <SampleInvitationTemplate
                     compact
                     imageAreaLabel="This area is for images."
@@ -234,7 +234,7 @@ export function EventEditor({ event }: { event: EventRecord }) {
                   />
                 </div>
 
-                <div className="min-w-0 rounded-[1.1rem] bg-white/55 p-4 backdrop-blur-xl">
+                <div className="min-w-0 rounded-[1.1rem] bg-white/55 p-4 backdrop-blur-xl sm:p-5">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[color:var(--el-muted)]">
                     Guest view
                   </p>

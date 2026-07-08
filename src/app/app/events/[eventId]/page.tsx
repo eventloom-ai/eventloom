@@ -34,7 +34,7 @@ export default async function EventManagePage({ params }: { params: Promise<{ ev
   if (!event) notFound();
 
   return (
-    <AppShell backHref="/app" backLabel="My events" title={event.config.title} width="wide">
+    <AppShell backHref="/app" backLabel="My events" title={event.config.title} width="full">
       <EventEditor event={event} />
     </AppShell>
   );

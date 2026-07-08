@@ -9,7 +9,7 @@ type AppShellProps = {
   description?: string;
   action?: ReactNode;
   children: ReactNode;
-  width?: "narrow" | "wide";
+  width?: "narrow" | "wide" | "full";
 };
 
 export function AppShell({
@@ -21,12 +21,14 @@ export function AppShell({
   children,
   width = "wide",
 }: AppShellProps) {
-  const maxWidth = width === "narrow" ? "max-w-2xl" : width === "wide" ? "max-w-6xl" : "max-w-5xl";
+  const maxWidth = width === "narrow" ? "max-w-2xl" : width === "wide" ? "max-w-6xl" : "max-w-none";
+  const spacing = width === "full" ? "px-4 py-5 md:px-6 md:py-6" : "px-6 py-10 md:py-14";
+  const contentSpacing = width === "full" ? "mt-5" : "mt-10";
 
   return (
     <div className="min-h-screen text-[#1d1d1f]">
       <AppHeader active="events" />
-      <main className={`mx-auto ${maxWidth} px-6 py-10 md:py-14`}>
+      <main className={`mx-auto ${maxWidth} ${spacing}`}>
         {backHref ? (
           <Link className="text-[14px] font-medium text-[#0071e3] transition-colors hover:text-[#0077ed]" href={backHref}>
             ← {backLabel}
@@ -41,7 +43,7 @@ export function AppShell({
           {action}
         </header>
 
-        <div className="mt-10">{children}</div>
+        <div className={contentSpacing}>{children}</div>
       </main>
     </div>
   );
