@@ -1,11 +1,5 @@
 import type { EventConfig, EventSiteTemplate } from "@/lib/types";
-import {
-  applyThemeOverrides,
-  enrichConfigTheme,
-  extractPaletteFromPrompt,
-  prefersCelebrationTemplate,
-  type ThemeOverrides,
-} from "@/lib/event-theme";
+import { enrichConfigTheme, extractPaletteFromPrompt, prefersCelebrationTemplate } from "@/lib/event-theme";
 
 export function usesWeddingTemplate(config: EventConfig) {
   return config.template !== "custom";
@@ -15,7 +9,7 @@ export function defaultTemplateForPrompt(prompt: string): EventSiteTemplate {
   return prefersCelebrationTemplate(prompt) ? "wedding-rsvp" : "custom";
 }
 
-export function normalizeGeneratedConfig(config: EventConfig, prompt: string, themeOverrides?: ThemeOverrides): EventConfig {
+export function normalizeGeneratedConfig(config: EventConfig, prompt: string): EventConfig {
   const template =
     config.template === "custom" && prefersCelebrationTemplate(prompt)
       ? "wedding-rsvp"
@@ -30,12 +24,9 @@ export function normalizeGeneratedConfig(config: EventConfig, prompt: string, th
     rsvpFields: config.rsvpFields?.length ? config.rsvpFields : ["name", "attendance", "party_size", "guest_names", "note"],
   };
 
-  next = applyThemeOverrides(next, themeOverrides);
   next = enrichConfigTheme(next, prompt);
 
-  const palette = themeOverrides?.mood
-    ? null
-    : extractPaletteFromPrompt(prompt);
+  const palette = extractPaletteFromPrompt(prompt);
   if (palette) {
     next = { ...next, theme: { ...next.theme, colors: palette } };
   } else if (next.theme.colors.length < 4) {
