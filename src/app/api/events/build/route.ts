@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
 
   const slug = slugSchema.safeParse(body.slug);
   const prompt = typeof body.prompt === "string" ? body.prompt : "";
-  const templateHint = body.template === "wedding" ? ("wedding" as const) : undefined;
+  const templateHint = body.template === "wedding" || body.template === "custom" ? body.template : undefined;
+  const publish = body.publish === "true" || body.publish === true;
 
   if (!slug.success || !prompt.trim()) {
     return new Response(encode({ step: "error", message: "invalid" }), {
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
         templateHint,
         ownerId: user.id,
         organizationId: organization.id,
+        publish,
         onProgress: send,
       });
 

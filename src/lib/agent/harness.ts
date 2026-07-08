@@ -60,6 +60,8 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     const config = normalizeGeneratedConfig(
       input.templateHint === "wedding"
         ? { ...plan.config, template: "wedding-rsvp", eventType: "wedding" }
+        : input.templateHint === "custom"
+          ? { ...plan.config, template: "custom" }
         : plan.config,
       input.prompt,
     );
