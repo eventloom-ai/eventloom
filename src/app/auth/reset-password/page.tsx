@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
@@ -10,7 +10,79 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [isPreparing, setIsPreparing] = useState(true);
+  const [canResetPassword, setCanResetPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function prepareRecoverySession() {
+      const supabase = createSupabaseBrowserClient();
+      if (!supabase) {
+        if (isMounted) {
+          setError("Authentication is not configured yet.");
+          setIsPreparing(false);
+        }
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          if (isMounted) {
+            setError("This password reset link is invalid or expired. Request a new reset email from the sign in page.");
+            setIsPreparing(false);
+          }
+          return;
+        }
+      } else if (accessToken && refreshToken) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) {
+          if (isMounted) {
+            setError("This password reset link is invalid or expired. Request a new reset email from the sign in page.");
+            setIsPreparing(false);
+          }
+          return;
+        }
+      } else {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          if (isMounted) {
+            setError("Open the password reset link from your email, or request a new reset email from the sign in page.");
+            setIsPreparing(false);
+          }
+          return;
+        }
+      }
+
+      if (code || window.location.hash) {
+        window.history.replaceState(null, "", "/auth/reset-password");
+      }
+
+      if (isMounted) {
+        setCanResetPassword(true);
+        setMessage("Enter a new password to finish resetting your account.");
+        setIsPreparing(false);
+      }
+    }
+
+    void prepareRecoverySession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,13 +166,27 @@ export default function ResetPasswordPage() {
             </p>
           ) : null}
 
+          {message && !error ? (
+            <p className="mt-5 rounded-xl bg-[#f0f7ff] px-4 py-3 text-[14px] text-[#0071e3]" role="status">
+              {message}
+            </p>
+          ) : null}
+
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isPreparing || isSubmitting || !canResetPassword}
             className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {isSubmitting ? "Saving…" : "Update password"}
+            {isPreparing ? "Checking link…" : isSubmitting ? "Saving…" : "Update password"}
           </button>
+
+          {error ? (
+            <p className="mt-5 text-center text-[14px] text-[#6e6e73]">
+              <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href="/login">
+                Back to sign in
+              </Link>
+            </p>
+          ) : null}
         </form>
       </div>
     </main>
