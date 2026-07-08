@@ -4,26 +4,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, Globe2, Loader2, Send, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { SampleInvitationTemplate } from "@/components/sample-invitation-template";
-import { resolveEventPalette } from "@/lib/event-theme";
+import { EventLivePreview } from "@/components/event-live-preview";
 import type { EventConfig, EventRecord } from "@/lib/types";
 
 function statusLabel(status: EventRecord["status"]) {
   if (status === "published") return "Published";
   if (status === "archived") return "Archived";
   return "Draft";
-}
-
-function displayDeadline(config: EventConfig) {
-  if (!config.rsvpDeadline) return null;
-  const parsed = new Date(`${config.rsvpDeadline}T12:00:00`);
-  if (Number.isNaN(parsed.getTime())) return config.rsvpDeadline;
-
-  return new Intl.DateTimeFormat("en", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(parsed);
 }
 
 function previewConfig(config: EventConfig, instruction: string): EventConfig {
@@ -48,8 +35,7 @@ export function EventEditor({ event }: { event: EventRecord }) {
     () => previewConfig(currentEvent.config, instruction),
     [currentEvent.config, instruction],
   );
-  const palette = useMemo(() => resolveEventPalette(activeConfig), [activeConfig]);
-  const deadline = displayDeadline(activeConfig);
+  const previewEvent = useMemo(() => ({ ...currentEvent, config: activeConfig }), [activeConfig, currentEvent]);
 
   async function regenerate() {
     const prompt = instruction.trim();
@@ -220,59 +206,15 @@ export function EventEditor({ event }: { event: EventRecord }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28 }}
-              className="wedding-rsvp min-h-full flex-1 overflow-auto p-4 sm:p-5"
-              style={{ ...palette.cssVars, background: palette.background, color: palette.text }}
+              className="min-h-full flex-1 overflow-auto bg-white"
             >
-              <div className="grid min-h-full gap-5 lg:grid-cols-[minmax(260px,0.75fr)_minmax(360px,1fr)] lg:items-stretch">
-                <div className="mx-auto flex w-full max-w-md items-stretch">
-                  <SampleInvitationTemplate
-                    compact
-                    imageAreaLabel="This area is for images."
-                    title={activeConfig.title}
-                    subtitle={activeConfig.subtitle}
-                    date={activeConfig.date}
-                  />
-                </div>
-
-                <div className="min-w-0 rounded-[1.1rem] bg-white/55 p-4 backdrop-blur-xl sm:p-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[color:var(--el-muted)]">
-                    Guest view
-                  </p>
-                  <h3 className="mt-3 font-display text-3xl leading-tight text-[color:var(--el-text)]">{activeConfig.title}</h3>
-                  <p className="mt-3 text-[14px] leading-7 text-[color:var(--el-text)]/65">{activeConfig.subtitle}</p>
-
-                  <div className="mt-5 grid gap-2 text-[13px] text-[color:var(--el-text)]/70">
-                    <p>
-                      <span className="font-medium text-[color:var(--el-text)]">Date:</span> {activeConfig.date}
-                    </p>
-                    <p>
-                      <span className="font-medium text-[color:var(--el-text)]">Place:</span> {activeConfig.venueName}
-                    </p>
-                    {deadline ? (
-                      <p>
-                        <span className="font-medium text-[color:var(--el-text)]">RSVP by:</span> {deadline}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-5 space-y-2">
-                    {activeConfig.schedule.slice(0, 3).map((item, index) => (
-                      <motion.div
-                        key={`${item.title}-${item.time}`}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="rounded-2xl border border-white/70 bg-white/60 px-4 py-3"
-                      >
-                        <p className="font-display text-xl text-[color:var(--el-accent)]">{item.title}</p>
-                        <p className="mt-1 text-[12px] text-[color:var(--el-text)]/60">{item.time}</p>
-                        {item.description ? (
-                          <p className="mt-1 text-[12px] leading-6 text-[color:var(--el-text)]/55">{item.description}</p>
-                        ) : null}
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
+              <div
+                onSubmitCapture={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+              >
+                <EventLivePreview event={previewEvent} />
               </div>
             </motion.div>
           </AnimatePresence>
