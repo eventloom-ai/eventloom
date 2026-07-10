@@ -1,18 +1,7 @@
 import type { EventRecord } from "@/lib/types";
 import { RsvpForm } from "@/components/rsvp-form";
-import { usesWeddingTemplate } from "@/lib/template-policy";
-import { WeddingDemoPage } from "@/components/wedding-demo-page";
-import { WeddingEventPage } from "@/components/wedding-event-page";
 
 export function EventPage({ event }: { event: EventRecord }) {
-  if (event.slug === "demo-wedding") {
-    return <WeddingDemoPage event={event} />;
-  }
-
-  if (usesWeddingTemplate(event.config)) {
-    return <WeddingEventPage event={event} />;
-  }
-
   const { config } = event;
   const colors = config.theme.colors.length >= 4 ? config.theme.colors : ["#191713", "#f7f4ee", "#b48a5a", "#405448"];
 
@@ -25,6 +14,12 @@ export function EventPage({ event }: { event: EventRecord }) {
             className="prose-event rounded-[8px] border border-black/10 bg-white/55 p-7 shadow-[0_24px_80px_rgba(25,23,19,0.10)] backdrop-blur"
             dangerouslySetInnerHTML={{ __html: event.artifact?.html ?? fallbackHero(event) }}
           />
+
+          {config.heroImageUrl ? (
+            <figure className="overflow-hidden rounded-[8px] border border-black/10 bg-white/55 shadow-[0_24px_80px_rgba(25,23,19,0.10)]">
+              <img src={config.heroImageUrl} alt="Event highlight" className="h-auto w-full object-cover" />
+            </figure>
+          ) : null}
 
           <section className="rounded-[8px] border border-black/10 bg-white/55 p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: colors[2] }}>
@@ -45,6 +40,19 @@ export function EventPage({ event }: { event: EventRecord }) {
               ))}
             </div>
           </section>
+
+          {config.galleryImageUrls?.length ? (
+            <section className="rounded-[8px] border border-black/10 bg-white/55 p-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: colors[2] }}>
+                Gallery
+              </p>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {config.galleryImageUrls.map((url, index) => (
+                  <img key={url} src={url} alt={`Event gallery image ${index + 1}`} className="aspect-[4/3] w-full rounded-[6px] object-cover" />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <section className="rounded-[8px] border border-black/10 bg-white/55 p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: colors[2] }}>

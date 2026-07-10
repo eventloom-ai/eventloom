@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/supabase/server";
+import { isEventOwner } from "@/lib/payments/billing";
 import type { EventRecord } from "@/lib/types";
 
 async function loadEvent(eventId: string): Promise<EventRecord | null> {
@@ -28,6 +30,8 @@ function statusLabel(status: EventRecord["status"]) {
 
 export default async function EventManagePage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
+  const user = await getServerUser();
+  if (serviceSupabase() && (!user || !(await isEventOwner(eventId, user.id)))) notFound();
   const event = await loadEvent(eventId);
   if (!event) notFound();
 
@@ -64,13 +68,14 @@ export default async function EventManagePage({ params }: { params: Promise<{ ev
             </form>
 
             <form action={`/api/events/${event.id}/publish`} method="post">
-              <input type="hidden" name="domain" value={`${event.slug}.com`} />
               <button
                 type="submit"
-                className="w-full rounded-2xl border border-black/[0.06] bg-[#fbfbfd] px-5 py-5 text-left transition-colors hover:bg-[#f5f5f7]"
+                className="w-full rounded-2xl border border-[#0071e3]/20 bg-[#f0f7ff] px-5 py-5 text-left transition-colors hover:bg-[#e3f2fd]"
               >
-                <p className="text-[17px] font-semibold tracking-tight">Custom domain</p>
-                <p className="mt-1 text-[14px] leading-relaxed text-[#6e6e73]">Get a personal website address for this event.</p>
+                <p className="text-[17px] font-semibold tracking-tight">Publish site · $20</p>
+                <p className="mt-1 text-[14px] leading-relaxed text-[#6e6e73]">
+                  Launch your event site for one year, open RSVPs, and receive another $5 in AI build credit.
+                </p>
               </button>
             </form>
           </div>

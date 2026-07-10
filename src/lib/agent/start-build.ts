@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { buildCompleteSite } from "@/lib/agent/harness";
 import { enrichPromptWithTheme, type ParsedBuildForm } from "@/lib/agent/parse-build-form";
 import { createEventRecord, createGenerationJob, placeholderEventConfig } from "@/lib/agent/tools";
+import { isEventOwner, reserveBuildCredit } from "@/lib/payments/billing";
 
 export type StartBuildResult =
   | { ok: true; jobId: string; eventId: string | null; slug: string }
@@ -13,6 +14,15 @@ export async function startBuildJob(
 ): Promise<StartBuildResult> {
   if (!parsed.slug || !parsed.prompt.trim()) {
     return { ok: false, error: "invalid", status: 400 };
+  }
+
+  if (ownerId && parsed.existingEventId && !(await isEventOwner(parsed.existingEventId, ownerId))) {
+    return { ok: false, error: "not_found", status: 404 };
+  }
+
+  if (ownerId) {
+    const credit = await reserveBuildCredit(ownerId, parsed.existingEventId);
+    if (!credit.ok) return { ok: false, error: credit.error, status: 402 };
   }
 
   const prompt = enrichPromptWithTheme(parsed.prompt, parsed.themeOverrides);
@@ -49,7 +59,6 @@ export async function startBuildJob(
     prompt,
     slug: parsed.slug,
     images: parsed.images,
-    templateHint: parsed.templateHint,
     themeOverrides: parsed.themeOverrides,
     existingEventId: parsed.existingEventId,
     placeholderEventId,

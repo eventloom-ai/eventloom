@@ -6,7 +6,6 @@ import { slugSchema } from "@/lib/validation";
 export type ParsedBuildForm = {
   prompt: string;
   slug: string | null;
-  templateHint?: "wedding" | "custom";
   images: ImageInput[];
   themeOverrides?: ThemeOverrides;
   existingEventId?: string;
@@ -15,7 +14,6 @@ export type ParsedBuildForm = {
 export async function parseBuildForm(form: FormData | null, body: Record<string, FormDataEntryValue>): Promise<ParsedBuildForm> {
   const prompt = typeof body.prompt === "string" ? body.prompt : "";
   const slug = slugSchema.safeParse(body.slug);
-  const templateHint = body.template === "wedding" ? ("wedding" as const) : undefined;
   const images = form ? await readImages(form) : [];
   const themeOverrides = readThemeOverrides(body);
   const existingEventId = typeof body.event_id === "string" && /^[0-9a-f-]{36}$/i.test(body.event_id) ? body.event_id : undefined;
@@ -23,7 +21,6 @@ export async function parseBuildForm(form: FormData | null, body: Record<string,
   return {
     prompt,
     slug: slug.success ? slug.data : null,
-    templateHint,
     images,
     themeOverrides,
     existingEventId,

@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCheckoutSession } from "@/lib/payments/stripe";
-import { domainSchema } from "@/lib/validation";
+import { createLaunchCheckoutSession } from "@/lib/payments/stripe";
+import { getServerUser } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => null)) as { event_id?: string; domain?: string } | null;
-  if (!body?.event_id || !body.domain) {
+  const body = (await req.json().catch(() => null)) as { event_id?: string } | null;
+  if (!body?.event_id) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  const domain = domainSchema.safeParse(body.domain);
-  if (!domain.success) {
-    return NextResponse.json({ error: "invalid_domain" }, { status: 400 });
-  }
-
-  const session = await createCheckoutSession({ eventId: body.event_id, domain: domain.data });
+  const user = await getServerUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const session = await createLaunchCheckoutSession({ eventId: body.event_id, ownerId: user.id, customerEmail: user.email });
   if (!session.ok) {
-    return NextResponse.json({ error: session.error }, { status: 503 });
+    return NextResponse.json({ error: session.error }, { status: session.error === "not_found" ? 404 : 409 });
   }
 
   return NextResponse.json(session);

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateSitePlan } from "@/lib/agent/generate-config";
 import { generateArtifactForConfig } from "@/lib/agent/tools";
 import { validateGeneratedArtifact } from "@/lib/validation";
+import { isSupabaseConfigured } from "@/lib/env";
+import { reserveBuildCredit } from "@/lib/payments/billing";
+import { getServerUser } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   const contentType = req.headers.get("content-type") ?? "";
@@ -11,17 +14,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing_message" }, { status: 400 });
   }
 
+  const user = await getServerUser();
+  if (isSupabaseConfigured() && !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (user) {
+    const credit = await reserveBuildCredit(user.id);
+    if (!credit.ok) return NextResponse.json({ error: credit.error }, { status: 402 });
+  }
+
   const plan = await generateSitePlan(message);
   const artifact = await generateArtifactForConfig(plan.config, message, body.images);
-
-  if (plan.template === "wedding-rsvp") {
-    return NextResponse.json({
-      config: plan.config,
-      template: plan.template,
-      artifact,
-      next: "preview",
-    });
-  }
 
   const validation = validateGeneratedArtifact(artifact);
   if (!validation.ok) {

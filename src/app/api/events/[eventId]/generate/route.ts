@@ -3,12 +3,23 @@ import { generateSitePlan } from "@/lib/agent/generate-config";
 import { generateArtifactForConfig, saveEventVersion, savePageArtifact } from "@/lib/agent/tools";
 import { demoEvent } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/supabase/server";
+import { isEventOwner, reserveBuildCredit } from "@/lib/payments/billing";
 import type { EventConfig } from "@/lib/types";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
   const client = serviceSupabase();
   const body = (await req.json().catch(() => ({}))) as { prompt?: string };
+
+  const user = await getServerUser();
+  if (client && (!user || !(await isEventOwner(eventId, user.id)))) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+  if (user) {
+    const credit = await reserveBuildCredit(user.id, eventId);
+    if (!credit.ok) return NextResponse.json({ error: credit.error }, { status: 402 });
+  }
 
   if (!client) {
     const plan = await generateSitePlan(body.prompt ?? demoEvent.config.title);

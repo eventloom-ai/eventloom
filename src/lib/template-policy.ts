@@ -1,25 +1,8 @@
-import type { EventConfig, EventSiteTemplate } from "@/lib/types";
-import {
-  applyThemeOverrides,
-  enrichConfigTheme,
-  extractPaletteFromPrompt,
-  prefersCelebrationTemplate,
-  type ThemeOverrides,
-} from "@/lib/event-theme";
-
-export function usesWeddingTemplate(config: EventConfig) {
-  return config.template !== "custom";
-}
-
-export function defaultTemplateForPrompt(prompt: string): EventSiteTemplate {
-  return prefersCelebrationTemplate(prompt) ? "wedding-rsvp" : "custom";
-}
+import type { EventConfig } from "@/lib/types";
+import { applyThemeOverrides, enrichConfigTheme, extractPaletteFromPrompt, type ThemeOverrides } from "@/lib/event-theme";
 
 export function normalizeGeneratedConfig(config: EventConfig, prompt: string, themeOverrides?: ThemeOverrides): EventConfig {
-  const template =
-    config.template === "custom" && prefersCelebrationTemplate(prompt)
-      ? "wedding-rsvp"
-      : (config.template ?? defaultTemplateForPrompt(prompt));
+  const template = "custom";
 
   let next: EventConfig = {
     ...config,

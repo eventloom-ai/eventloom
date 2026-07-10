@@ -29,6 +29,17 @@ npm test
 npm run build
 ```
 
+## Launch billing and AI credit policy
+
+- Publishing an event uses a server-created Stripe Checkout session for **$20 USD**.
+- Stripe's signed `checkout.session.completed` webhook activates the site for one year; returning to the success page alone never publishes it.
+- A new account starts with $5 of build credit. Each complete AI build reserves $0.50 from a server-side, atomic ledger. A paid launch adds a further $5.
+- Public published sites require an active entitlement. After the one-year term, access expires without charging the initial $20 launch price again.
+
+After applying the latest migration, add `https://YOUR_DOMAIN/api/stripe/webhook` as a Stripe webhook endpoint and subscribe it to `checkout.session.completed`. Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`; the launch amount is owned by the server and cannot be changed by the browser.
+
+Renewal and traffic upgrades are deliberately not priced in code yet. Add those products before offering renewals rather than reusing the launch price.
+
 ## Supabase
 
 Apply `supabase/migrations/20260615000100_eventloom_platform.sql` to create the multi-tenant schema and Row Level Security policies.

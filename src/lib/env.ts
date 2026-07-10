@@ -33,7 +33,7 @@ export function isAiConfigured() {
 }
 
 export function isStripeConfigured() {
-  return Boolean(read("STRIPE_SECRET_KEY") && read("STRIPE_PRICE_ID"));
+  return Boolean(read("STRIPE_SECRET_KEY"));
 }
 
 export const env = {
@@ -46,7 +46,6 @@ export const env = {
   supabaseServiceRoleKey: () => read("SUPABASE_SERVICE_ROLE_KEY"),
   stripeSecretKey: () => read("STRIPE_SECRET_KEY"),
   stripeWebhookSecret: () => read("STRIPE_WEBHOOK_SECRET"),
-  stripePriceId: () => read("STRIPE_PRICE_ID"),
   vercelApiToken: () => read("VERCEL_API_TOKEN"),
   vercelProjectId: () => read("VERCEL_PROJECT_ID"),
   vercelTeamId: () => read("VERCEL_TEAM_ID"),

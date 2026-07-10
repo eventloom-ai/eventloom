@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
+import { safeRedirectPath } from "@/lib/auth/redirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthMode = "signin" | "signup";
@@ -10,14 +11,15 @@ type AuthMode = "signin" | "signup";
 export function AuthForm({ mode }: { mode: AuthMode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/app";
+  const nextPath = safeRedirectPath(searchParams.get("next"));
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => searchParams.get("error") ?? "");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSignInHint, setShowSignInHint] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const title = mode === "signup" ? "Create your account" : "Sign in";
   const subtitle = useMemo(
@@ -38,6 +40,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     const supabase = createSupabaseBrowserClient();
     if (!supabase) {
       setError("Authentication is not configured yet.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (mode === "signup" && password.length < 12) {
+      setError("Use at least 12 characters for your password.");
       setIsSubmitting(false);
       return;
     }
@@ -86,6 +94,29 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     router.refresh();
   }
 
+  async function signInWithGoogle() {
+    setError("");
+    setMessage("");
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) {
+      setError("Authentication is not configured yet.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+      },
+    });
+
+    if (oauthError) {
+      setError(oauthError.message);
+      setIsSubmitting(false);
+    }
+  }
+
   async function resetPassword() {
     setError("");
     setMessage("");
@@ -130,6 +161,27 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         onSubmit={submit}
         className="rounded-2xl border border-black/[0.08] bg-white p-6 shadow-[0_2px_24px_rgba(0,0,0,0.04)] md:p-8"
       >
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={signInWithGoogle}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-black/[0.12] bg-white py-3.5 text-[16px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5">
+            <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.3 2.98-7.36Z" />
+            <path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.41l-3.23-2.51c-.9.6-2.05.95-3.39.95-2.6 0-4.8-1.76-5.58-4.12H3.08v2.59A10 10 0 0 0 12 22Z" />
+            <path fill="#FBBC05" d="M6.42 13.91A6 6 0 0 1 6.1 12c0-.66.11-1.3.32-1.91V7.5H3.08A10 10 0 0 0 2 12c0 1.61.39 3.13 1.08 4.5l3.34-2.59Z" />
+            <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.51l2.87-2.87C16.96 2.99 14.7 2 12 2a10 10 0 0 0-8.92 5.5l3.34 2.59C7.2 7.73 9.4 5.97 12 5.97Z" />
+          </svg>
+          Continue with Google
+        </button>
+
+        <div className="my-6 flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.14em] text-[#86868b]">
+          <span className="h-px flex-1 bg-black/[0.08]" />
+          or continue with email
+          <span className="h-px flex-1 bg-black/[0.08]" />
+        </div>
+
         {mode === "signup" ? (
           <label className="grid gap-2">
             <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Full name</span>
@@ -161,16 +213,30 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         <label className="mt-5 grid gap-2">
           <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Password</span>
           <input
-            type="password"
+              type={showPassword ? "text" : "password"}
             required
             minLength={8}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
-            placeholder="At least 8 characters"
+              placeholder={mode === "signup" ? "At least 12 characters" : "Your password"}
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
-          />
-        </label>
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              className="justify-self-start text-sm font-medium text-[#0071e3] hover:text-[#0077ed]"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "Hide password" : "Show password"}
+            </button>
+          </label>
+
+        {mode === "signup" ? (
+          <p className="mt-3 text-[13px] leading-relaxed text-[#6e6e73]">
+            Use 12+ characters with a mix of uppercase, lowercase, numbers, and symbols.
+          </p>
+        ) : null}
 
         {error ? (
           <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-600" role="alert">
@@ -213,6 +279,10 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           </button>
         ) : null}
       </form>
+
+      <p className="mt-5 text-center text-[12px] leading-relaxed text-[#86868b]">
+        Protected by secure authentication. Google sign-in is handled by Google; Eventloom never receives your Google password.
+      </p>
 
       <p className="mt-6 text-center text-[14px] text-[#6e6e73]">
         {mode === "signup" ? (

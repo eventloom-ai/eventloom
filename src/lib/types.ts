@@ -8,7 +8,7 @@ export type EventTheme = {
   fontPairing: string;
 };
 
-export type EventSiteTemplate = "wedding-rsvp" | "custom";
+export type EventSiteTemplate = "custom";
 
 export type EventScheduleItem = {
   title: string;

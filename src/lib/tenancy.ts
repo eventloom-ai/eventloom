@@ -65,6 +65,17 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
   }
 
   const row = event as EventRow;
+  if (row.status === "published") {
+    const { data: entitlement } = await client
+      .from("event_entitlements")
+      .select("status, expires_at")
+      .eq("event_id", row.id)
+      .maybeSingle();
+    if (entitlement?.status !== "active" || !entitlement.expires_at || new Date(entitlement.expires_at) <= new Date()) {
+      return null;
+    }
+  }
+
   const { data: artifact } = await client
     .from("page_artifacts")
     .select("html, css, generated_at, model")

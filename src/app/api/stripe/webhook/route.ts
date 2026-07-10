@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addDomainToVercelProject } from "@/lib/domains/vercel";
-import { domainProvider } from "@/lib/domains/provider";
 import { env } from "@/lib/env";
+import { AI_LAUNCH_BONUS_CENTS, LAUNCH_PRICE_CENTS } from "@/lib/payments/billing";
 import { stripeClient } from "@/lib/payments/stripe";
 import { serviceSupabase } from "@/lib/supabase/server";
 
@@ -28,8 +27,8 @@ export async function POST(req: NextRequest) {
 
   const session = event.data.object;
   const eventId = session.metadata?.event_id;
-  const domain = session.metadata?.domain;
-  if (!eventId || !domain) {
+  const orderId = session.metadata?.order_id;
+  if (!eventId || !orderId || session.metadata?.product !== "eventloom_launch" || session.payment_status !== "paid") {
     return NextResponse.json({ error: "missing_metadata" }, { status: 400 });
   }
 
@@ -38,32 +37,74 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, demo: true });
   }
 
+  const { data: order } = await client
+    .from("orders")
+    .select("id, event_id, status, amount_total, currency, provider_reference")
+    .eq("id", orderId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (
+    !order ||
+    order.amount_total !== LAUNCH_PRICE_CENTS ||
+    order.currency !== "usd" ||
+    order.provider_reference !== session.id ||
+    session.client_reference_id !== orderId ||
+    session.amount_total !== LAUNCH_PRICE_CENTS ||
+    session.currency !== "usd"
+  ) {
+    return NextResponse.json({ error: "invalid_order" }, { status: 400 });
+  }
+
+  const { data: eventRecord } = await client.from("events").select("owner_id").eq("id", eventId).maybeSingle();
+  if (!eventRecord?.owner_id) return NextResponse.json({ error: "event_not_found" }, { status: 404 });
+
+  const { data: existingEntitlement } = await client
+    .from("event_entitlements")
+    .select("launch_order_id")
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  // Stripe may retry webhooks. An entitlement already attached to this order
+  // means all side effects completed previously, so it is safe to acknowledge.
+  if (existingEntitlement?.launch_order_id === orderId) {
+    return NextResponse.json({ ok: true, duplicate: true });
+  }
+
+  const startsAt = new Date();
+  const expiresAt = new Date(startsAt);
+  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+
+  await client.from("orders").update({ status: "paid", updated_at: startsAt.toISOString() }).eq("id", orderId);
   await client.from("payments").upsert({
     event_id: eventId,
     stripe_session_id: session.id,
+    order_id: orderId,
     status: "paid",
     amount_total: session.amount_total ?? 0,
     currency: session.currency ?? "usd",
+    provider: "stripe",
+    metadata: { stripe_event_id: event.id, payment_intent: session.payment_intent },
+  });
+  await client
+    .from("event_entitlements")
+    .upsert({
+      event_id: eventId,
+      owner_id: eventRecord.owner_id,
+      launch_order_id: orderId,
+      status: "active",
+      starts_at: startsAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+      updated_at: startsAt.toISOString(),
+    })
+    .eq("event_id", eventId);
+
+  await client.rpc("grant_launch_ai_credit", {
+    p_user_id: eventRecord.owner_id,
+    p_order_id: orderId,
+    p_amount_cents: AI_LAUNCH_BONUS_CENTS,
   });
 
-  const registration = await domainProvider().register(domain);
-  if (!registration.ok) {
-    await client.from("domains").update({ status: "failed", failure_reason: registration.error }).eq("event_id", eventId).eq("domain", domain);
-    return NextResponse.json({ ok: true, domain_status: "failed" });
-  }
-
-  const vercel = await addDomainToVercelProject(domain);
-  await client
-    .from("domains")
-    .update({
-      status: vercel.ok ? "vercel_pending" : "failed",
-      provider_id: registration.providerId,
-      failure_reason: vercel.ok ? null : vercel.error,
-    })
-    .eq("event_id", eventId)
-    .eq("domain", domain);
-
-  await client.from("events").update({ status: "published", rsvp_open: true }).eq("id", eventId);
+  await client.from("events").update({ status: "published", rsvp_open: true, published_at: startsAt.toISOString() }).eq("id", eventId);
   await client.from("page_artifacts").update({ status: "published" }).eq("event_id", eventId).eq("status", "draft");
 
   return NextResponse.json({ ok: true });

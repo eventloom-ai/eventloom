@@ -2,7 +2,7 @@ import { defaultEventConfig } from "@/lib/ai/generator";
 import { env } from "@/lib/env";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt } from "@/lib/event-theme";
-import { defaultTemplateForPrompt, normalizeGeneratedConfig } from "@/lib/template-policy";
+import { normalizeGeneratedConfig } from "@/lib/template-policy";
 import type { EventConfig, EventSiteTemplate } from "@/lib/types";
 
 type GeneratedSitePlan = {
@@ -23,7 +23,7 @@ const eventConfigSchema = {
     hallInfo: { type: "string" },
     directionsLabel: { type: "string" },
     rsvpDeadline: { type: "string" },
-    template: { type: "string", enum: ["wedding-rsvp", "custom"] },
+    template: { type: "string", enum: ["custom"] },
     schedule: {
       type: "array",
       items: {
@@ -84,7 +84,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
         {
           role: "system",
           content:
-            "You are Eventloom's luxury event site planner. Build rich, editorial-quality celebration sites using the wedding-rsvp template by default for weddings, engagements, birthdays, anniversaries, galas, and family events. Only choose custom for corporate conferences or pages that explicitly should not use the premium RSVP experience. Extract the customer's desired mood and colors from their prompt (e.g. blush, navy, gold, lavender, forest, sunset) and output an intentional 4-color palette: [text, surface, accent, muted] as hex codes. Write evocative titles, subtitles, a detailed schedule, venue copy, and RSVP deadline. Never use famous real people's names.",
+            "You are Eventloom's event site planner. Every site must feel original to the customer's brief—never select or imitate a fixed template. Extract the desired mood and colors from their prompt and output an intentional four-color palette: [text, surface, accent, muted] as hex codes. Write specific, evocative titles, subtitles, schedule and venue copy, while ensuring the core guest RSVP details are represented in the plan. Never use famous real people's names.",
         },
         {
           role: "user",
@@ -130,7 +130,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
       themeOverrides,
     );
     return {
-      template: config.template ?? "wedding-rsvp",
+      template: "custom",
       config,
     };
   } catch {
@@ -141,35 +141,24 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
 function fallbackSitePlan(prompt: string, themeOverrides?: ThemeOverrides): GeneratedSitePlan {
   const base = defaultEventConfig(prompt);
   const palette = extractPaletteFromPrompt(prompt);
-  const template = defaultTemplateForPrompt(prompt);
-
-  const richSchedule =
-    template === "wedding-rsvp"
-      ? [
-          { title: "Reception", time: "6:00 PM", location: "", description: "Welcome drinks and soft music as guests arrive." },
-          { title: "Ceremony", time: "6:45 PM", location: "Main Hall", description: "The celebration begins with a warm procession." },
-          { title: "Dinner", time: "8:00 PM", location: "Dining Hall", description: "A curated dinner service with toasts and conversation." },
-        ]
-      : base.schedule.map((item) => ({
-          title: item.title,
-          time: item.time,
-          location: item.location ?? "",
-          description: item.description ?? "",
-        }));
+  const template = "custom" as const;
+  const richSchedule = base.schedule.map((item) => ({
+    title: item.title,
+    time: item.time,
+    location: item.location ?? "",
+    description: item.description ?? "",
+  }));
 
   const config = normalizeGeneratedConfig(
     {
       ...base,
       template,
-      subtitle:
-        template === "wedding-rsvp"
-          ? "We would be honored to celebrate this day with the people who matter most."
-          : base.subtitle,
+      subtitle: base.subtitle,
       schedule: richSchedule,
       theme: {
-        mood: palette ? "customer palette" : template === "wedding-rsvp" ? "soft luxury celebration" : base.theme.mood,
-        colors: palette ?? (template === "wedding-rsvp" ? ["#1f1a17", "#f7f2ed", "#6f3032", "#747d5c"] : base.theme.colors),
-        fontPairing: "romantic serif with clean sans",
+        mood: palette ? "customer palette" : base.theme.mood,
+        colors: palette ?? base.theme.colors,
+        fontPairing: "expressive display with clean sans",
       },
     },
     prompt,

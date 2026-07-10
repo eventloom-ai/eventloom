@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseBuildForm } from "@/lib/agent/parse-build-form";
 import { startBuildJob } from "@/lib/agent/start-build";
 import { getServerUser } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/env";
 
 export const maxDuration = 300;
 
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
 
   const parsed = await parseBuildForm(form, body);
   const ownerId = (await getServerUser())?.id ?? null;
+  if (isSupabaseConfigured() && !ownerId) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const result = await startBuildJob(parsed, ownerId);
 
   if (!result.ok) {

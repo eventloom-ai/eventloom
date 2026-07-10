@@ -29,7 +29,6 @@ export type BuildSiteInput = {
   images?: ImageInput[];
   ownerId?: string | null;
   publish?: boolean;
-  templateHint?: "wedding" | "custom";
   themeOverrides?: ThemeOverrides;
   existingEventId?: string;
   placeholderEventId?: string | null;
@@ -86,17 +85,11 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
 
   try {
     await report(input, { step: "started", message: "Starting your site build…", progressPercent: progressForStep("started") });
-    await report(input, { step: "planning", message: "Understanding your event and choosing a template…", progressPercent: progressForStep("planning") });
+    await report(input, { step: "planning", message: "Understanding your event and shaping a unique direction…", progressPercent: progressForStep("planning") });
 
     const plan = await generateSitePlan(input.prompt, input.themeOverrides);
     const existingEvent = input.existingEventId ? await getEventRecord(input.existingEventId, input.ownerId) : null;
-    let config = normalizeGeneratedConfig(
-      input.templateHint === "wedding"
-        ? { ...plan.config, template: "wedding-rsvp", eventType: "wedding" }
-        : plan.config,
-      input.prompt,
-      input.themeOverrides,
-    );
+    let config = normalizeGeneratedConfig(plan.config, input.prompt, input.themeOverrides);
     config = applyImagesToConfig(config, input.images ?? []);
     if (!input.images?.length && existingEvent?.config.heroImageUrl) {
       config = {
@@ -105,11 +98,11 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
         galleryImageUrls: existingEvent.config.galleryImageUrls,
       };
     }
-    const template = config.template ?? plan.template;
+    const template = "custom" as const;
 
     await report(input, {
       step: "planned",
-      message: template === "wedding-rsvp" ? "Premium celebration template selected." : "Custom layout planned.",
+      message: "A unique visual direction is ready.",
       template,
       config,
       progressPercent: progressForStep("planned"),

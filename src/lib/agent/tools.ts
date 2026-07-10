@@ -231,7 +231,7 @@ export function placeholderEventConfig(slug: string): EventConfig {
       colors: ["#1f1a17", "#f7f2ed", "#6f3032", "#747d5c"],
       fontPairing: "romantic serif with clean sans",
     },
-    template: "wedding-rsvp",
+    template: "custom",
   };
 }
 
@@ -358,14 +358,5 @@ export function previewUrls(slug: string) {
 }
 
 export async function generateArtifactForConfig(config: EventConfig, prompt: string, images: ImageInput[] = []) {
-  if (config.template === "wedding-rsvp") {
-    return {
-      generatedAt: new Date().toISOString(),
-      model: "wedding-rsvp-template",
-      css: "",
-      html: "",
-    } satisfies PageArtifact;
-  }
-
   return generatePageArtifact(config, prompt, images);
 }
