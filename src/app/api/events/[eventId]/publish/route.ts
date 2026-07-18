@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createLaunchCheckoutSession } from "@/lib/payments/stripe";
+import { isPlatformAdmin } from "@/lib/platform-admin";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { canEditEvent } from "@/lib/studio-store";
 
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
       client.from("event_entitlements").select("status, expires_at").eq("event_id", eventId).maybeSingle(),
     ]);
     const active = entitlement?.status === "active" && entitlement.expires_at && new Date(entitlement.expires_at) > new Date();
-    if (active) {
+    if (active || await isPlatformAdmin(user.id)) {
       if (!event?.draft_version_id) return NextResponse.json({ error: "site_version_missing" }, { status: 409 });
       await client.from("events").update({ status: "published", rsvp_open: true, published_version_id: event.draft_version_id, published_at: new Date().toISOString() }).eq("id", eventId);
       return NextResponse.redirect(new URL(`/app/events/${eventId}/studio?published=1`, req.url), { status: 303 });
