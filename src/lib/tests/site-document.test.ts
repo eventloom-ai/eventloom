@@ -12,6 +12,16 @@ describe("structured event site documents", () => {
     expect(walkSiteNodes(document).some((node) => node.type === "text" && node.binding === "event.title")).toBe(true);
   });
 
+  it("starts an image-less hero at a readable size without reserving a viewport-sized gap", () => {
+    const document = createDefaultSiteDocument(defaultEventConfig("A birthday dinner"));
+    const hero = document.nodes[0];
+    expect(hero).toMatchObject({
+      type: "section",
+      label: "Hero",
+      style: { padding: "large", minHeight: "auto", width: "wide", gap: "medium" },
+    });
+  });
+
   it("applies a targeted text edit without changing unrelated nodes", () => {
     const document = createDefaultSiteDocument(defaultEventConfig("A birthday party"));
     const text = walkSiteNodes(document).find((node) => node.type === "text" && node.variant === "eyebrow");

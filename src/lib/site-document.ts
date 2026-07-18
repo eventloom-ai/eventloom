@@ -165,7 +165,7 @@ export function createDefaultSiteDocument(config: EventConfig, makeId: (prefix: 
     },
     nodes: [
       {
-        id: makeId("hero"), type: "section", label: "Hero", style: { padding: "hero", minHeight: "threeQuarter", align: "center" }, children: [
+        id: makeId("hero"), type: "section", label: "Hero", style: { padding: "large", minHeight: "auto", align: "center", width: "wide", gap: "medium" }, children: [
           { id: makeId("eyebrow"), type: "text", content: config.eventType, variant: "eyebrow", style: { font: "body", size: "xs", weight: "semibold" } },
           { id: makeId("title"), type: "text", binding: "event.title", variant: "heading", style: { font: "display", size: "hero", weight: "semibold" } },
           { id: makeId("subtitle"), type: "text", binding: "event.subtitle", variant: "subheading", style: { font: "body", size: "lg" } },

@@ -28,7 +28,7 @@ export function StudioChat({ messages, value, selectedLabel, isRunning, activity
   function submit(event: FormEvent) { event.preventDefault(); if (value.trim() && !isRunning) onSubmit(); }
   function attach(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; event.target.value = ""; if (file) onAttachment(file); }
   return (
-    <aside className="flex min-h-0 flex-col border-r border-white/10 bg-[#171717] text-white">
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden border-r border-white/10 bg-[#171717] text-white">
       <div className="border-b border-white/10 px-4 py-3"><div className="flex items-center gap-2 text-[12px] font-semibold"><WandSparkles className="size-4 text-violet-300" /> Eventloom agent</div><p className="mt-1 text-[10px] leading-4 text-white/40">Ask for a change or select something on the canvas first.</p></div>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
         {messages.length === 0 ? <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.03] p-4"><p className="text-[12px] font-medium">Your site is ready to shape.</p><p className="mt-1 text-[11px] leading-5 text-white/45">Try a visual direction, rewrite a section, or select an element for a precise edit.</p></div> : null}
@@ -36,7 +36,7 @@ export function StudioChat({ messages, value, selectedLabel, isRunning, activity
         {isRunning ? <div className="rounded-xl border border-violet-400/15 bg-violet-400/[0.07] px-3 py-2.5 text-[11px] text-violet-100"><Loader2 className="mr-2 inline size-3.5 animate-spin text-violet-300" />{activity || "Working on your site…"}</div> : null}
         {error ? <p className="rounded-xl bg-red-400/10 px-3 py-2.5 text-[11px] leading-5 text-red-200" role="alert">{error}</p> : null}
       </div>
-      {!hideComposer ? <div className="border-t border-white/10 p-3">
+      {!hideComposer ? <div className="shrink-0 border-t border-white/10 p-3">
         {!messages.length && !isRunning ? <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => { onChange(suggestion); textareaRef.current?.focus(); }} className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-[10px] text-white/55 hover:bg-white/10 hover:text-white">{suggestion}</button>)}</div> : null}
         {selectedLabel ? <div className="mb-2 flex items-center gap-2 rounded-lg bg-violet-400/10 px-2.5 py-1.5 text-[10px] text-violet-200"><MousePointer2 className="size-3" /><span className="min-w-0 flex-1 truncate">Editing: {selectedLabel}</span><button type="button" onClick={onClearSelection} aria-label="Clear selection"><X className="size-3" /></button></div> : null}
         <form onSubmit={submit} className="rounded-xl border border-white/10 bg-[#202020] p-1 focus-within:border-violet-400/50">

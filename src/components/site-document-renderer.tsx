@@ -22,7 +22,7 @@ const gap = { none: "0", small: "0.75rem", medium: "1.5rem", large: "3rem" } as 
 const radius = { none: "0", small: "0.5rem", medium: "1rem", large: "2rem", pill: "999px" } as const;
 const maxWidth = { full: "none", wide: "80rem", content: "64rem", narrow: "42rem" } as const;
 const minHeight = { auto: undefined, screen: "100svh", threeQuarter: "75svh", half: "50svh" } as const;
-const fontSize = { xs: "0.75rem", sm: "0.875rem", md: "1rem", lg: "clamp(1.1rem,2vw,1.4rem)", xl: "clamp(2.4rem,6vw,5.5rem)", hero: "clamp(3.6rem,10vw,9rem)" } as const;
+const fontSize = { xs: "0.75rem", sm: "0.875rem", md: "1rem", lg: "clamp(1.1rem,2vw,1.4rem)", xl: "clamp(2.4rem,6vw,5.5rem)", hero: "clamp(3rem,6vw,6rem)" } as const;
 const fontWeight = { regular: 400, medium: 500, semibold: 600, bold: 700 } as const;
 
 function styleFor(style: SiteStyle | undefined, document: SiteDocument): CSSProperties {
@@ -57,7 +57,11 @@ function bindingValue(binding: SiteTextBinding | undefined, config: EventConfig)
 function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRendererProps }) {
   const { document, config, interactive, selectedNodeId, onSelectNode, onTextCommit } = context;
   const selected = selectedNodeId === node.id;
-  const style = styleFor(node.style, document);
+  const isImageLessHero = node.type === "section" && node.label === "Hero" && !node.children.some((child) => child.type === "image");
+  const baseStyle = styleFor(node.style, document);
+  const style: CSSProperties = isImageLessHero
+    ? { ...baseStyle, padding: "clamp(4rem, 8vw, 7rem) clamp(1.25rem, 5vw, 5rem)", minHeight: "auto", gap: "1.5rem" }
+    : baseStyle;
   const common = {
     "data-site-node-id": node.id,
     "data-site-node-type": node.type,
@@ -65,7 +69,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
     style: { ...style, outline: selected ? `2px solid ${document.theme.colors.accent}` : undefined, outlineOffset: selected ? "3px" : undefined, cursor: interactive ? "pointer" : undefined } as CSSProperties,
   };
 
-  if (node.type === "section") return <section {...common}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</section>;
+  if (node.type === "section") return <section {...common} style={{ display: "flex", flexDirection: "column", gap: common.style.gap ?? "1.5rem", ...common.style }}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</section>;
   if (node.type === "stack") return <div {...common} style={{ display: "flex", flexDirection: "column", ...common.style }}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</div>;
   if (node.type === "grid") return <div {...common} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,18rem),1fr))", ...common.style }}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</div>;
   if (node.type === "overlay") return <div {...common} style={{ display: "grid", ...common.style }}>{node.children.map((child) => <div key={child.id} style={{ gridArea: "1 / 1" }}><NodeView node={child} context={context} /></div>)}</div>;
@@ -76,11 +80,12 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
       if (content && content !== value) onTextCommit?.(node.id, content);
     } : undefined;
     const editable = { contentEditable: interactive, suppressContentEditableWarning: true, onBlur: commit, title: interactive ? "Click to select, then type to edit" : undefined };
-    if (node.variant === "heading") return <h2 {...common} {...editable} style={{ ...common.style, lineHeight: 0.98, letterSpacing: "-0.045em" }}>{value}</h2>;
-    if (node.variant === "subheading") return <p {...common} {...editable} style={{ ...common.style, lineHeight: 1.55 }}>{value}</p>;
-    if (node.variant === "eyebrow") return <p {...common} {...editable} style={{ ...common.style, textTransform: "uppercase", letterSpacing: "0.2em" }}>{value}</p>;
-    if (node.variant === "caption") return <small {...common} {...editable} style={{ ...common.style, lineHeight: 1.5 }}>{value}</small>;
-    return <p {...common} {...editable} style={{ ...common.style, lineHeight: 1.7 }}>{value}</p>;
+    const textStyle: CSSProperties = { margin: 0, ...common.style };
+    if (node.variant === "heading") return <h2 {...common} {...editable} style={{ ...textStyle, lineHeight: 0.98, letterSpacing: "-0.045em", ...(node.style?.size === "hero" ? { maxWidth: "15ch", marginInline: node.style?.align === "center" ? "auto" : undefined, textWrap: "balance" } : {}) }}>{value}</h2>;
+    if (node.variant === "subheading") return <p {...common} {...editable} style={{ ...textStyle, lineHeight: 1.55 }}>{value}</p>;
+    if (node.variant === "eyebrow") return <p {...common} {...editable} style={{ ...textStyle, textTransform: "uppercase", letterSpacing: "0.2em" }}>{value}</p>;
+    if (node.variant === "caption") return <small {...common} {...editable} style={{ ...textStyle, lineHeight: 1.5 }}>{value}</small>;
+    return <p {...common} {...editable} style={{ ...textStyle, lineHeight: 1.7 }}>{value}</p>;
   }
   if (node.type === "image") return <figure {...common} style={{ overflow: "hidden", aspectRatio: "16 / 10", position: "relative", ...common.style }}>{node.url ? <Image unoptimized fill sizes="(max-width: 768px) 100vw, 1200px" src={node.url} alt={node.alt} style={{ objectFit: node.fit ?? "cover" }} /> : <div style={{ display: "grid", placeItems: "center", minHeight: "18rem", background: "color-mix(in srgb, currentColor 8%, transparent)" }}>Add an image</div>}</figure>;
   if (node.type === "button") return <a {...common} href={node.href} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0.85rem 1.25rem", border: "1px solid currentColor", background: node.variant === "primary" ? document.theme.colors.accent : "transparent", color: node.variant === "primary" ? document.theme.colors.surface : "inherit", borderRadius: document.theme.radius === "round" ? "999px" : "0.75rem", textDecoration: "none", ...common.style }}>{node.label}</a>;
