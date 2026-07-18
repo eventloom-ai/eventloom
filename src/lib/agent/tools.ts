@@ -5,7 +5,7 @@ import type { BuildJobStatus, BuildProgressEvent, BuildProgressStep } from "@/li
 import { addDomainToVercelProject } from "@/lib/domains/vercel";
 import { appUrl, rootDomain } from "@/lib/env";
 import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
-import type { EventConfig, EventRecord, EventSiteTemplate, PageArtifact } from "@/lib/types";
+import type { EventConfig, EventRecord, PageArtifact } from "@/lib/types";
 
 async function writableClient(ownerId?: string | null) {
   if (ownerId) {

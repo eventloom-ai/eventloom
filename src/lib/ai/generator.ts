@@ -9,19 +9,21 @@ export type ImageInput = {
 };
 
 export function defaultEventConfig(prompt: string): EventConfig {
-  const title = prompt.match(/for\s+([^,.]+)/i)?.[1]?.trim() || "Your Event";
+  const isWedding = /\bwedding\b/i.test(prompt);
+  const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
   return {
-    title,
+    title: isWedding ? "Wedding celebration" : "Your event",
     subtitle: "A custom event page that helps guests reply in one simple place.",
-    eventType: prompt.toLowerCase().includes("wedding") ? "wedding" : "event",
-    date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString().slice(0, 10),
+    eventType: isWedding ? "wedding" : "event",
+    date: "Date to be announced",
     venueName: "Venue to be announced",
     rsvpFields: ["name", "attendance", "party_size", "guest_names", "note"],
-    schedule: [
-      { title: "Arrival", time: "6:00 PM", description: "Guests arrive and check in." },
-      { title: "Main Event", time: "7:00 PM", description: "The featured celebration begins." },
-      { title: "Reception", time: "8:30 PM", description: "Food, music, and conversation." },
-    ],
+    schedule: hasSeparateHalls
+      ? [
+          { title: "Men's hall", time: "Time to be announced", location: "Men's hall", description: "Details to be announced." },
+          { title: "Women's hall", time: "Time to be announced", location: "Women's hall", description: "Details to be announced." },
+        ]
+      : [{ title: "Event details", time: "Time to be announced", description: "Details to be announced." }],
     theme: {
       mood: "custom editorial",
       colors: ["#191713", "#f7f4ee", "#b48a5a", "#405448"],
@@ -55,7 +57,7 @@ export async function generatePageArtifact(config: EventConfig, prompt: string, 
           {
             role: "system",
             content:
-              "Generate a safe frontend-only event page artifact as JSON with html and css. No scripts, no event handlers, no network calls, no storage, no cookies.",
+              "Generate a complete, safe, frontend-only event page as JSON with html and css. Do not use a template or a standard event-page layout: the requested visual direction must affect composition, hierarchy, typography, color, texture, and spacing. Include all event content in the generated markup. No scripts, event handlers, network calls, storage, cookies, or forms.",
           },
           { role: "user", content: JSON.stringify({ prompt, config }) },
         ],
@@ -81,14 +83,7 @@ export async function generatePageArtifact(config: EventConfig, prompt: string, 
     generatedAt: new Date().toISOString(),
     model: "deterministic-fallback",
     css: "",
-    html: `
-      <section class="space-y-8">
-        <p class="text-sm uppercase tracking-[0.28em] text-[#b48a5a]">${config.eventType}</p>
-        <h1>${escapeHtml(config.title)}</h1>
-        <p class="max-w-2xl text-xl text-stone-700">${escapeHtml(config.subtitle)}</p>
-        <p class="text-stone-600">${escapeHtml(config.date)} · ${escapeHtml(config.venueName)}</p>
-      </section>
-    `,
+    html: `<section class="eventloom-fallback"><p class="eventloom-fallback__eyebrow">${escapeHtml(config.eventType)}</p><h1>${escapeHtml(config.title)}</h1><p class="eventloom-fallback__intro">${escapeHtml(config.subtitle)}</p><div class="eventloom-fallback__details"><p>${escapeHtml(config.date)}</p><p>${escapeHtml(config.venueName)}</p></div><section class="eventloom-fallback__schedule"><h2>Schedule</h2>${config.schedule.map((item) => `<article><p>${escapeHtml(item.time)}</p><h3>${escapeHtml(item.title)}</h3>${item.location ? `<span>${escapeHtml(item.location)}</span>` : ""}${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</article>`).join("")}</section></section>`,
   };
 }
 
@@ -97,10 +92,12 @@ async function generateWithOpenAI(openaiKey: string, config: EventConfig, prompt
     {
       type: "input_text",
       text: [
-        "Create a custom event website section as safe HTML and CSS.",
+        "Create the complete visual website for this event as safe HTML and CSS.",
         "Return JSON only with html and css.",
         "Do not include scripts, event handlers, network calls, cookies, browser storage, forms, or payment elements.",
-        "The Eventloom page will add the guest reply form separately.",
+        "The Eventloom page will place the managed RSVP form after your markup. Include a clear RSVP invitation in the page and CSS for .eventloom-managed-rsvp so it visually belongs to your design.",
+        "This is not a template task: invent a complete, original composition based on the customer's visual direction. Do not use a generic centered-card hero, standard two-column layout, or repeating event-site structure.",
+        "Include the supplied schedule, venue, and any hall details in the generated markup. Use CSS scoped to .eventloom-generated-page and .eventloom-managed-rsvp; do not style html or body.",
         `Customer request: ${prompt}`,
         `Starting event details: ${JSON.stringify(config)}`,
       ].join("\n"),
@@ -123,7 +120,7 @@ async function generateWithOpenAI(openaiKey: string, config: EventConfig, prompt
         {
           role: "system",
           content:
-            "You are Eventloom's page designer. Create elegant, mobile-friendly event page markup that reflects the user's event and images while staying safe to render.",
+            "You are Eventloom's generative art director and frontend designer. Every page must be an original, complete, mobile-friendly event site driven by the customer brief. Never start from a fixed template, preset section order, or standard layout. Treat the stated visual direction as a hard requirement that changes layout, typography, palette, texture, spacing, and visual hierarchy. Stay safe to render.",
         },
         {
           role: "user",

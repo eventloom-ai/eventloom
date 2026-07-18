@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
   const session = event.data.object;
   const eventId = session.metadata?.event_id;
   const orderId = session.metadata?.order_id;
-  if (!eventId || !orderId || session.metadata?.product !== "eventloom_launch" || session.payment_status !== "paid") {
+  const versionId = session.metadata?.version_id;
+  if (!eventId || !orderId || !versionId || session.metadata?.product !== "eventloom_launch" || session.payment_status !== "paid") {
     return NextResponse.json({ error: "missing_metadata" }, { status: 400 });
   }
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const { data: order } = await client
     .from("orders")
-    .select("id, event_id, status, amount_total, currency, provider_reference")
+    .select("id, event_id, status, amount_total, currency, provider_reference, site_version_id")
     .eq("id", orderId)
     .eq("event_id", eventId)
     .maybeSingle();
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
     order.amount_total !== LAUNCH_PRICE_CENTS ||
     order.currency !== "usd" ||
     order.provider_reference !== session.id ||
+    order.site_version_id !== versionId ||
     session.client_reference_id !== orderId ||
     session.amount_total !== LAUNCH_PRICE_CENTS ||
     session.currency !== "usd"
@@ -104,8 +106,10 @@ export async function POST(req: NextRequest) {
     p_amount_cents: AI_LAUNCH_BONUS_CENTS,
   });
 
-  await client.from("events").update({ status: "published", rsvp_open: true, published_at: startsAt.toISOString() }).eq("id", eventId);
-  await client.from("page_artifacts").update({ status: "published" }).eq("event_id", eventId).eq("status", "draft");
+  const { data: version } = await client.from("event_versions").select("id").eq("id", versionId).eq("event_id", eventId).maybeSingle();
+  if (!version) return NextResponse.json({ error: "version_not_found" }, { status: 400 });
+  await client.from("events").update({ status: "published", rsvp_open: true, published_version_id: versionId, published_at: startsAt.toISOString() }).eq("id", eventId);
+  await client.from("page_artifacts").update({ status: "published" }).eq("event_id", eventId).eq("version_id", versionId);
 
   return NextResponse.json({ ok: true });
 }

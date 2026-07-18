@@ -8,6 +8,7 @@ import {
   ExternalLink,
   ImagePlus,
   Loader2,
+  MapPin,
   Monitor,
   Palette,
   Smartphone,
@@ -16,10 +17,12 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
+import { enrichBriefWithIntake, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
 import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { useBuildJob } from "@/hooks/use-build-job";
@@ -40,7 +43,7 @@ const steps: { id: BuildProgressStep; label: string; detail: string }[] = [
   { id: "done", label: "Ready to review", detail: "Your draft is live" },
 ];
 
-type SiteBuildStudioProps = { initialPrompt?: string; initialTemplate?: string; variant?: "home" | "app" };
+type SiteBuildStudioProps = { initialPrompt?: string; initialTemplate?: string; variant?: "home" | "app" | "studio" };
 
 function stepState(step: BuildProgressStep, current: BuildProgressStep) {
   const currentIndex = steps.findIndex((item) => item.id === current);
@@ -59,13 +62,19 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
   const [files, setFiles] = useState<File[]>([]);
   const [mood, setMood] = useState<string | null>(examples.find((example) => example.label.toLowerCase() === initialTemplate)?.mood ?? null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [showIntake, setShowIntake] = useState(Boolean(initialPrompt));
+  const [intakeAnswers, setIntakeAnswers] = useState<IntakeAnswers>({});
+  const [intakeStep, setIntakeStep] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const intakeRef = useRef<HTMLDivElement>(null);
   const previewHost = publicSiteHost();
   const suggestedSlug = normalizeSlugInput(suggestSlug(prompt) || "");
   const activeSlug = slugEdited ? slug : suggestedSlug;
   const palette = useMemo(() => (build.previewConfig ? resolveEventPalette(build.previewConfig) : null), [build.previewConfig]);
   const localPreviewImage = useMemo(() => (files[0] ? URL.createObjectURL(files[0]) : undefined), [files]);
   const imageUrl = build.previewConfig?.heroImageUrl ?? localPreviewImage;
+  const intakeQuestions = useMemo(() => intakeQuestionsForBrief(prompt), [prompt]);
+  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(intakeAnswers.venue?.trim() || "event venue")}`;
 
   useEffect(() => {
     void resumeStoredJob();
@@ -77,10 +86,17 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
     };
   }, [localPreviewImage]);
 
+  useEffect(() => {
+    if (showIntake) intakeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [intakeStep, showIntake]);
+
   function chooseExample(example: (typeof examples)[number]) {
     setPrompt(example.prompt);
     setMood(example.mood);
     setSlugEdited(false);
+    setShowIntake(false);
+    setIntakeAnswers({});
+    setIntakeStep(0);
   }
 
   function selectFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -91,8 +107,17 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!build.completedEventId && !showIntake) {
+      setShowIntake(true);
+      return;
+    }
+    if (!build.completedEventId && intakeStep < intakeQuestions.length - 1) {
+      setIntakeStep((current) => Math.min(current + 1, intakeQuestions.length - 1));
+      return;
+    }
+
     const form = new FormData();
-    form.set("prompt", prompt.trim());
+    form.set("prompt", enrichBriefWithIntake(prompt, intakeAnswers));
     form.set("slug", activeSlug.trim());
     if (mood) form.set("mood", mood);
     if (initialTemplate === "wedding") form.set("template", "wedding");
@@ -105,112 +130,183 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
   const previewSlug = build.slug || activeSlug || "your-event";
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-black/[0.08] bg-white shadow-[0_24px_80px_rgba(31,36,48,0.10)]">
-      <header className="flex flex-col gap-4 border-b border-black/[0.07] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-7">
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#151515] text-[#f5f5f5] shadow-[0_28px_100px_rgba(0,0,0,0.26)]">
+      <header className="flex min-h-12 flex-col gap-3 border-b border-white/10 bg-[#1a1a1a] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="grid size-9 place-items-center rounded-xl bg-[#1d1d1f] text-white shadow-lg shadow-black/10"><Sparkles className="size-4" /></div>
+          <div className="grid size-7 place-items-center rounded-lg bg-[#8b5cf6] text-white shadow-lg shadow-violet-950/30"><Sparkles className="size-3.5" /></div>
           <div>
-            <p className="text-[14px] font-semibold tracking-tight">Eventloom Studio</p>
-            <p className="text-[12px] text-[#6e6e73]">{build.isBuilding ? "Agent is working on your site" : build.completedEventId ? "Draft ready for review" : "Start with a creative brief"}</p>
+            <p className="text-[13px] font-semibold tracking-tight">Eventloom Studio</p>
+            <p className="text-[11px] text-[#9c9ca2]">{build.isBuilding ? "Agent is building your experience" : build.completedEventId ? "Draft ready to review" : "New event workspace"}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[12px] font-medium">
-          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 ${build.isBuilding ? "bg-[#e8f3ff] text-[#0071e3]" : "bg-[#f5f5f7] text-[#6e6e73]"}`}>
-            <span className={`size-1.5 rounded-full ${build.isBuilding ? "animate-pulse bg-[#0071e3]" : "bg-[#86868b]"}`} />
-            {build.isBuilding ? "Building live" : "Draft mode"}
+        <div className="flex items-center gap-2 text-[11px] font-medium">
+          <span className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${build.isBuilding ? "border-violet-400/25 bg-violet-400/10 text-violet-200" : "border-white/10 bg-white/[0.04] text-[#b7b7bc]"}`}>
+            <span className={`size-1.5 rounded-full ${build.isBuilding ? "animate-pulse bg-violet-300" : "bg-[#77777e]"}`} />
+            {build.isBuilding ? "Creating" : "Workspace"}
           </span>
-          <span className="rounded-full bg-[#fff8e1] px-3 py-1.5 text-[#8d6e00]">$0.50 / build</span>
+          <span className="rounded-md bg-[#1677ff] px-2.5 py-1.5 text-white">$0.50 / build</span>
         </div>
       </header>
 
-      <div className="grid min-h-[720px] lg:grid-cols-[minmax(320px,0.84fr)_minmax(0,1.5fr)]">
-        <form onSubmit={submit} className="flex flex-col border-b border-black/[0.07] bg-[#fbfbfc] p-5 lg:border-b-0 lg:border-r lg:p-7">
+      <div className="grid min-h-[760px] lg:h-[calc(100vh-76px)] lg:min-h-0 lg:grid-cols-[minmax(330px,0.72fr)_minmax(0,1.5fr)]">
+        <form onSubmit={submit} className="flex min-h-[760px] flex-col border-b border-white/10 bg-[#191919] p-4 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#6e6e73]">Creative brief</p>
-            <span className="text-[12px] text-[#86868b]">{prompt.length}/2,000</span>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a9a9ae]">Agent conversation</p>
+            <span className="rounded-md bg-white/[0.05] px-2 py-1 text-[10px] text-[#8f8f96]">{prompt.length}/2,000</span>
           </div>
 
-          <div className="mt-3 rounded-2xl border border-black/[0.09] bg-white p-1 shadow-sm transition-shadow focus-within:border-[#0071e3]/40 focus-within:shadow-[0_0_0_4px_rgba(0,113,227,0.10)]">
+          {prompt.trim() ? <div className="mt-5 rounded-xl bg-[#273d59] px-3.5 py-3 text-[13px] leading-5 text-[#e8efff]">{prompt}</div> : <div className="mt-5 rounded-xl border border-dashed border-white/10 px-3.5 py-3 text-[12px] text-[#85858d]">Describe an event and the agent will turn it into a custom website.</div>}
+          <div className="mt-4 rounded-xl border border-white/10 bg-[#202020] p-1 transition-shadow focus-within:border-violet-400/60 focus-within:ring-2 focus-within:ring-violet-400/15">
             <textarea
               value={prompt}
               required
               maxLength={2000}
               rows={7}
-              onChange={(event) => setPrompt(event.target.value)}
+              onChange={(event) => {
+                setPrompt(event.target.value);
+                setShowIntake(false);
+                setIntakeAnswers({});
+                setIntakeStep(0);
+              }}
               disabled={build.isBuilding}
               placeholder="Describe the feeling, occasion, important details, and anything guests should know…"
-              className="w-full resize-none rounded-xl bg-transparent px-4 py-3 text-[15px] leading-6 outline-none placeholder:text-[#9b9ba1] disabled:opacity-60"
+              className="w-full resize-none rounded-lg bg-transparent px-3 py-2.5 text-[13px] leading-5 text-white outline-none placeholder:text-[#85858d] disabled:opacity-60"
             />
-            <div className="flex items-center justify-between border-t border-black/[0.06] px-3 py-2">
-              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={build.isBuilding} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f] disabled:opacity-50">
+            <div className="flex items-center justify-between border-t border-white/[0.08] px-2 py-1.5">
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={build.isBuilding} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-[#a8a8af] transition hover:bg-white/[0.08] hover:text-white disabled:opacity-50">
                 <ImagePlus className="size-3.5" /> Add references
               </button>
-              <button type="submit" disabled={!canBuild} className="inline-flex items-center gap-2 rounded-xl bg-[#0071e3] px-3.5 py-2 text-[13px] font-semibold text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-40">
+              <button type="submit" disabled={!canBuild} className="inline-flex items-center gap-2 rounded-md bg-[#8b5cf6] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#9b72ff] disabled:cursor-not-allowed disabled:opacity-40">
                 {build.isBuilding ? <Loader2 className="size-3.5 animate-spin" /> : <ArrowUp className="size-3.5" />}
-                {build.completedEventId ? "Refine" : "Build"}
+                {build.completedEventId ? "Refine" : showIntake ? intakeStep < intakeQuestions.length - 1 ? "Next question" : "Build site" : "Continue"}
               </button>
             </div>
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={selectFiles} className="hidden" />
 
+          {showIntake && !build.completedEventId ? (
+                <div ref={intakeRef} className="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/[0.08] p-3">
+                  <p className="text-[12px] font-semibold text-white">A few details before we build</p>
+                  <p className="mt-1 text-[11px] leading-5 text-[#c3b5e9]">Answer what you know. We will clearly mark anything you skip as to be announced—never make it up.</p>
+                  <div className="mt-4 space-y-3">
+                    {intakeQuestions.map((question, index) => index === intakeStep ? (
+                      <label key={question.id} className="block">
+                        <span className="block text-[11px] font-semibold text-[#eeeeef]">{question.label}</span>
+                        <span className="mt-0.5 block text-[10px] text-[#aaa5b8]">{question.hint}</span>
+                        {question.input === "select" ? (
+                          <select
+                            value={intakeAnswers[question.id] ?? ""}
+                            onChange={(event) => setIntakeAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
+                            disabled={build.isBuilding}
+                            className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#181818] px-3 py-2 text-[12px] text-white outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/15 disabled:opacity-60"
+                          >
+                            <option value="">Choose one…</option>
+                            {question.options?.map((option) => <option key={option} value={option}>{option}</option>)}
+                          </select>
+                        ) : (
+                          <input
+                            type={question.input ?? "text"}
+                            value={intakeAnswers[question.id] ?? ""}
+                            onChange={(event) => setIntakeAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
+                            disabled={build.isBuilding}
+                            placeholder={question.placeholder}
+                            className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#181818] px-3 py-2 text-[12px] text-white outline-none placeholder:text-[#777780] focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/15 disabled:opacity-60"
+                          />
+                        )}
+                        {question.id === "venue" ? (
+                          <div className="mt-2 overflow-hidden rounded-lg border border-white/10 bg-[#181818]">
+                            <div className="flex items-center justify-between gap-3 px-3 py-2">
+                              <span className="inline-flex items-center gap-1.5 text-[10px] text-[#aaaab2]"><MapPin className="size-3.5 text-violet-300" /> Map preview</span>
+                              <a href={mapSearchUrl} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-violet-300 hover:underline">Search in Google Maps</a>
+                            </div>
+                            {intakeAnswers.venue?.trim() ? (
+                              <iframe title="Venue map preview" src={`https://www.google.com/maps?q=${encodeURIComponent(intakeAnswers.venue.trim())}&output=embed`} className="h-40 w-full border-0" loading="lazy" />
+                            ) : (
+                              <div className="grid h-20 place-items-center bg-white/[0.03] px-3 text-center text-[10px] text-[#85858d]">Enter a venue or city to preview it here.</div>
+                            )}
+                          </div>
+                        ) : null}
+                      </label>
+                    ) : null)}
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-violet-300/15 pt-3">
+                    <span className="text-[10px] text-[#aaa5b8]">Question {intakeStep + 1} of {intakeQuestions.length}</span>
+                    {intakeStep === intakeQuestions.length - 1 ? (
+                      <button type="submit" disabled={!canBuild} className="rounded-md bg-violet-500 px-2.5 py-1.5 text-[10px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Build site</button>
+                    ) : (
+                      <button type="button" onClick={() => setIntakeStep((current) => Math.min(current + 1, intakeQuestions.length - 1))} className="rounded-md bg-violet-500 px-2.5 py-1.5 text-[10px] font-semibold text-white">Next question →</button>
+                    )}
+                  </div>
+                </div>
+          ) : null}
+
           <div className="mt-5">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#6e6e73]">Start from an idea</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a9a9ae]">Try an idea</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {examples.map((example) => (
-                <button key={example.label} type="button" disabled={build.isBuilding} onClick={() => chooseExample(example)} className="rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[12px] font-medium text-[#4d4d52] transition hover:border-black/[0.16] hover:bg-[#f5f5f7] disabled:opacity-50">
+                <button key={example.label} type="button" disabled={build.isBuilding} onClick={() => chooseExample(example)} className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-[#c5c5ca] transition hover:border-white/20 hover:bg-white/[0.08] disabled:opacity-50">
                   {example.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 rounded-2xl border border-black/[0.07] bg-white p-4">
-            <div className="flex items-center gap-2"><Palette className="size-4 text-[#0071e3]" /><p className="text-[13px] font-semibold">Visual direction</p></div>
+          <div className="mt-5 grid gap-4 rounded-xl border border-white/10 bg-[#202020] p-3">
+            <div className="flex items-center gap-2"><Palette className="size-4 text-violet-300" /><p className="text-[12px] font-semibold">Visual direction</p></div>
             <div className="flex flex-wrap gap-2">
               {moods.map((item) => (
-                <button key={item} type="button" onClick={() => setMood((current) => (current === item ? null : item))} disabled={build.isBuilding} className={`rounded-full px-3 py-1.5 text-[12px] font-medium capitalize transition ${mood === item ? "bg-[#1d1d1f] text-white" : "bg-[#f5f5f7] text-[#626267] hover:bg-[#e9e9ec]"}`}>
+                <button key={item} type="button" onClick={() => setMood((current) => (current === item ? null : item))} disabled={build.isBuilding} className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium capitalize transition ${mood === item ? "bg-violet-500 text-white" : "bg-white/[0.06] text-[#b8b8bf] hover:bg-white/[0.1]"}`}>
                   {item}
                 </button>
               ))}
             </div>
-            <label className="flex items-center gap-2 rounded-xl bg-[#f7f7f8] px-3 py-2.5 text-[12px] text-[#6e6e73] focus-within:ring-2 focus-within:ring-[#0071e3]/15">
+            <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#171717] px-3 py-2 text-[11px] text-[#8f8f96] focus-within:ring-2 focus-within:ring-violet-400/20">
               <span className="shrink-0">{previewHost}/</span>
-              <input value={activeSlug} required onChange={(event) => { setSlugEdited(true); setSlug(normalizeSlugInput(event.target.value)); }} disabled={build.isBuilding} className="min-w-0 flex-1 bg-transparent font-medium text-[#1d1d1f] outline-none" placeholder="your-event" />
+              <input value={activeSlug} required onChange={(event) => { setSlugEdited(true); setSlug(normalizeSlugInput(event.target.value)); }} disabled={build.isBuilding} className="min-w-0 flex-1 bg-transparent font-medium text-white outline-none" placeholder="your-event" />
             </label>
           </div>
 
           {files.length > 0 && (
-            <div className="mt-4 rounded-2xl border border-dashed border-black/[0.12] bg-white p-3">
-              <div className="flex items-center justify-between"><p className="text-[12px] font-semibold">Reference images</p><span className="text-[11px] text-[#86868b]">{files.length}/4</span></div>
+            <div className="mt-4 rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-3">
+              <div className="flex items-center justify-between"><p className="text-[11px] font-semibold">Reference images</p><span className="text-[10px] text-[#85858d]">{files.length}/4</span></div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {files.map((file, index) => <div key={`${file.name}-${file.size}-${index}`} className="group flex max-w-full items-center gap-2 rounded-lg bg-[#f5f5f7] py-1.5 pl-2.5 pr-1.5 text-[11px]"><span className="max-w-32 truncate">{file.name}</span><button type="button" onClick={() => setFiles((current) => current.filter((_, i) => i !== index))} className="grid size-5 place-items-center rounded-md text-[#6e6e73] hover:bg-white hover:text-[#1d1d1f]" aria-label={`Remove ${file.name}`}><X className="size-3" /></button></div>)}
+                {files.map((file, index) => <div key={`${file.name}-${file.size}-${index}`} className="group flex max-w-full items-center gap-2 rounded-md bg-white/[0.08] py-1.5 pl-2.5 pr-1.5 text-[10px]"><span className="max-w-32 truncate">{file.name}</span><button type="button" onClick={() => setFiles((current) => current.filter((_, i) => i !== index))} className="grid size-5 place-items-center rounded-md text-[#a0a0a8] hover:bg-white/10 hover:text-white" aria-label={`Remove ${file.name}`}><X className="size-3" /></button></div>)}
               </div>
             </div>
           )}
 
           <div className="mt-auto pt-5">
-            {build.error && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2.5 text-[12px] leading-5 text-red-600" role="alert">{build.error === "ai_credit_limit_reached" ? "Your current build credit is used. Publish this site to unlock another $5." : build.error}</p>}
-            <p className="flex items-center gap-2 text-[11px] leading-4 text-[#86868b]"><Wand2 className="size-3.5 shrink-0" /> Every build creates a new reviewable version. Nothing is published until you choose to launch.</p>
+            {build.error && <p className="mb-3 rounded-lg bg-red-400/10 px-3 py-2.5 text-[11px] leading-5 text-red-300" role="alert">{build.error === "ai_credit_limit_reached" ? "Your current build credit is used. Publish this site to unlock another $5." : build.error}</p>}
+            <p className="flex items-center gap-2 text-[10px] leading-4 text-[#85858d]"><Wand2 className="size-3.5 shrink-0 text-violet-300" /> Every build creates a new reviewable version. Nothing is published until you choose to launch.</p>
           </div>
         </form>
 
-        <section className="relative min-w-0 bg-[#ececf1] p-4 sm:p-6 lg:p-7">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-            <div><p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#6e6e73]">Live canvas</p><p className="mt-1 text-[13px] text-[#4d4d52]">{build.statusMessage}</p></div>
-            <div className="flex rounded-xl border border-black/[0.08] bg-white p-1 shadow-sm">
-              <button type="button" onClick={() => setDevice("desktop")} className={`grid size-8 place-items-center rounded-lg ${device === "desktop" ? "bg-[#1d1d1f] text-white" : "text-[#6e6e73]"}`} aria-label="Desktop preview"><Monitor className="size-4" /></button>
-              <button type="button" onClick={() => setDevice("mobile")} className={`grid size-8 place-items-center rounded-lg ${device === "mobile" ? "bg-[#1d1d1f] text-white" : "text-[#6e6e73]"}`} aria-label="Mobile preview"><Smartphone className="size-4" /></button>
+        <section className="relative min-w-0 bg-[#111111] p-3 sm:p-4 lg:overflow-hidden">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 border-b border-white/10 pb-3">
+            <div><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#b7b7bd]">Canvas</p><p className="mt-1 text-[11px] text-[#85858d]">{build.statusMessage}</p></div>
+            <div className="flex rounded-md border border-white/10 bg-white/[0.04] p-1">
+              <button type="button" onClick={() => setDevice("desktop")} className={`grid size-7 place-items-center rounded ${device === "desktop" ? "bg-white/15 text-white" : "text-[#85858d]"}`} aria-label="Desktop preview"><Monitor className="size-3.5" /></button>
+              <button type="button" onClick={() => setDevice("mobile")} className={`grid size-7 place-items-center rounded ${device === "mobile" ? "bg-white/15 text-white" : "text-[#85858d]"}`} aria-label="Mobile preview"><Smartphone className="size-3.5" /></button>
             </div>
           </div>
 
-          <div className={`mx-auto mt-5 overflow-hidden rounded-[1.5rem] border border-black/[0.12] bg-white shadow-[0_18px_50px_rgba(27,31,43,0.16)] transition-[max-width] duration-500 ${device === "mobile" ? "max-w-[390px]" : "max-w-4xl"}`}>
-            <div className="flex items-center gap-2 border-b border-black/[0.07] bg-[#fafafa] px-4 py-3"><span className="size-2 rounded-full bg-[#ff5f57]"/><span className="size-2 rounded-full bg-[#febc2e]"/><span className="size-2 rounded-full bg-[#28c840]"/><span className="ml-2 truncate rounded-md bg-white px-2.5 py-1 text-[10px] text-[#74747a] ring-1 ring-black/[0.05]">{previewHost}/{previewSlug}</span></div>
+          <div className={`mx-auto mt-4 overflow-hidden rounded-xl border border-white/10 bg-[#202020] shadow-[0_18px_50px_rgba(0,0,0,0.38)] transition-[max-width] duration-500 ${device === "mobile" ? "max-w-[390px]" : "max-w-5xl"}`}>
+            <div className="flex items-center gap-2 border-b border-white/10 bg-[#191919] px-3 py-2"><span className="size-2 rounded-full bg-[#ff5f57]"/><span className="size-2 rounded-full bg-[#febc2e]"/><span className="size-2 rounded-full bg-[#28c840]"/><span className="ml-2 truncate rounded bg-black/20 px-2 py-1 text-[10px] text-[#a0a0a7]">{previewHost}/{previewSlug}</span></div>
             <AnimatePresence mode="wait">
-              {build.previewConfig && palette ? (
-                <motion.div key={build.previewConfig.title} initial={{ opacity: 0, scale: 0.985 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }} className="min-h-[535px] p-5 sm:p-8" style={{ ...palette.cssVars, background: palette.background, color: palette.text }}>
+              {build.completedEventId ? (
+                <motion.iframe
+                  key={`site-${build.completedEventId}`}
+                  title="Generated event site preview"
+                  src={publicSlugPath(previewSlug)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="h-[650px] w-full bg-white"
+                />
+              ) : build.previewConfig && palette ? (
+                <motion.div key={build.previewConfig.title} initial={{ opacity: 0, scale: 0.985 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }} className="min-h-[590px] p-5 sm:p-8" style={{ ...palette.cssVars, background: palette.background, color: palette.text }}>
                   <div className="mx-auto max-w-lg">
                     <div className="overflow-hidden rounded-[1.75rem] border border-white/50 bg-white/45 p-6 shadow-[0_18px_45px_rgba(0,0,0,0.10)] backdrop-blur">
-                      {imageUrl ? <img src={imageUrl} alt="Event visual" className="mb-6 aspect-[16/9] w-full rounded-[1.15rem] object-cover" /> : null}
+                      {imageUrl ? <Image unoptimized src={imageUrl} alt="Event visual" width={1200} height={675} className="mb-6 aspect-[16/9] w-full rounded-[1.15rem] object-cover" /> : null}
                       <p className="text-[10px] font-semibold uppercase tracking-[0.24em] opacity-60">{build.previewConfig.eventType}</p>
                       <h2 className="mt-3 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{build.previewConfig.title}</h2>
                       <p className="mt-4 max-w-md text-[14px] leading-6 opacity-70">{build.previewConfig.subtitle}</p>
@@ -221,17 +317,17 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
                   </div>
                 </motion.div>
               ) : (
-                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid min-h-[535px] place-items-center bg-[radial-gradient(circle_at_center,_#fff_0,_#f8f8fa_68%)] p-8 text-center">
-                  <div className="max-w-xs">{build.isBuilding ? <Loader2 className="mx-auto size-8 animate-spin text-[#0071e3]" /> : <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#e8f3ff] text-[#0071e3]"><Sparkles className="size-5" /></div>}<p className="mt-5 text-[15px] font-semibold">{build.isBuilding ? "Your agent is shaping the first version" : "Your site will take shape here"}</p><p className="mt-2 text-[13px] leading-5 text-[#6e6e73]">{build.isBuilding ? "You can keep an eye on the build as each step completes." : "Write a short creative brief, then let the agent create a polished starting point."}</p></div>
+                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid min-h-[590px] place-items-center bg-[#202020] p-8 text-center">
+                  <div className="max-w-xs">{build.isBuilding ? <Loader2 className="mx-auto size-8 animate-spin text-violet-300" /> : <div className="mx-auto grid size-12 place-items-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-300"><Sparkles className="size-5" /></div>}<p className="mt-5 text-[14px] font-semibold text-white">{build.isBuilding ? "Your agent is shaping the first version" : "Your site will take shape here"}</p><p className="mt-2 text-[12px] leading-5 text-[#8e8e96]">{build.isBuilding ? "You can watch as each phase completes." : "Send a creative brief to start your event workspace."}</p></div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <div className="mx-auto mt-5 max-w-4xl rounded-2xl border border-black/[0.07] bg-white/85 p-4 shadow-sm backdrop-blur">
-            <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><div className={`grid size-7 place-items-center rounded-full ${build.isBuilding ? "bg-[#e8f3ff] text-[#0071e3]" : "bg-[#f5f5f7] text-[#6e6e73]"}`}>{build.isBuilding ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}</div><p className="text-[13px] font-semibold">Agent activity</p></div><span className="text-[12px] font-semibold tabular-nums text-[#0071e3]">{build.progressPercent}%</span></div>
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-black/[0.06]"><motion.div className="h-full rounded-full bg-[#0071e3]" animate={{ width: `${build.progressPercent}%` }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} /></div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">{steps.slice(Math.max(0, steps.findIndex((step) => step.id === build.currentStep) - 1), Math.max(3, steps.findIndex((step) => step.id === build.currentStep) + 2)).map((step) => { const state = stepState(step.id, build.currentStep); return <div key={step.id} className={`rounded-xl px-3 py-2 ${state === "active" ? "bg-[#f0f7ff]" : "bg-[#f7f7f8]"}`}><div className="flex items-center gap-2 text-[12px] font-semibold">{state === "done" ? <Check className="size-3.5 text-[#0071e3]" /> : state === "active" ? <Loader2 className="size-3.5 animate-spin text-[#0071e3]" /> : <Circle className="size-3.5 text-[#babac0]" />}{step.label}</div><p className="mt-1 pl-5 text-[10px] text-[#86868b]">{step.detail}</p></div>; })}</div>
+          <div className="mx-auto mt-4 max-w-5xl rounded-xl border border-white/10 bg-[#191919] p-3">
+            <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><div className={`grid size-6 place-items-center rounded ${build.isBuilding ? "bg-violet-400/15 text-violet-300" : "bg-white/[0.06] text-[#96969d]"}`}>{build.isBuilding ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}</div><p className="text-[11px] font-semibold text-white">Build activity</p></div><span className="text-[11px] font-semibold tabular-nums text-violet-300">{build.progressPercent}%</span></div>
+            <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.08]"><motion.div className="h-full rounded-full bg-violet-400" animate={{ width: `${build.progressPercent}%` }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} /></div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">{steps.slice(Math.max(0, steps.findIndex((step) => step.id === build.currentStep) - 1), Math.max(3, steps.findIndex((step) => step.id === build.currentStep) + 2)).map((step) => { const state = stepState(step.id, build.currentStep); return <div key={step.id} className={`rounded-lg px-2.5 py-2 ${state === "active" ? "bg-violet-400/10" : "bg-white/[0.04]"}`}><div className="flex items-center gap-2 text-[11px] font-semibold text-[#e6e6e8]">{state === "done" ? <Check className="size-3.5 text-violet-300" /> : state === "active" ? <Loader2 className="size-3.5 animate-spin text-violet-300" /> : <Circle className="size-3.5 text-[#606069]" />}{step.label}</div><p className="mt-1 pl-5 text-[10px] text-[#888890]">{step.detail}</p></div>; })}</div>
           </div>
 
           {build.completedEventId && !build.isBuilding && <div className="mx-auto mt-4 flex max-w-4xl flex-wrap gap-2"><a href={publicSlugPath(previewSlug)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#f7f7f8]"><ExternalLink className="size-3.5" /> Open preview</a>{variant === "app" ? <button type="button" onClick={() => { router.push(`/app/events/${build.completedEventId}`); router.refresh(); }} className="rounded-xl bg-[#1d1d1f] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-black">Review & publish</button> : <Link href={`/login?next=${encodeURIComponent(`/app/events/${build.completedEventId}`)}`} className="rounded-xl bg-[#1d1d1f] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-black">Sign in to manage</Link>}</div>}

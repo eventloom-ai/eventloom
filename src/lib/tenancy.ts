@@ -3,6 +3,7 @@ import { rootDomain } from "@/lib/env";
 import { demoEvent, demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord, EventStatus, PageArtifact } from "@/lib/types";
+import { siteDocumentSchema } from "@/lib/site-document";
 
 const INTERNAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
 const PLATFORM_HOST_SUFFIXES = [".vercel.app"];
@@ -46,6 +47,8 @@ type EventRow = {
   status: EventStatus;
   rsvp_open: boolean;
   config: EventConfig;
+  draft_version_id?: string | null;
+  published_version_id?: string | null;
 };
 
 export async function resolveEventBySlug(slug: string): Promise<EventRecord | null> {
@@ -56,7 +59,7 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
 
   const { data: event, error } = await client
     .from("events")
-    .select("id, owner_id, slug, status, rsvp_open, config")
+    .select("id, owner_id, slug, status, rsvp_open, config, draft_version_id, published_version_id")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -65,6 +68,7 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
   }
 
   const row = event as EventRow;
+  if (row.status !== "published") return null;
   if (row.status === "published") {
     const { data: entitlement } = await client
       .from("event_entitlements")
@@ -73,6 +77,30 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
       .maybeSingle();
     if (entitlement?.status !== "active" || !entitlement.expires_at || new Date(entitlement.expires_at) <= new Date()) {
       return null;
+    }
+  }
+
+  if (row.published_version_id) {
+    const { data: version } = await client
+      .from("event_versions")
+      .select("id, config, document")
+      .eq("id", row.published_version_id)
+      .eq("event_id", row.id)
+      .maybeSingle();
+    const document = siteDocumentSchema.safeParse(version?.document);
+    if (version && document.success) {
+      return {
+        id: row.id,
+        owner_id: row.owner_id,
+        slug: row.slug,
+        status: row.status,
+        rsvp_open: row.rsvp_open,
+        config: version.config as EventConfig,
+        document: document.data,
+        draft_version_id: row.draft_version_id,
+        published_version_id: row.published_version_id,
+        artifact: null,
+      };
     }
   }
 
@@ -92,6 +120,8 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
     status: row.status,
     rsvp_open: row.rsvp_open,
     config: row.config,
+    draft_version_id: row.draft_version_id,
+    published_version_id: row.published_version_id,
     artifact: artifact
       ? ({
           html: artifact.html,
