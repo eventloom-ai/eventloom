@@ -107,7 +107,7 @@ export function useBuildJob() {
     return (await response.json()) as BuildJobStatus;
   }, []);
 
-  const startCreep = useCallback((step: BuildProgressStep, floor: number) => {
+  const startCreep = useCallback((step: BuildProgressStep) => {
     if (creepTimer.current) {
       window.clearInterval(creepTimer.current);
     }
@@ -145,7 +145,7 @@ export function useBuildJob() {
         setState((previous) => applyJobStatus(job, previous));
 
         if (job.status === "running" && job.progressStep) {
-          startCreep(job.progressStep, job.progressPercent);
+          startCreep(job.progressStep);
         }
 
         if (job.status !== "running") {

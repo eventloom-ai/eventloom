@@ -52,6 +52,40 @@ export type EventRecord = {
   rsvp_open: boolean;
   config: EventConfig;
   artifact?: PageArtifact | null;
+  document?: SiteDocument | null;
+  draft_version_id?: string | null;
+  published_version_id?: string | null;
+};
+
+export type SiteRevision = {
+  id: string;
+  event_id: string;
+  parent_version_id: string | null;
+  source: "initial" | "ai" | "manual" | "restore" | "legacy";
+  summary: string;
+  prompt: string;
+  config: EventConfig;
+  document: SiteDocument;
+  created_at: string;
+};
+
+export type BuilderMessage = {
+  id: string;
+  event_id: string;
+  run_id: string | null;
+  role: "user" | "assistant" | "system";
+  content: string;
+  selected_node_ids: string[];
+  version_id: string | null;
+  status: "pending" | "complete" | "failed" | "cancelled";
+  created_at: string;
+};
+
+export type BuilderRunEvent = {
+  sequence: number;
+  type: "status" | "patch" | "message" | "committed" | "error" | "cancelled";
+  payload: Record<string, unknown>;
+  created_at: string;
 };
 
 export type DomainQuote = {
@@ -62,3 +96,4 @@ export type DomainQuote = {
   registrationCost: number;
   renewalCost: number;
 };
+import type { SiteDocument } from "@/lib/site-document";

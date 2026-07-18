@@ -45,11 +45,16 @@ export function BuildJobProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshActiveJob();
+    const initialTimer = window.setTimeout(() => {
+      void refreshActiveJob();
+    }, 0);
     const timer = window.setInterval(() => {
       void refreshActiveJob();
     }, 2500);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(timer);
+    };
   }, [refreshActiveJob]);
 
   const value = useMemo(() => ({ activeJob, refreshActiveJob }), [activeJob, refreshActiveJob]);

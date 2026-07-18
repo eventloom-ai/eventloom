@@ -1,8 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import type { RsvpField } from "@/lib/types";
 
-export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: string; isOpen: boolean }) {
+const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
+
+export function RsvpForm({ eventId, slug, isOpen, fields = defaultFields, className = "" }: { eventId: string; slug: string; isOpen: boolean; fields?: RsvpField[]; className?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [attending, setAttending] = useState(true);
   const [partySize, setPartySize] = useState(1);
@@ -34,7 +37,7 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
         is_attending: attending,
         party_size: attending ? partySize : 0,
         guest_names: attending ? guestNames : [],
-        answers: { note: String(form.get("note") ?? "") },
+        answers: { note: String(form.get("note") ?? ""), meal_preference: String(form.get("meal_preference") ?? "") },
       }),
     });
 
@@ -50,7 +53,7 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
 
   if (!isOpen) {
     return (
-      <section className="rounded-[8px] border border-black/10 bg-white/70 p-6">
+      <section className={`rounded-[8px] border border-black/10 bg-white/70 p-6 ${className}`}>
         <h2 className="text-2xl font-semibold">Guest replies are closed</h2>
         <p className="mt-2 text-stone-600">This event is no longer accepting responses.</p>
       </section>
@@ -59,7 +62,7 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
 
   if (status === "done") {
     return (
-      <section className="rounded-[8px] border border-[#405448]/20 bg-[#405448] p-6 text-white">
+      <section className={`rounded-[8px] border border-[#405448]/20 bg-[#405448] p-6 text-white ${className}`}>
         <h2 className="text-2xl font-semibold">Reply received</h2>
         <p className="mt-2 text-white/80">Your response has been recorded.</p>
       </section>
@@ -67,7 +70,7 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
   }
 
   return (
-    <form onSubmit={submit} className="rounded-[8px] border border-black/10 bg-white p-5 shadow-sm">
+    <form onSubmit={submit} className={`rounded-[8px] border border-black/10 bg-white p-5 shadow-sm ${className}`}>
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a3f]">Guest reply</p>
         <h2 className="mt-2 text-3xl font-semibold">Confirm your details</h2>
@@ -82,17 +85,17 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
           Last name
           <input required name="last_name" className="rounded-[6px] border border-black/15 px-3 py-3" />
         </label>
-        <label className="grid gap-2 text-sm font-medium">
+        {fields.includes("email") ? <label className="grid gap-2 text-sm font-medium">
           Email
           <input name="email" type="email" className="rounded-[6px] border border-black/15 px-3 py-3" />
-        </label>
-        <label className="grid gap-2 text-sm font-medium">
+        </label> : null}
+        {fields.includes("phone") ? <label className="grid gap-2 text-sm font-medium">
           Phone
           <input name="phone" className="rounded-[6px] border border-black/15 px-3 py-3" />
-        </label>
+        </label> : null}
       </div>
 
-      <fieldset className="mt-5">
+      {fields.includes("attendance") ? <fieldset className="mt-5">
         <legend className="text-sm font-medium">Will you attend?</legend>
         <div className="mt-2 flex gap-3">
           <button type="button" onClick={() => setAttending(true)} className={`rounded-full px-4 py-2 ${attending ? "bg-[#191713] text-white" : "bg-stone-100"}`}>
@@ -102,25 +105,26 @@ export function RsvpForm({ eventId, slug, isOpen }: { eventId: string; slug: str
             No
           </button>
         </div>
-      </fieldset>
+      </fieldset> : null}
 
       {attending ? (
         <div className="mt-5 grid gap-4">
-          <label className="grid gap-2 text-sm font-medium">
+          {fields.includes("party_size") ? <label className="grid gap-2 text-sm font-medium">
             Party size
             <input min={1} max={50} type="number" value={partySize} onChange={(event) => setPartySize(Number(event.target.value))} className="rounded-[6px] border border-black/15 px-3 py-3" />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
+          </label> : null}
+          {fields.includes("guest_names") ? <label className="grid gap-2 text-sm font-medium">
             Guest names, one per line
             <textarea name="guest_names" rows={4} className="rounded-[6px] border border-black/15 px-3 py-3" placeholder="Include every attendee if party size is more than one." />
-          </label>
+          </label> : null}
+          {fields.includes("meal_preference") ? <label className="grid gap-2 text-sm font-medium">Meal preference<input name="meal_preference" className="rounded-[6px] border border-black/15 px-3 py-3" /></label> : null}
         </div>
       ) : null}
 
-      <label className="mt-5 grid gap-2 text-sm font-medium">
+      {fields.includes("note") ? <label className="mt-5 grid gap-2 text-sm font-medium">
         Note
         <textarea name="note" rows={3} className="rounded-[6px] border border-black/15 px-3 py-3" />
-      </label>
+      </label> : null}
 
       {message ? <p className="mt-4 text-sm text-red-700">{message}</p> : null}
 

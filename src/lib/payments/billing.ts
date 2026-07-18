@@ -26,3 +26,15 @@ export async function reserveBuildCredit(userId: string, eventId?: string | null
   if (error || data === null) return { ok: false as const, error: "ai_credit_limit_reached" };
   return { ok: true as const, remainingCents: data as number };
 }
+
+export async function refundBuildCredit(userId: string, eventId: string, jobId: string) {
+  const client = serviceSupabase();
+  if (!client || jobId.startsWith("demo-run-")) return true;
+  const { data, error } = await client.rpc("refund_ai_build_credit", {
+    p_user_id: userId,
+    p_event_id: eventId,
+    p_job_id: jobId,
+    p_amount_cents: AI_BUILD_CREDIT_CENTS,
+  });
+  return !error && Boolean(data);
+}

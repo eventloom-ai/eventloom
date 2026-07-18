@@ -27,10 +27,6 @@ export function EventsList({ events, activeJobs: initialJobs }: { events: EventR
   const [activeJobs, setActiveJobs] = useState(initialJobs);
 
   useEffect(() => {
-    setActiveJobs(initialJobs);
-  }, [initialJobs]);
-
-  useEffect(() => {
     let cancelled = false;
 
     const refresh = async () => {
@@ -42,13 +38,16 @@ export function EventsList({ events, activeJobs: initialJobs }: { events: EventR
       }
     };
 
-    void refresh();
+    const initialTimer = window.setTimeout(() => {
+      void refresh();
+    }, 0);
     const timer = window.setInterval(() => {
       void refresh();
     }, 2000);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(initialTimer);
       window.clearInterval(timer);
     };
   }, []);
@@ -109,16 +108,16 @@ export function EventsList({ events, activeJobs: initialJobs }: { events: EventR
                   {isBuilding ? (
                     <Link
                       className="inline-flex items-center justify-center rounded-full bg-[#0071e3] px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-[#0077ed]"
-                      href="/app/events/new"
+                      href={job?.eventId ? `/app/events/${job.eventId}/studio` : "/app/events/new"}
                     >
                       Open build
                     </Link>
                   ) : (
                     <Link
                       className="inline-flex items-center justify-center rounded-full bg-[#1d1d1f] px-4 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90"
-                      href={`/app/events/${event.id}`}
+                      href={`/app/events/${event.id}/studio`}
                     >
-                      Manage
+                      Open studio
                     </Link>
                   )}
                 </div>

@@ -1,16 +1,17 @@
 import { AppShell } from "@/components/app-shell";
-import { SiteBuildStudio } from "@/components/site-build-studio";
+import { NewEventStarter } from "@/components/new-event-starter";
 
-export default function NewEventPage() {
+export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ brief?: string }> }) {
+  const { brief } = await searchParams;
   return (
     <AppShell
       backHref="/app"
       backLabel="My events"
       title="New event"
-      description="Describe your celebration and watch Eventloom plan, design, and save your first version live."
+      description="Describe your celebration, then shape every detail in the visual studio."
       width="wide"
     >
-      <SiteBuildStudio />
+      <NewEventStarter initialBrief={brief?.slice(0, 8000)} />
     </AppShell>
   );
 }

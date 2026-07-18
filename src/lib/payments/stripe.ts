@@ -23,11 +23,12 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
 
   const { data: event } = await client
     .from("events")
-    .select("id, owner_id, organization_id, slug")
+    .select("id, owner_id, organization_id, slug, draft_version_id")
     .eq("id", input.eventId)
     .eq("owner_id", input.ownerId)
     .maybeSingle();
   if (!event) return { ok: false as const, error: "not_found" };
+  if (!event.draft_version_id) return { ok: false as const, error: "site_version_missing" };
 
   const { data: entitlement } = await client
     .from("event_entitlements")
@@ -49,6 +50,7 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
       currency: "usd",
       provider: "stripe",
       metadata: { product: "eventloom_launch", term_months: 12 },
+      site_version_id: event.draft_version_id,
     })
     .select("id")
     .single();
@@ -68,15 +70,16 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
         quantity: 1,
       },
     ],
-    success_url: `${appUrl()}/app/events/${input.eventId}?checkout=success`,
-    cancel_url: `${appUrl()}/app/events/${input.eventId}?checkout=cancelled`,
+    success_url: `${appUrl()}/app/events/${input.eventId}/studio?checkout=success`,
+    cancel_url: `${appUrl()}/app/events/${input.eventId}/studio?checkout=cancelled`,
     client_reference_id: order.id,
     metadata: {
       event_id: input.eventId,
       order_id: order.id,
       product: "eventloom_launch",
+      version_id: event.draft_version_id,
     },
-    payment_intent_data: { metadata: { event_id: input.eventId, order_id: order.id, product: "eventloom_launch" } },
+    payment_intent_data: { metadata: { event_id: input.eventId, order_id: order.id, version_id: event.draft_version_id, product: "eventloom_launch" } },
   });
 
   await client.from("orders").update({ provider_reference: session.id, updated_at: new Date().toISOString() }).eq("id", order.id);

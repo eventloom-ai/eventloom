@@ -24,6 +24,15 @@ export const MOOD_PALETTES: Record<string, string[]> = {
   monochrome: ["#111111", "#f5f5f5", "#333333", "#777777"],
 };
 
+const VISUAL_DIRECTIONS: Record<string, string> = {
+  blush: "soft romantic editorial: blush tonal layers, generous whitespace, delicate serif display type, tactile paper-like details, and an asymmetric composition",
+  navy: "cinematic midnight editorial: deep navy fields, high-contrast type, restrained metallic details, architectural spacing, and a dramatic composition",
+  gold: "warm ceremonial modernism: parchment tones, gold accents, refined serif headlines, structured details, and a gallery-like composition",
+  lavender: "dreamlike contemporary: airy lavender gradients, expressive display typography, soft shapes, unexpected rhythm, and a playful composition",
+  forest: "organic garden editorial: deep botanical tones, natural texture, generous image moments, tactile borders, and an immersive composition",
+  sunset: "joyful graphic celebration: saturated sunset hues, bold typography, lively geometry, layered color blocks, and an energetic composition",
+};
+
 function normalizeHex(color: string) {
   const value = color.trim();
   if (/^#[0-9a-fA-F]{6}$/.test(value)) return value;
@@ -109,6 +118,10 @@ export function resolveEventPalette(config: EventConfig): EventPalette {
 export function paletteForMood(mood: string): string[] | null {
   const key = mood.trim().toLowerCase();
   return MOOD_PALETTES[key] ?? null;
+}
+
+export function visualDirectionForMood(mood: string) {
+  return VISUAL_DIRECTIONS[mood.trim().toLowerCase()] ?? null;
 }
 
 export type ThemeOverrides = {

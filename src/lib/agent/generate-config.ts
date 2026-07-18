@@ -84,7 +84,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
         {
           role: "system",
           content:
-            "You are Eventloom's event site planner. Every site must feel original to the customer's brief—never select or imitate a fixed template. Extract the desired mood and colors from their prompt and output an intentional four-color palette: [text, surface, accent, muted] as hex codes. Write specific, evocative titles, subtitles, schedule and venue copy, while ensuring the core guest RSVP details are represented in the plan. Never use famous real people's names.",
+            "You are Eventloom's event site planner. Every site must feel original to the customer's brief—never select or imitate a fixed template. The brief is the source of truth: preserve every requested feature, language, audience split, and visual direction in the output. Do not invent names, dates, times, venues, addresses, or translations that the customer did not provide. For an omitted fact, use a clear placeholder such as 'To be announced' rather than making one up. If separate groups or halls are requested, include separate schedule entries and hallInfo for each group. Extract the desired mood and colors from their prompt and output an intentional four-color palette: [text, surface, accent, muted] as hex codes. Write specific, evocative copy only from facts in the brief, while ensuring the core guest RSVP details are represented in the plan. Never use famous real people's names.",
         },
         {
           role: "user",
@@ -131,11 +131,42 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
     );
     return {
       template: "custom",
-      config,
+      config: preventInventedEventFacts(config, prompt),
     };
   } catch {
     return fallback;
   }
+}
+
+function preventInventedEventFacts(config: EventConfig, prompt: string): EventConfig {
+  const hasDate = /\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{4})?\b|\b\d{4}-\d{2}-\d{2}\b|\b(?:today|tomorrow|next\s+\w+)\b/i.test(prompt);
+  const hasTime = /\b(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:a\.??m\.??|p\.??m\.??)\b|\b(?:noon|midnight)\b/i.test(prompt);
+  const hasVenue = /\b(?:at|venue|location)\s+[^,.\n]+/i.test(prompt);
+  const hasNames = /\b(?:for|celebrating|celebrate|wedding of)\s+[A-Z][\p{L}'’-]+(?:\s*(?:&|and)\s*[A-Z][\p{L}'’-]+)+/u.test(prompt);
+
+  const isWedding = /\bwedding\b/i.test(prompt);
+  const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
+  const schedule = config.schedule.map((item) => ({
+    ...item,
+    time: hasTime ? item.time : "Time to be announced",
+  }));
+
+  if (hasSeparateHalls && !schedule.some((item) => /men'?s|women'?s/i.test(`${item.title} ${item.location ?? ""}`))) {
+    schedule.push(
+      { title: "Men's hall", time: hasTime ? "" : "Time to be announced", location: "Men's hall", description: "Details to be announced." },
+      { title: "Women's hall", time: hasTime ? "" : "Time to be announced", location: "Women's hall", description: "Details to be announced." },
+    );
+  }
+
+  return {
+    ...config,
+    title: hasNames ? config.title : isWedding ? "Wedding celebration" : "Your event",
+    date: hasDate ? config.date : "Date to be announced",
+    venueName: hasVenue ? config.venueName : "Venue to be announced",
+    venueAddress: hasVenue ? config.venueAddress : undefined,
+    hallInfo: hasSeparateHalls ? "Separate men's and women's hall details will be shared with guests." : config.hallInfo,
+    schedule,
+  };
 }
 
 function fallbackSitePlan(prompt: string, themeOverrides?: ThemeOverrides): GeneratedSitePlan {
@@ -149,7 +180,7 @@ function fallbackSitePlan(prompt: string, themeOverrides?: ThemeOverrides): Gene
     description: item.description ?? "",
   }));
 
-  const config = normalizeGeneratedConfig(
+  const config = preventInventedEventFacts(normalizeGeneratedConfig(
     {
       ...base,
       template,
@@ -163,7 +194,7 @@ function fallbackSitePlan(prompt: string, themeOverrides?: ThemeOverrides): Gene
     },
     prompt,
     themeOverrides,
-  );
+  ), prompt);
 
   return { template: config.template ?? template, config };
 }

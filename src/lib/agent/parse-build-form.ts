@@ -1,6 +1,6 @@
 import type { ImageInput } from "@/lib/ai/generator";
 import type { ThemeOverrides } from "@/lib/event-theme";
-import { extractPaletteFromPrompt } from "@/lib/event-theme";
+import { extractPaletteFromPrompt, visualDirectionForMood } from "@/lib/event-theme";
 import { slugSchema } from "@/lib/validation";
 
 export type ParsedBuildForm = {
@@ -67,7 +67,8 @@ async function readImages(form: FormData): Promise<ImageInput[]> {
 
 export function enrichPromptWithTheme(prompt: string, themeOverrides?: ThemeOverrides) {
   if (themeOverrides?.mood) {
-    return `${prompt.trim()} Use a ${themeOverrides.mood} color palette.`;
+    const direction = visualDirectionForMood(themeOverrides.mood);
+    return `${prompt.trim()} Visual direction (non-negotiable): ${direction ?? themeOverrides.mood}. Create an original composition for this event; do not reuse a standard event-site layout.`;
   }
 
   if (themeOverrides?.colors?.length) {

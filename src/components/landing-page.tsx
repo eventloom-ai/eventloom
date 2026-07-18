@@ -1,162 +1,55 @@
 import Link from "next/link";
-import { Globe, MessageSquare, Palette, Sparkles } from "lucide-react";
-import { SiteBuildStudio } from "@/components/site-build-studio";
-import { FadeIn } from "@/components/ui/fade-in";
+import { CalendarDays, CakeSlice, Gem, Globe2, Heart, LayoutDashboard, PartyPopper, Plus, Sparkles } from "lucide-react";
+import { StartEventPrompt } from "@/components/start-event-prompt";
 
-const features = [
-  {
-    icon: Palette,
-    title: "A site made for your event",
-    description: "Describe the occasion in plain language. Eventloom designs a unique page with your tone, schedule, and photos.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Guest replies, built in",
-    description: "Collect RSVPs, meal choices, and notes on a page you control — no separate forms or spreadsheets.",
-  },
-  {
-    icon: Globe,
-    title: "Your own web address",
-    description: "Share a clean link or add a custom domain after checkout, so guests find you easily.",
-  },
-];
-
-const steps = [
-  { number: "1", title: "Describe it", description: "Tell us what you're celebrating and how the page should feel." },
-  { number: "2", title: "Review & refine", description: "Preview your site, adjust details, and open guest replies when you're ready." },
-  { number: "3", title: "Share", description: "Send one link. Guests reply on your page. You stay in control." },
+const eventTypes = [
+  { label: "Wedding", icon: Heart, prompt: "A wedding celebration with RSVP and guest details." },
+  { label: "Birthday", icon: CakeSlice, prompt: "A birthday celebration with RSVP, schedule, and a photo gallery." },
+  { label: "Engagement", icon: Gem, prompt: "An elegant engagement celebration with bilingual details and RSVP." },
+  { label: "Party", icon: PartyPopper, prompt: "A lively party page with guest replies, dress code, and a bold visual direction." },
 ];
 
 export function LandingPage({ initialTemplate }: { initialTemplate?: string }) {
   return (
-    <main className="min-h-screen text-[#1d1d1f]">
-      <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-[#fbfbfd]/80 backdrop-blur-xl backdrop-saturate-150">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <Link className="text-[17px] font-semibold tracking-tight" href="/">
-            Eventloom
-          </Link>
-          <nav className="flex items-center gap-1 text-[14px]">
-            <Link className="rounded-full px-4 py-2 text-[#6e6e73] transition-colors hover:text-[#1d1d1f]" href="/demo-wedding">
-              Sample site
-            </Link>
-            <Link
-              className="rounded-full bg-[#1d1d1f] px-4 py-2 font-medium text-white transition-opacity hover:opacity-90"
-              href="/app"
-            >
-              My events
-            </Link>
+    <main className="min-h-screen bg-[#fbfaf8] text-[#252329]">
+      <div className="grid min-h-screen lg:grid-cols-[232px_1fr]">
+        <aside className="hidden border-r border-black/[0.07] bg-white p-3 lg:flex lg:flex-col">
+          <Link href="/" className="flex items-center gap-2 rounded-lg px-2 py-2 text-[14px] font-semibold"><span className="grid size-6 place-items-center rounded-md bg-violet-500 text-white"><Sparkles className="size-3.5" /></span> Eventloom</Link>
+          <Link href="#create" className="mt-5 flex items-center justify-center gap-2 rounded-lg border border-black/[0.10] bg-[#f8f7f9] px-3 py-2 text-[12px] font-medium transition hover:bg-[#f0edf5]"><Plus className="size-3.5" /> Create an event</Link>
+          <nav className="mt-5 grid gap-1 text-[12px] text-[#716d75]">
+            <Link href="/" className="flex items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-violet-800"><Sparkles className="size-3.5" /> Home</Link>
+            <Link href="/app" className="flex items-center gap-2 rounded-md px-3 py-2 transition hover:bg-black/[0.04] hover:text-[#252329]"><LayoutDashboard className="size-3.5" /> My events</Link>
+            <Link href="/demo-wedding" className="flex items-center gap-2 rounded-md px-3 py-2 transition hover:bg-black/[0.04] hover:text-[#252329]"><Globe2 className="size-3.5" /> Published sites</Link>
           </nav>
-        </div>
-      </header>
+          <div className="mt-auto border-t border-black/[0.07] pt-4 text-[11px] text-[#85818a]"><p className="font-medium text-[#4e4953]">Eventloom Studio</p><p className="mt-1 leading-4">Create an event site, collect replies, and publish when it is ready.</p></div>
+        </aside>
 
-      <section className="mx-auto max-w-6xl px-6 pb-16 pt-20 text-center md:pt-28">
-        <FadeIn>
-          <p className="text-[15px] font-medium text-[#0071e3]">Event websites, simplified</p>
-          <h1 className="mx-auto mt-4 max-w-3xl text-[40px] font-semibold leading-[1.08] tracking-[-0.03em] md:text-[56px] md:leading-[1.05] lg:text-[64px]">
-            Your event deserves
-            <br />
-            its own beautiful site.
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-[19px] leading-[1.5] text-[#6e6e73] md:text-[21px]">
-            Create a custom page, collect guest replies, and share a link guests will actually remember — all in one place.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
-              className="inline-flex min-w-[180px] items-center justify-center rounded-full bg-[#0071e3] px-7 py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.98]"
-              href="#create"
-            >
-              Create your site
-            </a>
-            <Link
-              className="inline-flex min-w-[180px] items-center justify-center rounded-full border border-black/10 bg-white px-7 py-3.5 text-[17px] font-medium transition-all hover:bg-black/[0.02] active:scale-[0.98]"
-              href="/demo-wedding"
-            >
-              See a sample
-            </Link>
-          </div>
-        </FadeIn>
-      </section>
+        <section className="flex min-h-screen flex-col">
+          <header className="flex h-14 items-center justify-between border-b border-black/[0.07] bg-white/75 px-5 backdrop-blur lg:px-8"><Link href="/" className="flex items-center gap-2 text-[14px] font-semibold lg:hidden"><span className="grid size-6 place-items-center rounded-md bg-violet-500 text-white"><Sparkles className="size-3.5" /></span> Eventloom</Link><div className="hidden text-[12px] text-[#85818a] lg:block">Your event workspace</div><Link href="/app" className="rounded-md bg-[#252329] px-3 py-1.5 text-[12px] font-medium text-white transition hover:bg-black">My events</Link></header>
 
-      <section className="border-y border-black/[0.06] bg-white py-20 md:py-24">
-        <div className="mx-auto max-w-6xl px-6">
-          <FadeIn>
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-[32px] font-semibold tracking-[-0.02em] md:text-[40px]">Everything you need. Nothing you don&apos;t.</h2>
-              <p className="mt-4 text-[17px] leading-relaxed text-[#6e6e73] md:text-[19px]">
-                Eventloom handles the website, replies, and sharing — so you can focus on the celebration.
-              </p>
+          <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-5 py-16 sm:py-24">
+            <div className="mx-auto w-full max-w-3xl text-center">
+              <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-violet-600">Eventloom agent</p>
+              <h1 className="mt-4 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">What kind of event are you planning?</h1>
+              <p className="mx-auto mt-3 max-w-xl text-[14px] leading-6 text-[#716d75]">Eventloom turns your idea into a unique event website, gathers guest RSVPs, and gives you one beautiful link to share. Describe your occasion in one sentence, then shape it in the studio.</p>
             </div>
-          </FadeIn>
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {features.map((feature, index) => (
-              <FadeIn key={feature.title} delay={index * 80}>
-                <article className="h-full rounded-2xl border border-black/[0.06] bg-[#fbfbfd] p-8 transition-shadow hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/[0.04]">
-                    <feature.icon className="h-5 w-5 text-[#1d1d1f]" strokeWidth={1.75} />
-                  </div>
-                  <h3 className="mt-6 text-[21px] font-semibold tracking-tight">{feature.title}</h3>
-                  <p className="mt-3 text-[15px] leading-relaxed text-[#6e6e73]">{feature.description}</p>
-                </article>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-20 md:py-24">
-        <FadeIn>
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-[32px] font-semibold tracking-[-0.02em] md:text-[40px]">Three steps to publish</h2>
-            <p className="mt-4 text-[17px] text-[#6e6e73] md:text-[19px]">No templates to wrestle with. No code. Just your event, ready to share.</p>
-          </div>
-        </FadeIn>
-        <ol className="mx-auto mt-14 grid max-w-4xl gap-10 md:grid-cols-3 md:gap-8">
-          {steps.map((step, index) => (
-            <li key={step.number} className="text-center md:text-left">
-              <FadeIn delay={index * 100}>
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#1d1d1f] text-[15px] font-semibold text-white">
-                  {step.number}
-                </span>
-                <h3 className="mt-5 text-[21px] font-semibold tracking-tight">{step.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-[#6e6e73]">{step.description}</p>
-              </FadeIn>
-            </li>
-          ))}
-        </ol>
-      </section>
+            <div id="create" className="mt-8"><StartEventPrompt initialTemplate={initialTemplate} /></div>
 
-      <section id="create" className="border-t border-black/[0.06] bg-white py-20 md:py-24">
-        <div className="mx-auto max-w-6xl px-6">
-          <FadeIn>
-            <div className="mx-auto max-w-2xl text-center">
-              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#f5f5f7]">
-                <Sparkles className="h-5 w-5 text-[#1d1d1f]" strokeWidth={1.75} />
+            <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-3">
+              {eventTypes.map((type) => <Link key={type.label} href={`/studio?brief=${encodeURIComponent(type.prompt)}`} className="group flex w-[118px] flex-col items-center gap-2 rounded-xl border border-black/[0.08] bg-white px-3 py-4 text-[11px] text-[#716d75] shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-[#252329]"><span className="grid size-8 place-items-center rounded-lg bg-violet-50 text-violet-600 transition group-hover:bg-violet-100"><type.icon className="size-4" /></span>{type.label}</Link>)}
+            </div>
+
+            <div className="mx-auto mt-16 w-full max-w-3xl">
+              <div className="flex items-center justify-between"><h2 className="text-[13px] font-semibold">Continue planning</h2><Link href="/app" className="text-[12px] text-violet-600 hover:underline">View all events</Link></div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <Link href="/demo-wedding" className="group rounded-xl border border-black/[0.08] bg-white p-4 shadow-sm transition hover:bg-[#fffafb]"><div className="flex items-center justify-between"><span className="grid size-8 place-items-center rounded-lg bg-rose-50 text-rose-500"><Heart className="size-4" /></span><span className="text-[10px] text-[#8b858d]">Sample</span></div><p className="mt-4 text-[13px] font-semibold">Wedding site example</p><p className="mt-1 text-[11px] text-[#77717a]">See an Eventloom site with RSVP.</p></Link>
+                <Link href="/app" className="group rounded-xl border border-dashed border-black/[0.14] bg-[#fdfcff] p-4 transition hover:border-violet-300 hover:bg-violet-50/40"><span className="grid size-8 place-items-center rounded-lg bg-violet-50 text-violet-600"><CalendarDays className="size-4" /></span><p className="mt-4 text-[13px] font-semibold">Your event projects</p><p className="mt-1 text-[11px] text-[#77717a]">Open drafts and published events.</p></Link>
               </div>
-              <h2 className="mt-6 text-[32px] font-semibold tracking-[-0.02em] md:text-[40px]">Start with a sentence</h2>
-              <p className="mt-4 text-[17px] leading-relaxed text-[#6e6e73] md:text-[19px]">
-                Tell us about your event. Add photos if you like. Watch your site take shape in the live canvas as you refine it.
-              </p>
             </div>
-          </FadeIn>
-          <FadeIn delay={100} className="mt-10">
-            <SiteBuildStudio initialTemplate={initialTemplate} variant="home" />
-          </FadeIn>
-        </div>
-      </section>
-
-      <footer className="border-t border-black/[0.06] py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-[13px] text-[#6e6e73] sm:flex-row">
-          <p>© {new Date().getFullYear()} Eventloom</p>
-          <div className="flex gap-6">
-            <Link className="transition-colors hover:text-[#1d1d1f]" href="/demo-wedding">
-              Sample site
-            </Link>
-            <Link className="transition-colors hover:text-[#1d1d1f]" href="/app">
-              Dashboard
-            </Link>
           </div>
-        </div>
-      </footer>
+        </section>
+      </div>
     </main>
   );
 }
