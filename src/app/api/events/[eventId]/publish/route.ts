@@ -11,14 +11,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const client = serviceSupabase() ?? await createSupabaseServerClient();
+  const platformAdmin = await isPlatformAdmin(user.id);
+  const client = platformAdmin
+    ? (await createSupabaseServerClient() ?? serviceSupabase())
+    : (serviceSupabase() ?? await createSupabaseServerClient());
   if (client) {
     const [{ data: event }, { data: entitlement }] = await Promise.all([
       client.from("events").select("draft_version_id").eq("id", eventId).maybeSingle(),
       client.from("event_entitlements").select("status, expires_at").eq("event_id", eventId).maybeSingle(),
     ]);
     const active = entitlement?.status === "active" && entitlement.expires_at && new Date(entitlement.expires_at) > new Date();
-    const platformAdmin = await isPlatformAdmin(user.id);
     if (active || platformAdmin) {
       if (!event?.draft_version_id) return NextResponse.json({ error: "site_version_missing" }, { status: 409 });
       const { error: publishError } = await client
