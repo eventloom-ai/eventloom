@@ -16,12 +16,20 @@ export function domainPriceCapUsd() {
   return Number.isFinite(value) && value > 0 ? value : 15;
 }
 
-export function isSupabaseConfigured() {
-  return Boolean(read("NEXT_PUBLIC_SUPABASE_URL") && supabasePublicKey() && read("SUPABASE_SERVICE_ROLE_KEY"));
+function supabaseUrl() {
+  return read("NEXT_PUBLIC_SUPABASE_URL") || read("SUPABASE_URL");
 }
 
 function supabasePublicKey() {
-  return read("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || read("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  return read("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || read("NEXT_PUBLIC_SUPABASE_ANON_KEY") || read("SUPABASE_PUBLISHABLE_KEY") || read("SUPABASE_ANON_KEY");
+}
+
+function supabaseServiceRoleKey() {
+  return read("SUPABASE_SERVICE_ROLE_KEY") || read("SUPABASE_SECRET_KEY");
+}
+
+export function isSupabaseConfigured() {
+  return Boolean(supabaseUrl() && supabasePublicKey() && supabaseServiceRoleKey());
 }
 
 export function isVercelConfigured() {
@@ -40,10 +48,10 @@ export const env = {
   appUrl,
   rootDomain,
   domainPriceCapUsd,
-  supabaseUrl: () => read("NEXT_PUBLIC_SUPABASE_URL"),
+  supabaseUrl,
   supabaseAnonKey: supabasePublicKey,
   supabasePublicKey,
-  supabaseServiceRoleKey: () => read("SUPABASE_SERVICE_ROLE_KEY"),
+  supabaseServiceRoleKey,
   stripeSecretKey: () => read("STRIPE_SECRET_KEY"),
   stripeWebhookSecret: () => read("STRIPE_WEBHOOK_SECRET"),
   vercelApiToken: () => read("VERCEL_API_TOKEN"),
