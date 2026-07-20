@@ -1,6 +1,6 @@
 import "server-only";
 
-import { serviceSupabase } from "@/lib/supabase/server";
+import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
 
 /**
  * Platform administrators bypass billing and AI-credit gates for their own
@@ -9,7 +9,7 @@ import { serviceSupabase } from "@/lib/supabase/server";
 export async function isPlatformAdmin(userId: string | null | undefined) {
   if (!userId) return false;
 
-  const client = serviceSupabase();
+  const client = serviceSupabase() ?? await createSupabaseServerClient();
   if (!client) return false;
 
   const { data, error } = await client

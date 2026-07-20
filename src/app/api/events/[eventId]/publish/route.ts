@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createLaunchCheckoutSession } from "@/lib/payments/stripe";
 import { isPlatformAdmin } from "@/lib/platform-admin";
-import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { canEditEvent } from "@/lib/studio-store";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const client = serviceSupabase();
+  const client = serviceSupabase() ?? await createSupabaseServerClient();
   if (client) {
     const [{ data: event }, { data: entitlement }] = await Promise.all([
       client.from("events").select("draft_version_id").eq("id", eventId).maybeSingle(),
