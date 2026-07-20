@@ -23,8 +23,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
 
-  async function publish(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function publish() {
     if (publishing) return;
     setPublishing(true);
     setPublishError(null);
@@ -67,8 +66,8 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
         <button type="button" onClick={onToggleHistory} aria-label="Version history" className="hidden size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white sm:grid"><History className="size-3.5" /></button>
         <button type="button" onClick={onToggleCode} aria-label="Inspect generated source" className="hidden size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white sm:grid"><Code2 className="size-3.5" /></button>
         <Link href={`/app/events/${eventId}/preview`} target="_blank" className="hidden items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:bg-white/10 sm:inline-flex"><Eye className="size-3.5" /> Preview</Link>
-        <form action={`/api/events/${eventId}/publish`} method="post" onSubmit={publish} className="relative">
-          <button type="submit" disabled={publishing} aria-busy={publishing} className="inline-flex items-center gap-1.5 rounded-lg bg-violet-500 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-violet-400 disabled:cursor-wait disabled:opacity-70"><Rocket className="size-3.5" /> {publishing ? "Publishing…" : "Publish"}</button>
+        <form action={`/api/events/${eventId}/publish`} method="post" onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void publish(); }} className="relative">
+          <button type="submit" onClick={(event) => { event.preventDefault(); void publish(); }} disabled={publishing} aria-busy={publishing} className="inline-flex items-center gap-1.5 rounded-lg bg-violet-500 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-violet-400 disabled:cursor-wait disabled:opacity-70"><Rocket className="size-3.5" /> {publishing ? "Publishing…" : "Publish"}</button>
           {publishError ? <p role="alert" className="absolute right-0 top-10 z-50 w-64 rounded-lg border border-red-400/30 bg-[#251719] px-3 py-2 text-[11px] leading-4 text-red-100 shadow-xl">{publishError}</p> : null}
         </form>
       </div>
