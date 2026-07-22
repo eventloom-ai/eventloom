@@ -8,7 +8,7 @@ export function publicSiteHost() {
     }
   }
 
-  return process.env.NEXT_PUBLIC_ROOT_DOMAIN || "eventloom.ai";
+  return process.env.NEXT_PUBLIC_ROOT_DOMAIN || "eventloom-beta.vercel.app";
 }
 
 export function publicSlugPath(slug: string) {
@@ -17,6 +17,6 @@ export function publicSlugPath(slug: string) {
     return `${appUrl}/${slug}`;
   }
 
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "eventloom.ai";
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "eventloom-beta.vercel.app";
   return `https://${root}/${slug}`;
 }

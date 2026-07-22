@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasSupabasePublicEnv, supabasePublicEnv } from "@/lib/supabase/public-env";
 
-export async function refreshSupabaseSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+export async function refreshSupabaseSession(request: NextRequest, requestHeaders?: Headers) {
+  let response = NextResponse.next({ request: requestHeaders ? { headers: requestHeaders } : request });
 
   if (!hasSupabasePublicEnv()) {
     return { response, user: null };
@@ -18,7 +18,7 @@ export async function refreshSupabaseSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
-        response = NextResponse.next({ request });
+        response = NextResponse.next({ request: requestHeaders ? { headers: requestHeaders } : request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });

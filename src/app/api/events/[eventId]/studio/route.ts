@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { applyEventDetailsPatch, applySiteOperations } from "@/lib/site-document-operations";
 import { canEditEvent, commitStudioRevision, loadStudioState } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
+import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
@@ -12,6 +13,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ eve
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
+  if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!requestWithinLimit(req, 256_000)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const { eventId } = await params;
   const user = await getServerUser();
   if (!(await canEditEvent(eventId, user?.id ?? null))) return NextResponse.json({ error: "not_found" }, { status: 404 });

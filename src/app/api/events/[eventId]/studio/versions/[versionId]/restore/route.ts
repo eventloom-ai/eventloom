@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { canEditEvent, commitStudioRevision, loadStudioState } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
+import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string; versionId: string }> }) {
+  if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!requestWithinLimit(req, 4_096)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const { eventId, versionId } = await params;
   const user = await getServerUser();
   if (!(await canEditEvent(eventId, user?.id ?? null))) return NextResponse.json({ error: "not_found" }, { status: 404 });

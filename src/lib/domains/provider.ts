@@ -1,10 +1,17 @@
-import { env } from "@/lib/env";
+import { isOpenSrsConfigured } from "@/lib/env";
 import type { DomainQuote } from "@/lib/types";
+import type { DomainRegistrant } from "@/lib/domains/registrant";
+import { OpenSrsDomainProvider } from "@/lib/domains/opensrs";
+
+export type DomainRegistrationResult =
+  | { ok: true; providerId: string }
+  | { ok: false; error: string };
 
 export type DomainProvider = {
   search(query: string): Promise<DomainQuote[]>;
   check(domains: string[]): Promise<DomainQuote[]>;
-  register(domain: string): Promise<{ ok: true; providerId: string } | { ok: false; error: string }>;
+  register(domain: string, registrant?: DomainRegistrant): Promise<DomainRegistrationResult>;
+  ensureVercelDns(domain: string, ipv4: string): Promise<{ ok: true } | { ok: false; error: string }>;
 };
 
 function mockQuote(domain: string, cost = 12): DomainQuote {
@@ -35,87 +42,24 @@ export class MockDomainProvider implements DomainProvider {
   async register(domain: string) {
     return { ok: true as const, providerId: `mock:${domain}` };
   }
-}
 
-export class CloudflareRegistrarProvider implements DomainProvider {
-  private baseUrl = "https://api.cloudflare.com/client/v4";
-
-  private async request(path: string, init?: RequestInit) {
-    const token = env.cloudflareRegistrarToken();
-    const accountId = env.cloudflareAccountId();
-    if (!token || !accountId) {
-      throw new Error("Cloudflare registrar is not configured.");
-    }
-
-    const res = await fetch(`${this.baseUrl}/accounts/${accountId}${path}`, {
-      ...init,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
-      },
-    });
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as { errors?: Array<{ message?: string }> } | null;
-      const message = body?.errors?.map((error) => error.message).filter(Boolean).join("; ");
-      throw new Error(message ? `cloudflare_${res.status}: ${message}` : `cloudflare_${res.status}`);
-    }
-
-    return res.json() as Promise<{ result?: { domains?: unknown[] }; errors?: unknown[] }>;
-  }
-
-  async search(query: string) {
-    const data = await this.request(`/registrar/domain-search?q=${encodeURIComponent(query)}&limit=6`);
-    return this.mapQuotes(data.result?.domains ?? []);
-  }
-
-  async check(domains: string[]) {
-    const data = await this.request("/registrar/domain-check", {
-      method: "POST",
-      body: JSON.stringify({ domains }),
-    });
-    return this.mapQuotes(data.result?.domains ?? []);
-  }
-
-  async register(domain: string) {
-    try {
-      const data = await this.request("/registrar/registrations", {
-        method: "POST",
-        body: JSON.stringify({ domain_name: domain }),
-      });
-      return { ok: true as const, providerId: JSON.stringify(data.result ?? { domain }) };
-    } catch (error) {
-      return { ok: false as const, error: error instanceof Error ? error.message : "registration_failed" };
-    }
-  }
-
-  private mapQuotes(items: unknown[]): DomainQuote[] {
-    return items
-      .map((item) => {
-        const row = item as {
-          name?: string;
-          registrable?: boolean;
-          tier?: string;
-          pricing?: { currency?: string; registration_cost?: string; renewal_cost?: string };
-        };
-        return {
-          domain: row.name ?? "",
-          available: row.registrable === true,
-          premium: row.tier === "premium",
-          currency: row.pricing?.currency ?? "USD",
-          registrationCost: Number(row.pricing?.registration_cost ?? 0),
-          renewalCost: Number(row.pricing?.renewal_cost ?? 0),
-        };
-      })
-      .filter((quote) => quote.domain);
+  async ensureVercelDns() {
+    return { ok: true as const };
   }
 }
 
 export function domainProvider(): DomainProvider {
-  if (env.cloudflareAccountId() && env.cloudflareRegistrarToken()) {
-    return new CloudflareRegistrarProvider();
+  if (isOpenSrsConfigured()) return new OpenSrsDomainProvider();
+  if (process.env.NODE_ENV !== "production") {
+    return new MockDomainProvider();
   }
+  throw new Error("domain_registrar_not_configured");
+}
 
-  return new MockDomainProvider();
+export async function verifyOpenSrsRegistrarAccess() {
+  if (!isOpenSrsConfigured()) return false;
+  try {
+    await new OpenSrsDomainProvider().check(["example.com"]);
+    return true;
+  } catch { return false; }
 }

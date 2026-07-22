@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { optionalFormString } from "@/lib/form-values";
 import { evaluateDomainQuote, validateGeneratedArtifact, validateRsvpPayload } from "@/lib/validation";
 
 describe("RSVP validation", () => {
   it("accepts a valid attending RSVP", () => {
     const result = validateRsvpPayload({
-      slug: "mira-adam",
+      form_token: "signed-public-form-token-value",
+      turnstile_token: "test-token",
+      idempotency_key: "10000000-0000-4000-8000-000000000001",
       first_name: "Mira",
       last_name: "Hadi",
       is_attending: true,
@@ -18,7 +21,9 @@ describe("RSVP validation", () => {
 
   it("rejects guest count mismatches", () => {
     const result = validateRsvpPayload({
-      slug: "mira-adam",
+      form_token: "signed-public-form-token-value",
+      turnstile_token: "test-token",
+      idempotency_key: "10000000-0000-4000-8000-000000000002",
       first_name: "Mira",
       last_name: "Hadi",
       is_attending: true,
@@ -28,6 +33,24 @@ describe("RSVP validation", () => {
     });
 
     expect(result.ok).toBe(false);
+  });
+
+  it("accepts an RSVP when optional contact controls are hidden", () => {
+    const result = validateRsvpPayload({
+      form_token: "signed-public-form-token-value",
+      turnstile_token: "test-token",
+      idempotency_key: "10000000-0000-4000-8000-000000000003",
+      first_name: "Taylor",
+      last_name: "Guest",
+      email: optionalFormString(null),
+      phone: optionalFormString(null),
+      is_attending: true,
+      party_size: 1,
+      guest_names: [],
+      answers: { note: "Looking forward to it" },
+    });
+
+    expect(result.ok).toBe(true);
   });
 });
 

@@ -1,15 +1,19 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { optionalFormString } from "@/lib/form-values";
 import type { RsvpField } from "@/lib/types";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 
 const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
 
-export function RsvpForm({ eventId, slug, isOpen, fields = defaultFields, className = "" }: { eventId: string; slug: string; isOpen: boolean; fields?: RsvpField[]; className?: string }) {
+export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, fields = defaultFields, className = "" }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; fields?: RsvpField[]; className?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [attending, setAttending] = useState(true);
   const [partySize, setPartySize] = useState(1);
   const [message, setMessage] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,12 +32,13 @@ export function RsvpForm({ eventId, slug, isOpen, fields = defaultFields, classN
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        event_id: eventId,
-        slug,
+        form_token: formToken,
+        turnstile_token: turnstileToken,
+        idempotency_key: crypto.randomUUID(),
         first_name: form.get("first_name"),
         last_name: form.get("last_name"),
-        email: form.get("email"),
-        phone: form.get("phone"),
+        email: optionalFormString(form.get("email")),
+        phone: optionalFormString(form.get("phone")),
         is_attending: attending,
         party_size: attending ? partySize : 0,
         guest_names: attending ? guestNames : [],
@@ -128,7 +133,10 @@ export function RsvpForm({ eventId, slug, isOpen, fields = defaultFields, classN
 
       {message ? <p className="mt-4 text-sm text-red-700">{message}</p> : null}
 
-      <button disabled={status === "sending"} className="mt-6 w-full rounded-full bg-[#405448] px-5 py-4 font-semibold text-white disabled:opacity-60">
+      <div className="mt-5"><TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} /></div>
+      <p className="mt-4 text-xs leading-relaxed text-stone-600">Your reply is collected for this event by its creator and processed by Eventloom. It is not sold or used for advertising. {privacyContact ? <>Privacy contact: {privacyContact}. </> : null}<Link className="underline" href="/legal/privacy">Privacy details</Link>.</p>
+
+      <button disabled={status === "sending" || (Boolean(turnstileSiteKey) && !turnstileToken)} className="mt-6 w-full rounded-full bg-[#405448] px-5 py-4 font-semibold text-white disabled:opacity-60">
         {status === "sending" ? "Sending..." : "Send reply"}
       </button>
     </form>

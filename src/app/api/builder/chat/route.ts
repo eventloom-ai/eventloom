@@ -5,21 +5,23 @@ import { validateGeneratedArtifact } from "@/lib/validation";
 import { isSupabaseConfigured } from "@/lib/env";
 import { reserveBuildCredit } from "@/lib/payments/billing";
 import { getServerUser } from "@/lib/supabase/server";
+import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import sharp from "sharp";
 
 export async function POST(req: NextRequest) {
+  if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!requestWithinLimit(req, 21 * 1024 * 1024)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+  const user = await getServerUser();
+  if (!user || !isSupabaseConfigured()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const contentType = req.headers.get("content-type") ?? "";
   const body = contentType.includes("multipart/form-data") ? await readMultipart(req) : await readJson(req);
   const message = body.message.trim();
-  if (!message) {
+  if (!message || message.length > 4_000) {
     return NextResponse.json({ error: "missing_message" }, { status: 400 });
   }
 
-  const user = await getServerUser();
-  if (isSupabaseConfigured() && !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (user) {
-    const credit = await reserveBuildCredit(user.id);
-    if (!credit.ok) return NextResponse.json({ error: credit.error }, { status: 402 });
-  }
+  const credit = await reserveBuildCredit(user.id);
+  if (!credit.ok) return NextResponse.json({ error: credit.error }, { status: 402 });
 
   const plan = await generateSitePlan(message);
   const artifact = await generateArtifactForConfig(plan.config, message, body.images);
@@ -44,16 +46,23 @@ async function readJson(req: NextRequest) {
 
 async function readMultipart(req: NextRequest) {
   const form = await req.formData();
+  const files = form
+    .getAll("images")
+    .filter((file): file is File => file instanceof File && ["image/jpeg", "image/png", "image/webp"].includes(file.type) && file.size > 0 && file.size <= 5 * 1024 * 1024)
+    .slice(0, 4);
   const images = await Promise.all(
-    form
-      .getAll("images")
-      .filter((file): file is File => file instanceof File && file.type.startsWith("image/"))
-      .slice(0, 4)
-      .map(async (file) => ({
+    files.map(async (file) => {
+      const input = Buffer.from(await file.arrayBuffer());
+      const image = sharp(input, { failOn: "warning", limitInputPixels: 25_000_000 });
+      const metadata = await image.metadata();
+      if (!metadata.width || !metadata.height || (metadata.pages ?? 1) > 1) throw new Error("invalid_image");
+      const safe = await image.rotate().webp({ quality: 85 }).toBuffer();
+      return {
         name: file.name,
-        mediaType: file.type,
-        dataUrl: `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`,
-      })),
+        mediaType: "image/webp",
+        dataUrl: `data:image/webp;base64,${safe.toString("base64")}`,
+      };
+    }),
   );
 
   return { message: String(form.get("message") ?? form.get("prompt") ?? ""), images };

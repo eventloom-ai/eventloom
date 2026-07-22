@@ -17,8 +17,9 @@ export const domainSchema = z
   .max(253);
 
 export const rsvpPayloadSchema = z.object({
-  event_id: z.string().uuid().optional(),
-  slug: slugSchema.optional(),
+  form_token: z.string().min(20).max(2_000),
+  turnstile_token: z.string().max(2_000).default(""),
+  idempotency_key: z.string().uuid(),
   first_name: z.string().trim().min(1).max(80),
   last_name: z.string().trim().min(1).max(80),
   email: z.string().trim().email().max(160).optional().or(z.literal("")),
@@ -36,10 +37,6 @@ export function validateRsvpPayload(input: unknown) {
   }
 
   const payload = parsed.data;
-  if (!payload.event_id && !payload.slug) {
-    return { ok: false as const, error: "missing_event" };
-  }
-
   if (!payload.is_attending && (payload.party_size !== 0 || payload.guest_names.length !== 0)) {
     return { ok: false as const, error: "invalid_not_attending" };
   }

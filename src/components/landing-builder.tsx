@@ -122,7 +122,7 @@ export function LandingBuilder({ initialTemplate }: { initialTemplate?: string }
       {prompt.trim() ? (
         <p className="mt-3 text-[13px] text-[#6e6e73]">
           Your link preview:{" "}
-          <span className="font-medium text-[#1d1d1f]">eventloom.ai/{slug}</span>
+          <span className="font-medium text-[#1d1d1f]">eventloom-beta.vercel.app/{slug}</span>
         </p>
       ) : null}
 

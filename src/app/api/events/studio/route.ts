@@ -7,10 +7,13 @@ import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { executeStudioRun } from "@/lib/studio-agent";
 import { createBuilderMessage, createStudioRun, loadStudioState, updateStudioRun } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
+import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
 
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
+  if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!requestWithinLimit(req, 16_384)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const user = await getServerUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => null) as { prompt?: string; slug?: string } | null;

@@ -3,12 +3,20 @@ function read(name: string) {
   return value && value.trim() ? value.trim() : "";
 }
 
+function enabled(name: string, productionDefault = false) {
+  const value = read(name).toLowerCase();
+  if (value) return value === "1" || value === "true" || value === "yes" || value === "on";
+  const production = process.env.NODE_ENV === "production" || read("VERCEL_ENV") === "production";
+  return production ? productionDefault : true;
+}
+
 export function appUrl() {
   return read("NEXT_PUBLIC_APP_URL") || "http://localhost:3000";
 }
 
 export function rootDomain() {
-  return read("NEXT_PUBLIC_ROOT_DOMAIN") || "eventloom.ai";
+  if (read("NEXT_PUBLIC_ROOT_DOMAIN")) return read("NEXT_PUBLIC_ROOT_DOMAIN");
+  try { return new URL(appUrl()).host; } catch { return "localhost"; }
 }
 
 export function domainPriceCapUsd() {
@@ -44,6 +52,58 @@ export function isStripeConfigured() {
   return Boolean(read("STRIPE_SECRET_KEY"));
 }
 
+export function isDomainPurchasingConfigured() {
+  return publicDomainPurchasingEnabled() && isStripeConfigured() && isSupabaseConfigured() && isVercelConfigured() && isOpenSrsConfigured();
+}
+
+export function publicSignupEnabled() {
+  return enabled("PUBLIC_SIGNUP_ENABLED");
+}
+
+export function publicCheckoutEnabled() {
+  return enabled("PUBLIC_CHECKOUT_ENABLED");
+}
+
+export function publicRsvpEnabled() {
+  return enabled("PUBLIC_RSVP_ENABLED");
+}
+
+export function publicDomainPurchasingEnabled() {
+  return enabled("DOMAIN_PURCHASING_ENABLED");
+}
+
+export function mfaEnforcementEnabled() {
+  return enabled("MFA_ENFORCEMENT_ENABLED", true);
+}
+
+export function isOpenSrsConfigured() {
+  return Boolean(read("OPENSRS_USERNAME") && read("OPENSRS_API_KEY") && read("OPENSRS_API_URL") && registrantEncryptionKey());
+}
+
+export function registrantEncryptionKey() { return read("REGISTRANT_ENCRYPTION_KEY"); }
+
+export function isTurnstileConfigured() {
+  return Boolean(read("NEXT_PUBLIC_TURNSTILE_SITE_KEY") && read("TURNSTILE_SECRET_KEY"));
+}
+
+export function legalIdentityConfigured() {
+  return Boolean(read("LEGAL_BUSINESS_NAME") && read("LEGAL_CONTACT_EMAIL") && read("LEGAL_MAILING_ADDRESS"));
+}
+
+export function externalLaunchReviewsApproved() {
+  return [
+    "LEGAL_REVIEW_APPROVED",
+    "ACCOUNTING_REVIEW_APPROVED",
+    "PENETRATION_TEST_APPROVED",
+    "PROVIDER_DPA_REVIEW_APPROVED",
+    "PRIVACY_TABLETOP_COMPLETED",
+  ].every((name) => enabled(name, false));
+}
+
+export function monitoringConfigured() {
+  return Boolean(read("SENTRY_DSN") && read("SENTRY_ORG") && read("SENTRY_PROJECT"));
+}
+
 export const env = {
   appUrl,
   rootDomain,
@@ -57,8 +117,19 @@ export const env = {
   vercelApiToken: () => read("VERCEL_API_TOKEN"),
   vercelProjectId: () => read("VERCEL_PROJECT_ID"),
   vercelTeamId: () => read("VERCEL_TEAM_ID"),
-  cloudflareAccountId: () => read("CLOUDFLARE_ACCOUNT_ID"),
-  cloudflareRegistrarToken: () => read("CLOUDFLARE_REGISTRAR_TOKEN"),
+  openSrsUsername: () => read("OPENSRS_USERNAME"),
+  openSrsApiKey: () => read("OPENSRS_API_KEY"),
+  openSrsApiUrl: () => read("OPENSRS_API_URL"),
+  registrantEncryptionKey,
+  rsvpTokenSecret: () => read("RSVP_TOKEN_SECRET"),
+  ipHashSecret: () => read("IP_HASH_SECRET"),
+  turnstileSecretKey: () => read("TURNSTILE_SECRET_KEY"),
+  turnstileSiteKey: () => read("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
+  readinessToken: () => read("READINESS_TOKEN"),
+  cronSecret: () => read("CRON_SECRET"),
+  legalBusinessName: () => read("LEGAL_BUSINESS_NAME") || "Eventloom",
+  legalContactEmail: () => read("LEGAL_CONTACT_EMAIL") || "privacy@eventloom.invalid",
+  legalMailingAddress: () => read("LEGAL_MAILING_ADDRESS"),
   aiGatewayUrl: () => read("AI_GATEWAY_URL"),
   aiApiKey: () => read("AI_API_KEY"),
   openaiApiKey: () => read("OPENAI_API_KEY"),

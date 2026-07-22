@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Playfair_Display } from "next/font/google";
 import { BuildJobProvider } from "@/components/build-job-provider";
+import { GlobalLegalFooter } from "@/components/global-legal-footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,6 +43,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <BuildJobProvider>{children}</BuildJobProvider>
+        <GlobalLegalFooter />
       </body>
     </html>
   );

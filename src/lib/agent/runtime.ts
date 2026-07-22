@@ -1,4 +1,5 @@
-import { appUrl, env, isAiConfigured, isStripeConfigured, isSupabaseConfigured, isVercelConfigured, rootDomain } from "@/lib/env";
+import { appUrl, env, isAiConfigured, isDomainPurchasingConfigured, isOpenSrsConfigured, isStripeConfigured, isSupabaseConfigured, isVercelConfigured, rootDomain } from "@/lib/env";
+import { verifyOpenSrsRegistrarAccess } from "@/lib/domains/provider";
 
 export type AgentCapability =
   | "persist_events"
@@ -24,7 +25,7 @@ export function getAgentRuntime(): AgentRuntime {
     collect_rsvps: isSupabaseConfigured(),
     generate_with_ai: isAiConfigured(),
     attach_vercel_domains: isVercelConfigured(),
-    sell_domains: isStripeConfigured(),
+    sell_domains: isDomainPurchasingConfigured(),
   };
 
   const missing: string[] = [];
@@ -37,6 +38,12 @@ export function getAgentRuntime(): AgentRuntime {
   if (!capabilities.attach_vercel_domains) {
     missing.push("VERCEL_API_TOKEN", "VERCEL_PROJECT_ID");
   }
+  if (!isStripeConfigured()) {
+    missing.push("STRIPE_SECRET_KEY");
+  }
+  if (!isOpenSrsConfigured()) {
+    missing.push("OPENSRS_USERNAME", "OPENSRS_API_KEY", "OPENSRS_API_URL", "REGISTRANT_ENCRYPTION_KEY");
+  }
 
   return {
     appUrl: appUrl(),
@@ -44,6 +51,20 @@ export function getAgentRuntime(): AgentRuntime {
     capabilities,
     model: env.aiModel(),
     ready: capabilities.persist_events && capabilities.generate_with_ai,
-    missing,
+    missing: [...new Set(missing)],
+  };
+}
+
+export async function getVerifiedAgentRuntime(): Promise<AgentRuntime> {
+  const runtime = getAgentRuntime();
+  if (!runtime.capabilities.sell_domains) return runtime;
+
+  const registrarAuthorized = await verifyOpenSrsRegistrarAccess();
+  if (registrarAuthorized) return runtime;
+
+  return {
+    ...runtime,
+    capabilities: { ...runtime.capabilities, sell_domains: false },
+    missing: [...new Set([...runtime.missing, "OPENSRS_API_KEY (unauthorized)"])],
   };
 }

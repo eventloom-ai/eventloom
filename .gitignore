@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/eventloom-sbom.cdx.json
 
 # next.js
 /.next/

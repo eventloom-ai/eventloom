@@ -3,7 +3,7 @@ import { generatePageArtifact } from "@/lib/ai/generator";
 import { progressForStep } from "@/lib/agent/build-progress";
 import type { BuildJobStatus, BuildProgressEvent, BuildProgressStep } from "@/lib/agent/progress";
 import { addDomainToVercelProject } from "@/lib/domains/vercel";
-import { appUrl, rootDomain } from "@/lib/env";
+import { appUrl } from "@/lib/env";
 import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord, PageArtifact } from "@/lib/types";
 
@@ -353,7 +353,7 @@ export function previewUrls(slug: string) {
   const base = appUrl().replace(/\/$/, "");
   return {
     slugPath: `${base}/${slug}`,
-    subdomain: `https://${slug}.${rootDomain()}`,
+    subdomain: `${base}/${slug}`,
   };
 }
 

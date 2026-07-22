@@ -1,5 +1,12 @@
 import { demoEvents } from "@/lib/sample-data";
+import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
+import { recordAuditEvent } from "@/lib/security/audit";
+import { isPlatformAdmin } from "@/lib/platform-admin";
 import { serviceSupabase } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 async function loadStats() {
   const client = serviceSupabase();
@@ -23,6 +30,13 @@ async function loadStats() {
 }
 
 export default async function AdminPage() {
+  const auth = await getAuthContext();
+  if (!auth) redirect("/login?next=/admin");
+  if (!auth.emailVerified) redirect("/app/security?reason=email");
+  if (!hasRequiredMfa(auth)) redirect("/app/security?next=/admin");
+  if (!(await isPlatformAdmin(auth.user.id))) notFound();
+
+  await recordAuditEvent({ action: "platform_admin.view", actorUserId: auth.user.id, actorType: "admin", targetType: "admin_dashboard" });
   const stats = await loadStats();
 
   return (

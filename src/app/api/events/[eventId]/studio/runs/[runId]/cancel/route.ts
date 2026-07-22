@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { appendRunEvent, canEditEvent, getStudioRun, requestStudioRunCancellation } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
 
-export async function POST(_req: Request, { params }: { params: Promise<{ eventId: string; runId: string }> }) {
+import { isSameOriginMutation } from "@/lib/security/request";
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string; runId: string }> }) {
+  if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const { eventId, runId } = await params;
   const user = await getServerUser();
   if (!user || !(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });

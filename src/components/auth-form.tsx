@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 
 type AuthMode = "signin" | "signup";
 
-export function AuthForm({ mode }: { mode: AuthMode }) {
+export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turnstileSiteKey?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = safeRedirectPath(searchParams.get("next"));
@@ -20,6 +21,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSignInHint, setShowSignInHint] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   const title = mode === "signup" ? "Save your event" : "Open your events";
   const subtitle = useMemo(
@@ -49,13 +52,19 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       setIsSubmitting(false);
       return;
     }
+    if (mode === "signup" && (!accepted || (turnstileSiteKey && !captchaToken))) {
+      setError("Confirm the age and legal terms, then complete the security check.");
+      setIsSubmitting(false);
+      return;
+    }
 
     if (mode === "signup") {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: fullName.trim() },
+          data: { full_name: fullName.trim(), age_18_confirmed: true, legal_version: "2026-07-22-beta" },
+          captchaToken: captchaToken || undefined,
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         },
       });
@@ -100,6 +109,10 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     const supabase = createSupabaseBrowserClient();
     if (!supabase) {
       setError("Authentication is not configured yet.");
+      return;
+    }
+    if (mode === "signup" && !accepted) {
+      setError("Confirm that you are 18 or older and accept the legal terms before continuing.");
       return;
     }
 
@@ -197,6 +210,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           </label>
         ) : null}
 
+        {mode === "signup" ? <div className="mt-5 grid gap-4"><label className="flex items-start gap-3 text-sm leading-6 text-[#424245]"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1" required /><span>I am 18 or older and accept the <Link className="underline" href="/legal/terms" target="_blank">Terms</Link>, <Link className="underline" href="/legal/privacy" target="_blank">Privacy Policy</Link>, and <Link className="underline" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link> version 2026-07-22-beta.</span></label><TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptchaToken} />{!turnstileSiteKey ? <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Public signup remains disabled in production until Turnstile is configured.</p> : null}</div> : null}
+
         <label className={`grid gap-2 ${mode === "signup" ? "mt-5" : ""}`}>
           <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Email</span>
           <input
@@ -262,7 +277,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || (mode === "signup" && (!accepted || (Boolean(turnstileSiteKey) && !captchaToken)))}
           className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSubmitting ? "Please wait…" : mode === "signup" ? "Save and continue" : "Open my events"}
