@@ -1,0 +1,87 @@
+name: Production smoke monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      BASE_URL: https://eventloom-beta.vercel.app
+      INCIDENT_TITLE: "Production smoke monitor failed"
+    steps:
+      - name: Check public production journey
+        id: checks
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > smoke.log
+
+          check_status() {
+            local path="$1"
+            local expected="$2"
+            local status
+            status="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --output response.body --write-out '%{http_code}' "${BASE_URL}${path}")"
+            printf '%s -> %s\n' "$path" "$status" | tee -a smoke.log
+            test "$status" = "$expected"
+          }
+
+          check_contains() {
+            local path="$1"
+            local text="$2"
+            curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --fail --silent --show-error "${BASE_URL}${path}" |
+              tee response.body |
+              grep --fixed-strings --quiet "$text"
+            printf '%s contains expected marker\n' "$path" | tee -a smoke.log
+          }
+
+          check_status "/api/health/live" "200"
+          check_contains "/" "A beautiful RSVP site in minutes."
+          check_contains "/examples/wedding" "Men’s English wedding invitation"
+          check_contains "/robots.txt" "Sitemap:"
+          check_contains "/sitemap.xml" "/examples/wedding"
+
+          legacy_target="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --location --output /dev/null --write-out '%{url_effective}' "${BASE_URL}/demo-wedding")"
+          printf '/demo-wedding -> %s\n' "$legacy_target" | tee -a smoke.log
+          test "$legacy_target" = "${BASE_URL}/examples/wedding"
+
+      - name: Open or update incident
+        if: steps.checks.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"${INCIDENT_TITLE}\" in:title" --json number --jq '.[0].number // empty')"
+          body="$(printf 'Automated production checks failed at %s.\\n\\nWorkflow: %s/actions/runs/%s\\n\\n```text\\n%s\\n```' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$(cat smoke.log)")"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$INCIDENT_TITLE" --body "$body"
+          fi
+          exit 1
+
+      - name: Close recovered incident
+        if: steps.checks.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"${INCIDENT_TITLE}\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "Production smoke checks recovered automatically at $(date -u +'%Y-%m-%dT%H:%M:%SZ')."
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --reason completed
+          fi

@@ -21,18 +21,21 @@ export async function GET(request: NextRequest) {
   if (!client) return NextResponse.json({ error: "not_configured" }, { status: 503 });
 
   const now = new Date().toISOString();
-  const [purgeResult, registrantResult, retryResult, overduePrivacyResult, retryEventsResult] = await Promise.all([
+  const feedbackHashCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, retryEventsResult] = await Promise.all([
     client.rpc("purge_expired_rsvp_data"),
     client.from("domain_registrant_payloads").delete({ count: "exact" }).lt("expires_at", now),
+    client.from("product_feedback").update({ ip_hash: null }, { count: "exact" }).lt("created_at", feedbackHashCutoff).not("ip_hash", "is", null),
     client.from("fulfillment_jobs").select("id", { count: "exact", head: true }).in("state", ["received", "verified", "domain_pending", "retry"]).lte("next_attempt_at", now),
     client.from("privacy_requests").select("id", { count: "exact", head: true }).not("status", "in", '("completed","denied")').lte("due_at", now),
     client.from("provider_webhook_events").select("id, provider_event_id, attempt_count").eq("provider", "stripe").eq("status", "retry").order("received_at").limit(5),
   ]);
 
-  if (purgeResult.error || registrantResult.error || retryResult.error || overduePrivacyResult.error || retryEventsResult.error) {
+  if (purgeResult.error || registrantResult.error || feedbackHashResult.error || retryResult.error || overduePrivacyResult.error || retryEventsResult.error) {
     reportOperationalEvent("error", "maintenance_failed", {
       purgeError: purgeResult.error?.code,
       registrantError: registrantResult.error?.code,
+      feedbackHashError: feedbackHashResult.error?.code,
       retryError: retryResult.error?.code,
       privacyError: overduePrivacyResult.error?.code,
       providerRetryError: retryEventsResult.error?.code,
@@ -61,6 +64,7 @@ export async function GET(request: NextRequest) {
   reportOperationalEvent(retryJobs || overduePrivacyRequests ? "warn" : "info", "maintenance_completed", {
     purgedRsvpSubmissions: Number(purgeResult.data ?? 0),
     expiredRegistrantPayloads: registrantResult.count ?? 0,
+    purgedFeedbackIpHashes: feedbackHashResult.count ?? 0,
     retryJobs,
     overduePrivacyRequests,
     replayedEvents,
@@ -70,6 +74,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     purged_rsvp_submissions: Number(purgeResult.data ?? 0),
     expired_registrant_payloads: registrantResult.count ?? 0,
+    purged_feedback_ip_hashes: feedbackHashResult.count ?? 0,
     fulfillment_jobs_needing_attention: retryJobs,
     overdue_privacy_requests: overduePrivacyRequests,
     replayed_provider_events: replayedEvents,

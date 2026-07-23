@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Playfair_Display } from "next/font/google";
 import { BuildJobProvider } from "@/components/build-job-provider";
+import { FeedbackWidget } from "@/components/feedback-widget";
 import { GlobalLegalFooter } from "@/components/global-legal-footer";
+import { env } from "@/lib/env";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,8 +29,29 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Eventloom AI",
-  description: "Custom event websites with guest replies, payment, and a personal website address.",
+  metadataBase: new URL(env.appUrl()),
+  title: {
+    default: "Create a Beautiful RSVP Website in Minutes | Eventloom",
+    template: "%s | Eventloom",
+  },
+  description: "Create a beautiful event website, collect guest RSVPs, and share one simple link. No design or technical experience needed.",
+  applicationName: "Eventloom",
+  keywords: ["RSVP website", "online RSVP", "event website", "wedding RSVP", "party invitations"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    title: "Create a Beautiful RSVP Website in Minutes",
+    description: "Describe your event, get a polished website, and collect every guest reply in one place.",
+    siteName: "Eventloom",
+    url: "/",
+    images: [{ url: "/examples/men-english.png", width: 1055, height: 1491, alt: "Eventloom wedding website example" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Create a Beautiful RSVP Website in Minutes",
+    description: "A simple way to create an event site and collect guest replies.",
+    images: ["/examples/men-english.png"],
+  },
 };
 
 export default function RootLayout({
@@ -44,6 +67,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <BuildJobProvider>{children}</BuildJobProvider>
         <GlobalLegalFooter />
+        <FeedbackWidget turnstileSiteKey={env.turnstileSiteKey()} />
       </body>
     </html>
   );
