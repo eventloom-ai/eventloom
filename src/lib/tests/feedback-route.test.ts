@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => ({
   auth: { user: { id: "10000000-0000-4000-8000-000000000010" } } as { user: { id: string } } | null,
+  turnstileConfigured: false,
   verifyHuman: true,
   recentCount: 0,
   recentError: null as null | { code: string },
@@ -12,7 +13,10 @@ const mocks = vi.hoisted(() => ({
   client: null as unknown,
 }));
 
-vi.mock("@/lib/env", () => ({ env: { ipHashSecret: () => "feedback-ip-test-secret" } }));
+vi.mock("@/lib/env", () => ({
+  env: { ipHashSecret: () => "feedback-ip-test-secret" },
+  isTurnstileConfigured: () => mocks.turnstileConfigured,
+}));
 vi.mock("@/lib/security/auth", () => ({ getAuthContext: () => mocks.auth }));
 vi.mock("@/lib/security/turnstile", () => ({ verifyTurnstile: () => mocks.verifyHuman }));
 vi.mock("@/lib/monitoring", () => ({ reportOperationalEvent: mocks.operationalEvent }));
@@ -77,6 +81,7 @@ const validBody = {
 describe("product feedback route", () => {
   beforeEach(() => {
     mocks.auth = { user: { id: "10000000-0000-4000-8000-000000000010" } };
+    mocks.turnstileConfigured = false;
     mocks.verifyHuman = true;
     mocks.recentCount = 0;
     mocks.recentError = null;
@@ -102,8 +107,19 @@ describe("product feedback route", () => {
     expect(mocks.operationalEvent).toHaveBeenCalledWith("info", "product_feedback_received", expect.not.objectContaining({ message: expect.anything() }));
   });
 
-  it("requires human verification for anonymous feedback", async () => {
+  it("accepts tightly rate-limited anonymous feedback when Turnstile is not configured", async () => {
     mocks.auth = null;
+    mocks.verifyHuman = false;
+
+    const response = await POST(request(validBody));
+
+    expect(response.status).toBe(201);
+    expect(mocks.inserted).toMatchObject({ user_id: null });
+  });
+
+  it("requires human verification for anonymous feedback when Turnstile is configured", async () => {
+    mocks.auth = null;
+    mocks.turnstileConfigured = true;
     mocks.verifyHuman = false;
 
     const response = await POST(request(validBody));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { isTurnstileConfigured } from "@/lib/env";
 import { reportOperationalEvent } from "@/lib/monitoring";
 import { getAuthContext } from "@/lib/security/auth";
 import { clientIpHash, isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
@@ -31,7 +32,9 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 
   const auth = await getAuthContext();
-  const humanVerified = auth ? true : await verifyTurnstile(parsed.data.turnstileToken);
+  const humanVerified = auth
+    ? true
+    : !isTurnstileConfigured() || await verifyTurnstile(parsed.data.turnstileToken);
   if (!auth && !humanVerified) {
     return NextResponse.json({ error: "verification_required" }, { status: 400 });
   }
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
     : recentQuery.eq("ip_hash", ipHash as string);
   const recent = await recentQuery;
   if (recent.error) return NextResponse.json({ error: "unavailable" }, { status: 503 });
-  if ((recent.count ?? 0) >= 5) {
+  if ((recent.count ?? 0) >= (auth ? 5 : 3)) {
     return NextResponse.json({ error: "try_later" }, { status: 429 });
   }
 
