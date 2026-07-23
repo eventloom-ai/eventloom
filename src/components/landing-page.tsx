@@ -19,7 +19,7 @@ export function LandingPage({ initialTemplate }: { initialTemplate?: string }) {
           <nav className="mt-5 grid gap-1 text-[12px] text-[#716d75]">
             <Link href="/" className="flex items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-violet-800"><Sparkles className="size-3.5" /> Home</Link>
             <Link href="/app" className="flex items-center gap-2 rounded-md px-3 py-2 transition hover:bg-black/[0.04] hover:text-[#252329]"><LayoutDashboard className="size-3.5" /> My events</Link>
-            <Link href="/demo-wedding" className="flex items-center gap-2 rounded-md px-3 py-2 transition hover:bg-black/[0.04] hover:text-[#252329]"><Globe2 className="size-3.5" /> Published sites</Link>
+            <Link href="/app?status=published" className="flex items-center gap-2 rounded-md px-3 py-2 transition hover:bg-black/[0.04] hover:text-[#252329]"><Globe2 className="size-3.5" /> Published sites</Link>
           </nav>
           <div className="mt-auto border-t border-black/[0.07] pt-4 text-[11px] text-[#85818a]"><p className="font-medium text-[#4e4953]">Eventloom Studio</p><p className="mt-1 leading-4">Create an event site, collect replies, and publish when it is ready.</p></div>
         </aside>
@@ -43,7 +43,7 @@ export function LandingPage({ initialTemplate }: { initialTemplate?: string }) {
             <div className="mx-auto mt-16 w-full max-w-3xl">
               <div className="flex items-center justify-between"><h2 className="text-[13px] font-semibold">Continue planning</h2><Link href="/app" className="text-[12px] text-violet-600 hover:underline">View all events</Link></div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <Link href="/demo-wedding" className="group rounded-xl border border-black/[0.08] bg-white p-4 shadow-sm transition hover:bg-[#fffafb]"><div className="flex items-center justify-between"><span className="grid size-8 place-items-center rounded-lg bg-rose-50 text-rose-500"><Heart className="size-4" /></span><span className="text-[10px] text-[#8b858d]">Sample</span></div><p className="mt-4 text-[13px] font-semibold">Wedding site example</p><p className="mt-1 text-[11px] text-[#77717a]">See an Eventloom site with RSVP.</p></Link>
+                <Link href="/examples/wedding" className="group rounded-xl border border-black/[0.08] bg-white p-4 shadow-sm transition hover:bg-[#fffafb]"><div className="flex items-center justify-between"><span className="grid size-8 place-items-center rounded-lg bg-rose-50 text-rose-500"><Heart className="size-4" /></span><span className="text-[10px] text-[#8b858d]">Sample</span></div><p className="mt-4 text-[13px] font-semibold">Wedding site example</p><p className="mt-1 text-[11px] text-[#77717a]">See a polished men’s English invitation experience.</p></Link>
                 <Link href="/app" className="group rounded-xl border border-dashed border-black/[0.14] bg-[#fdfcff] p-4 transition hover:border-violet-300 hover:bg-violet-50/40"><span className="grid size-8 place-items-center rounded-lg bg-violet-50 text-violet-600"><CalendarDays className="size-4" /></span><p className="mt-4 text-[13px] font-semibold">Your event projects</p><p className="mt-1 text-[11px] text-[#77717a]">Open drafts and published events.</p></Link>
               </div>
             </div>
