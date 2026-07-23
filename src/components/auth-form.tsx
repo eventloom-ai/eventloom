@@ -9,7 +9,15 @@ import { TurnstileWidget } from "@/components/turnstile-widget";
 
 type AuthMode = "signin" | "signup";
 
-export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turnstileSiteKey?: string }) {
+export function AuthForm({
+  mode,
+  turnstileSiteKey = "",
+  signupAvailable = true,
+}: {
+  mode: AuthMode;
+  turnstileSiteKey?: string;
+  signupAvailable?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = safeRedirectPath(searchParams.get("next"));
@@ -24,13 +32,20 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
   const [accepted, setAccepted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
 
-  const title = mode === "signup" ? "Save your event" : "Open your events";
+  const continuingDraft = nextPath.startsWith("/app/events/new");
+  const title = mode === "signup"
+    ? "Save your event"
+    : continuingDraft
+      ? "Continue your event"
+      : "Open your events";
   const subtitle = useMemo(
     () =>
       mode === "signup"
         ? "Add your email and password so your site does not get lost."
-        : "Sign in to keep working on your event sites.",
-    [mode],
+        : continuingDraft
+          ? "Sign in and we’ll keep your description ready for an editable first draft."
+          : "Sign in to keep working on your event sites.",
+    [continuingDraft, mode],
   );
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -280,7 +295,13 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
           disabled={isSubmitting || (mode === "signup" && (!accepted || (Boolean(turnstileSiteKey) && !captchaToken)))}
           className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isSubmitting ? "Please wait…" : mode === "signup" ? "Save and continue" : "Open my events"}
+          {isSubmitting
+            ? "Please wait…"
+            : mode === "signup"
+              ? "Save and continue"
+              : continuingDraft
+                ? "Continue to my draft"
+                : "Open my events"}
         </button>
 
         {mode === "signin" ? (
@@ -307,13 +328,15 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
               Sign in
             </Link>
           </>
-        ) : (
+        ) : signupAvailable ? (
           <>
             First time here?{" "}
             <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href={`/signup?next=${encodeURIComponent(nextPath)}`}>
               Save your event
             </Link>
           </>
+        ) : (
+          <>Eventloom is currently open to invited creators. New accounts will open after launch checks are complete.</>
         )}
       </p>
     </div>

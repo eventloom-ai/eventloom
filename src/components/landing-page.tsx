@@ -64,7 +64,15 @@ const frequentlyAsked = [
   },
 ];
 
-export function LandingPage({ initialTemplate }: { initialTemplate?: string }) {
+export function LandingPage({
+  initialTemplate,
+  authenticated = false,
+  signupEnabled = false,
+}: {
+  initialTemplate?: string;
+  authenticated?: boolean;
+  signupEnabled?: boolean;
+}) {
   return (
     <main className="overflow-hidden bg-[#fbfaf8] text-[#252329]">
       <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-[#fbfaf8]/90 backdrop-blur-xl">
@@ -101,7 +109,11 @@ export function LandingPage({ initialTemplate }: { initialTemplate?: string }) {
               Tell us what you’re celebrating. Eventloom creates the website, collects guest replies, and keeps everything in one calm place.
             </p>
             <div id="create" className="mt-9 scroll-mt-28">
-              <StartEventPrompt initialTemplate={initialTemplate} />
+              <StartEventPrompt
+                initialTemplate={initialTemplate}
+                authenticated={authenticated}
+                signupEnabled={signupEnabled}
+              />
             </div>
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#746f77]">
               {assurances.map((item) => <span key={item} className="inline-flex items-center gap-1.5"><Check className="size-3.5 text-emerald-600" />{item}</span>)}
