@@ -13,6 +13,9 @@ async function loadEvents(filter: "all" | "published", userId: string | null): P
   if (!isSupabaseConfigured()) {
     return filter === "published" ? demoEvents.filter((event) => event.status === "published") : demoEvents;
   }
+  if (!userId) {
+    return [];
+  }
 
   const client = await createSupabaseServerClient();
   if (!client) {
@@ -21,10 +24,10 @@ async function loadEvents(filter: "all" | "published", userId: string | null): P
 
   let query = client
     .from("events")
-    .select("id, owner_id, slug, status, rsvp_open, config");
+    .select("id, owner_id, slug, status, rsvp_open, config")
+    .eq("owner_id", userId);
   if (filter === "published") {
     query = query.eq("status", "published");
-    if (userId) query = query.eq("owner_id", userId);
   }
   const { data } = await query
     .order("created_at", { ascending: false })
@@ -50,7 +53,12 @@ export async function Dashboard({ filter = "all" }: { filter?: "all" | "publishe
       description={publishedOnly ? "The live event sites you own and have published." : "Create, preview, and manage your event pages in one place."}
       action={
         <div className="flex flex-wrap gap-2">
-          {publishedOnly ? <Link className="inline-flex shrink-0 items-center justify-center rounded-full border border-black/10 px-5 py-2.5 text-[15px] font-medium transition-colors hover:bg-white" href="/app">All events</Link> : null}
+          <Link
+            className="inline-flex shrink-0 items-center justify-center rounded-full border border-black/10 px-5 py-2.5 text-[15px] font-medium transition-colors hover:bg-white"
+            href={publishedOnly ? "/app" : "/app?status=published"}
+          >
+            {publishedOnly ? "All events" : "Published sites"}
+          </Link>
           <Link
             className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#0071e3] px-5 py-2.5 text-[15px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.98]"
             href="/app/events/new"

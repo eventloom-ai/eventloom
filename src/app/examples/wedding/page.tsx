@@ -5,7 +5,7 @@ import { CalendarDays, Clock3, LockKeyhole, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Wedding Site Example · Eventloom",
-  description: "A polished Eventloom wedding invitation example with the RSVP disabled.",
+  description: "A sanitized Eventloom example adapted from RSVP OS, using the men's English invitation artwork with RSVP disabled.",
 };
 
 const schedule = [
@@ -48,8 +48,8 @@ export default function WeddingExamplePage() {
               />
             </div>
           </div>
-          <p className="mt-8 max-w-xl text-center text-sm leading-7 text-[#1f1a17]/60">
-            Location details are intentionally omitted. Guest submissions are disabled.
+          <p className="mt-8 max-w-xl text-center text-sm leading-7 text-[#5f5955]">
+            This example is adapted from RSVP OS. Street addresses, map links, and guest submissions are intentionally omitted.
           </p>
         </div>
       </section>
@@ -59,7 +59,7 @@ export default function WeddingExamplePage() {
           <div className="mb-12 text-center">
             <CalendarDays className="mx-auto size-5 text-[#747d5c]" />
             <h1 className="mt-4 font-[var(--font-playfair)] text-4xl text-[#1f1a17] sm:text-5xl">Schedule of Events</h1>
-            <p className="mt-3 text-sm text-[#1f1a17]/55">A graceful timeline for every part of the celebration.</p>
+            <p className="mt-3 text-sm text-[#665f5b]">A graceful timeline for every part of the celebration.</p>
           </div>
           <div className="grid gap-4">
             {schedule.map((event) => (
@@ -67,7 +67,7 @@ export default function WeddingExamplePage() {
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                   <div>
                     <h2 className="font-[var(--font-playfair)] text-2xl text-[#6f3032] sm:text-3xl">{event.title}</h2>
-                    <p className="mt-2 text-sm leading-6 text-[#1f1a17]/58">{event.description}</p>
+                    <p className="mt-2 text-sm leading-6 text-[#665f5b]">{event.description}</p>
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/60 px-3 py-1.5 text-sm font-medium text-[#6f3032]">
                     <Clock3 className="size-4" /> {event.time}
@@ -82,7 +82,7 @@ export default function WeddingExamplePage() {
       <section className="px-5 pb-28 pt-14 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-3xl overflow-hidden rounded-[2rem] border border-white/70 bg-white/40 px-6 py-16 text-center shadow-[0_30px_90px_rgba(65,42,36,0.16)] backdrop-blur-2xl sm:px-12">
           <div className="mx-auto grid size-16 place-items-center rounded-full bg-[#6f3032] text-white shadow-xl"><LockKeyhole className="size-7" /></div>
-          <p className="mt-7 text-xs font-semibold uppercase tracking-[0.28em] text-[#747d5c]">Demonstration only</p>
+          <p className="mt-7 text-xs font-semibold uppercase tracking-[0.28em] text-[#5f684a]">Demonstration only</p>
           <h2 className="mt-3 font-[var(--font-playfair)] text-4xl sm:text-5xl">RSVP is disabled</h2>
           <p className="mx-auto mt-5 max-w-xl text-base leading-8 text-[#1f1a17]/65">This example shows the guest experience without collecting or transmitting any personal information.</p>
           <Link href="/studio?brief=A%20soft%20floral%20wedding%20site%20with%20a%20formal%20invitation%20and%20guest%20RSVP." className="mt-8 inline-flex rounded-full bg-[#6f3032] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_50px_rgba(111,48,50,0.24)] transition hover:-translate-y-0.5 hover:bg-[#5f292b]">
