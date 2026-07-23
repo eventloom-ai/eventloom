@@ -88,8 +88,15 @@ export function LandingPage({
             <Link href="#questions" className="transition hover:text-[#252329]">Questions</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/login?next=/app" className="rounded-full px-3 py-2 text-sm font-medium text-[#66616a] transition hover:bg-black/[0.04] hover:text-[#252329] sm:px-4">Sign in</Link>
-            <Link href="#create" className="hidden rounded-full bg-[#252329] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:inline-flex">Create my RSVP</Link>
+            <Link
+              href={authenticated ? "/app" : "/login?next=/app"}
+              className="rounded-full px-3 py-2 text-sm font-medium text-[#66616a] transition hover:bg-black/[0.04] hover:text-[#252329] sm:px-4"
+            >
+              {authenticated ? "My events" : "Sign in"}
+            </Link>
+            <Link href="#create" className="hidden rounded-full bg-[#252329] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:inline-flex">
+              {authenticated ? "New event" : "Create my RSVP"}
+            </Link>
           </div>
         </div>
       </header>
