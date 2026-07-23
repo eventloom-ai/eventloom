@@ -7,7 +7,9 @@ const mocks = vi.hoisted(() => ({
   event: null as unknown,
   entitlement: null as unknown,
   publishError: null as unknown,
+  entitlementError: null as unknown,
   publishedUpdate: null as unknown,
+  entitlementUpsert: null as unknown,
   checkout: vi.fn(),
   client: null as unknown,
   legalOnboarding: true,
@@ -46,7 +48,7 @@ function createClient() {
   return {
     from: vi.fn((table: string) => {
       let operation = "select";
-      const builder = { select: vi.fn(), eq: vi.fn(), maybeSingle: vi.fn(), update: vi.fn() };
+      const builder = { select: vi.fn(), eq: vi.fn(), maybeSingle: vi.fn(), update: vi.fn(), upsert: vi.fn() };
       builder.select.mockReturnValue(builder);
       builder.eq.mockImplementation(() => operation === "update"
         ? Promise.resolve({ error: mocks.publishError })
@@ -59,6 +61,10 @@ function createClient() {
         operation = "update";
         mocks.publishedUpdate = value;
         return builder;
+      });
+      builder.upsert.mockImplementation((value) => {
+        mocks.entitlementUpsert = value;
+        return Promise.resolve({ error: mocks.entitlementError });
       });
       return builder;
     }),
@@ -85,7 +91,9 @@ describe("event publishing payment gate", () => {
     mocks.event = { draft_version_id: versionId, ends_at: "2099-01-01T00:00:00.000Z" };
     mocks.entitlement = null;
     mocks.publishError = null;
+    mocks.entitlementError = null;
     mocks.publishedUpdate = null;
+    mocks.entitlementUpsert = null;
     mocks.client = createClient();
     mocks.legalOnboarding = true;
     mocks.checkout.mockReset().mockResolvedValue({ ok: true, url: "https://checkout.stripe.test/cs_launch_1" });
@@ -126,7 +134,25 @@ describe("event publishing payment gate", () => {
     const response = await invoke();
 
     await expect(response.json()).resolves.toEqual({ ok: true, published: true, free: true });
+    expect(mocks.entitlementUpsert).toMatchObject({
+      event_id: eventId,
+      owner_id: mocks.user?.id,
+      status: "active",
+    });
     expect(mocks.checkout).not.toHaveBeenCalled();
+  });
+
+  it("does not publish when the administrator entitlement cannot be granted", async () => {
+    mocks.platformAdmin = true;
+    mocks.entitlementError = { code: "database_error" };
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await invoke();
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: "publish_failed" });
+    expect(mocks.publishedUpdate).toBeNull();
+    consoleError.mockRestore();
   });
 
   it("returns a retryable server error when publishing the entitled draft fails", async () => {

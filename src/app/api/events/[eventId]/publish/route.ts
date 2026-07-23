@@ -40,6 +40,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
     if (!event?.event_ends_at && !event?.ends_at) return NextResponse.json({ error: "event_end_required" }, { status: 409 });
     if (active || platformAdmin) {
       if (!event?.draft_version_id) return NextResponse.json({ error: "site_version_missing" }, { status: 409 });
+      if (platformAdmin && !active) {
+        const startsAt = new Date();
+        const expiresAt = new Date(startsAt);
+        expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+        const { error: entitlementError } = await client.from("event_entitlements").upsert({
+          event_id: eventId,
+          owner_id: user.id,
+          status: "active",
+          starts_at: startsAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          updated_at: startsAt.toISOString(),
+        }, { onConflict: "event_id" });
+        if (entitlementError) {
+          console.error("[publish] failed to grant administrator entitlement", { eventId, code: entitlementError.code });
+          return NextResponse.json({ error: "publish_failed" }, { status: 500 });
+        }
+      }
       const { error: publishError } = await client
         .from("events")
         .update({ status: "published", rsvp_open: true, published_version_id: event.draft_version_id, published_at: new Date().toISOString() })

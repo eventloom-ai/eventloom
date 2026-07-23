@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { EventsList } from "@/components/events-list";
 import { FadeIn } from "@/components/ui/fade-in";
@@ -15,7 +16,7 @@ async function loadEvents(): Promise<EventRecord[]> {
 
   const client = await createSupabaseServerClient();
   if (!client) {
-    return demoEvents;
+    return [];
   }
 
   const { data } = await client
@@ -29,6 +30,9 @@ async function loadEvents(): Promise<EventRecord[]> {
 
 export async function Dashboard() {
   const user = await getServerUser();
+  if (isSupabaseConfigured() && !user) {
+    redirect("/login?next=/app");
+  }
   const [events, activeJobs] = await Promise.all([
     loadEvents(),
     user ? listActiveGenerationJobs(user.id) : Promise.resolve([]),
@@ -63,7 +67,7 @@ export async function Dashboard() {
           </div>
         </FadeIn>
       ) : (
-        <EventsList events={events} activeJobs={activeJobs} />
+        <EventsList events={events} activeJobs={activeJobs} currentUserId={user?.id ?? null} />
       )}
     </AppShell>
   );
