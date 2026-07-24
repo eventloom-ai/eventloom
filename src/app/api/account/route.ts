@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
-import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { serviceSupabase } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const profileSchema = z.object({
+  fullName: z.string().trim().min(2).max(100),
+}).strict();
 
 async function verifiedCreator() {
   const auth = await getAuthContext();
@@ -48,6 +53,38 @@ export async function GET() {
       "Cache-Control": "private, no-store, max-age=0",
       "Content-Disposition": `attachment; filename="eventloom-account-${userId}.json"`,
     },
+  });
+}
+
+export async function PATCH(request: NextRequest) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  const raw = await readJsonWithinLimit(request, 1_024);
+  if (!raw.ok) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  const parsed = profileSchema.safeParse(raw.data);
+  if (!parsed.success) return NextResponse.json({ error: "invalid_profile" }, { status: 400 });
+  const auth = await getAuthContext();
+  if (!auth) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!auth.emailVerified) return NextResponse.json({ error: "email_verification_required" }, { status: 403 });
+  const client = serviceSupabase();
+  if (!client) return NextResponse.json({ error: "unavailable" }, { status: 503 });
+  const { data, error } = await client
+    .from("profiles")
+    .update({ full_name: parsed.data.fullName })
+    .eq("id", auth.user.id)
+    .select("full_name")
+    .single();
+  if (error || !data?.full_name) {
+    return NextResponse.json({ error: "profile_update_failed" }, { status: 500 });
+  }
+  await recordAuditEvent({
+    action: "account.profile_updated",
+    actorUserId: auth.user.id,
+    actorType: "user",
+  });
+  return NextResponse.json({ fullName: data.full_name }, {
+    headers: { "Cache-Control": "private, no-store, max-age=0" },
   });
 }
 

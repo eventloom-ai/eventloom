@@ -10,6 +10,7 @@ type AppShellProps = {
   action?: ReactNode;
   children: ReactNode;
   width?: "narrow" | "wide";
+  active?: "home" | "events" | "profile";
 };
 
 export function AppShell({
@@ -20,12 +21,13 @@ export function AppShell({
   action,
   children,
   width = "wide",
+  active = "events",
 }: AppShellProps) {
   const maxWidth = width === "narrow" ? "max-w-2xl" : width === "wide" ? "max-w-6xl" : "max-w-5xl";
 
   return (
     <div className="min-h-screen text-[#1d1d1f]">
-      <AppHeader active="events" />
+      <AppHeader active={active} />
       <main className={`mx-auto ${maxWidth} px-6 py-10 md:py-14`}>
         {backHref ? (
           <Link className="text-[14px] font-medium text-[#0071e3] transition-colors hover:text-[#0077ed]" href={backHref}>
