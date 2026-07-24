@@ -22,22 +22,25 @@ export async function GET(request: NextRequest) {
 
   const now = new Date().toISOString();
   const feedbackHashCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, retryEventsResult] = await Promise.all([
+  const feedbackSlaCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, staleFeedbackResult, retryEventsResult] = await Promise.all([
     client.rpc("purge_expired_rsvp_data"),
     client.from("domain_registrant_payloads").delete({ count: "exact" }).lt("expires_at", now),
     client.from("product_feedback").update({ ip_hash: null }, { count: "exact" }).lt("created_at", feedbackHashCutoff).not("ip_hash", "is", null),
     client.from("fulfillment_jobs").select("id", { count: "exact", head: true }).in("state", ["received", "verified", "domain_pending", "retry"]).lte("next_attempt_at", now),
     client.from("privacy_requests").select("id", { count: "exact", head: true }).not("status", "in", '("completed","denied")').lte("due_at", now),
+    client.from("product_feedback").select("id", { count: "exact", head: true }).in("status", ["new", "reviewing", "planned"]).lte("created_at", feedbackSlaCutoff),
     client.from("provider_webhook_events").select("id, provider_event_id, attempt_count").eq("provider", "stripe").eq("status", "retry").order("received_at").limit(5),
   ]);
 
-  if (purgeResult.error || registrantResult.error || feedbackHashResult.error || retryResult.error || overduePrivacyResult.error || retryEventsResult.error) {
+  if (purgeResult.error || registrantResult.error || feedbackHashResult.error || retryResult.error || overduePrivacyResult.error || staleFeedbackResult.error || retryEventsResult.error) {
     reportOperationalEvent("error", "maintenance_failed", {
       purgeError: purgeResult.error?.code,
       registrantError: registrantResult.error?.code,
       feedbackHashError: feedbackHashResult.error?.code,
       retryError: retryResult.error?.code,
       privacyError: overduePrivacyResult.error?.code,
+      feedbackQueueError: staleFeedbackResult.error?.code,
       providerRetryError: retryEventsResult.error?.code,
     });
     return NextResponse.json({ error: "maintenance_failed" }, { status: 500 });
@@ -45,6 +48,7 @@ export async function GET(request: NextRequest) {
 
   const retryJobs = retryResult.count ?? 0;
   const overduePrivacyRequests = overduePrivacyResult.count ?? 0;
+  const staleFeedback = staleFeedbackResult.count ?? 0;
   let replayedEvents = 0;
   const stripe = stripeClient();
   for (const row of retryEventsResult.data ?? []) {
@@ -61,12 +65,13 @@ export async function GET(request: NextRequest) {
       reportOperationalEvent("error", "fulfillment_replay_failed", { providerEventId: row.provider_event_id, attemptCount: row.attempt_count });
     }
   }
-  reportOperationalEvent(retryJobs || overduePrivacyRequests ? "warn" : "info", "maintenance_completed", {
+  reportOperationalEvent(retryJobs || overduePrivacyRequests || staleFeedback ? "warn" : "info", "maintenance_completed", {
     purgedRsvpSubmissions: Number(purgeResult.data ?? 0),
     expiredRegistrantPayloads: registrantResult.count ?? 0,
     purgedFeedbackIpHashes: feedbackHashResult.count ?? 0,
     retryJobs,
     overduePrivacyRequests,
+    staleFeedback,
     replayedEvents,
   });
 
@@ -77,6 +82,7 @@ export async function GET(request: NextRequest) {
     purged_feedback_ip_hashes: feedbackHashResult.count ?? 0,
     fulfillment_jobs_needing_attention: retryJobs,
     overdue_privacy_requests: overduePrivacyRequests,
+    feedback_items_past_sla: staleFeedback,
     replayed_provider_events: replayedEvents,
   });
 }

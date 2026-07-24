@@ -12,7 +12,7 @@ Target: OWASP ASVS 5.0 Level 2. This register is a release gate, not a claim of 
 - Stripe events are signature verified, durably recorded, idempotently fulfilled, postcondition checked, retried by Stripe on failure, and represented by fulfillment jobs/attempts.
 - OpenSRS registration uses customer registrant data in an encrypted 24-hour payload, separate at-cost Checkout pricing, registrar lock, WHOIS privacy, manual renewal, and Vercel DNS attachment.
 - Legal pages are versioned and globally linked. Checkout accepts only database versions marked active.
-- Daily maintenance purges RSVP data after the event retention deadline, removes expired registrant payloads, and reports stuck fulfillment or overdue privacy work.
+- Daily maintenance purges RSVP data after the event retention deadline, removes expired registrant payloads, and reports stuck fulfillment, overdue privacy work, or feedback that has not been addressed within 24 hours.
 - Account and RSVP exports/deletions require verified email and MFA. Active domains block account deletion; retained financial/legal records are detached and pseudonymized.
 - CI runs typecheck, lint, unit/integration tests, production build, dependency audit, SBOM generation, secret scanning, and CodeQL. Dependabot is enabled.
 - Per-request nonce CSP is report-only by default and can be enforced with `CSP_ENFORCE_ENABLED=true`. Script policy contains no `unsafe-inline`.
@@ -37,4 +37,4 @@ Target: OWASP ASVS 5.0 Level 2. This register is a release gate, not a claim of 
 - Performance advisor: missing foreign-key indexes, repeated `auth.uid()` evaluation, missing primary keys, and overlapping permissive policies were remediated. “Unused index” notices are expected immediately after adding indexes and must be reassessed after 30 days of representative beta traffic; owner: founder, due before general availability. Do not delete an index solely because a fresh database reports no usage.
 - Supabase Auth’s absolute connection allocation is a provider configuration item; switch it to percentage allocation during the required production-plan upgrade, owner: founder, due before invited paid beta.
 
-The authenticated `/api/health/ready` endpoint is the machine-readable launch gate. Draft legal documents and any missing external approval make it return HTTP 503.
+The authenticated `/api/health/ready` endpoint is the machine-readable launch gate. Draft legal documents, missing external approval, or product feedback left actionable for more than 24 hours make it return HTTP 503.
