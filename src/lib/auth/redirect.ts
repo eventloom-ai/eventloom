@@ -20,3 +20,14 @@ export function safeRedirectPath(value: string | null | undefined, fallback = "/
     return fallback;
   }
 }
+
+/**
+ * Builds the sign-in URL for a protected request while preserving the complete
+ * internal destination. Starting from a fresh `/login` URL prevents protected
+ * route query parameters from leaking onto the sign-in page itself.
+ */
+export function loginUrlForProtectedRequest(requestUrl: URL) {
+  const loginUrl = new URL("/login", requestUrl);
+  loginUrl.searchParams.set("next", `${requestUrl.pathname}${requestUrl.search}`);
+  return loginUrl;
+}
