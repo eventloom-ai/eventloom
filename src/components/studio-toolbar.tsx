@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { ChevronLeft, Code2, Eye, Globe2, History, Laptop, Loader2, Redo2, Rocket, Smartphone, Tablet, Undo2, X } from "lucide-react";
 import Link from "next/link";
+import { publishErrorPresentation } from "@/lib/publish-errors";
 
 type StudioToolbarProps = {
   eventId: string;
@@ -30,6 +31,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
   const [registrant, setRegistrant] = useState({ firstName: "", lastName: "", organization: "", email: "", phone: "", address1: "", address2: "", city: "", state: "", postalCode: "", country: "CA" });
   const [domainTermsAccepted, setDomainTermsAccepted] = useState(false);
   const [launchTermsAccepted, setLaunchTermsAccepted] = useState(false);
+  const publishIssue = publishError ? publishErrorPresentation(publishError, eventId) : null;
 
   async function publish(requestedDomain?: string | null) {
     if (publishing) return;
@@ -43,7 +45,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
       });
       const payload = await response.json().catch(() => null) as { error?: string; checkout_url?: string } | null;
       if (!response.ok) {
-        setPublishError(payload?.error === "publish_failed" ? "Publish failed. Your draft is still safe." : payload?.error ?? "Publish could not start.");
+        setPublishError(payload?.error ?? "unknown");
         return;
       }
       if (payload?.checkout_url) {
@@ -52,7 +54,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
       }
       window.location.reload();
     } catch {
-      setPublishError("Publish could not start. Check your connection and try again.");
+      setPublishError("network_error");
     } finally {
       setPublishing(false);
     }
@@ -112,10 +114,13 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
         <Link href={`/app/events/${eventId}/privacy`} className="hidden rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:bg-white/10 lg:inline-flex">Privacy</Link>
         <form action={`/api/events/${eventId}/publish`} method="post" onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setLaunchOpen(true); setPublishError(null); }} className="relative">
           <button type="submit" onClick={(event) => { event.preventDefault(); setLaunchOpen(true); setPublishError(null); }} disabled={publishing} aria-busy={publishing} className="inline-flex items-center gap-1.5 rounded-lg bg-violet-500 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-violet-400 disabled:cursor-wait disabled:opacity-70"><Rocket className="size-3.5" /> {publishing ? "Publishing…" : "Publish"}</button>
-          {publishError ? <p role="alert" className="absolute right-0 top-10 z-50 w-64 rounded-lg border border-red-400/30 bg-[#251719] px-3 py-2 text-[11px] leading-4 text-red-100 shadow-xl">{publishError}</p> : null}
           {launchOpen ? <div className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="launch-title" onMouseDown={(event) => { if (event.currentTarget === event.target && !publishing) setLaunchOpen(false); }}>
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1b1b1b] p-5 text-left shadow-2xl">
               <div className="flex items-start justify-between gap-4"><div><p id="launch-title" className="text-base font-semibold">Launch your event site</p><p className="mt-1 text-[11px] leading-5 text-white/50">Publish for one year. Choose the included Eventloom address or register an available custom domain.</p></div><button type="button" onClick={() => setLaunchOpen(false)} disabled={publishing} aria-label="Close launch options" className="grid size-8 shrink-0 place-items-center rounded-lg text-white/45 hover:bg-white/10 hover:text-white"><X className="size-4" /></button></div>
+              {publishIssue ? <div role="alert" className="mt-4 rounded-xl border border-amber-300/25 bg-amber-300/[0.10] p-3 text-[11px] leading-5 text-amber-50">
+                <p>{publishIssue.message}</p>
+                {publishIssue.actionHref && publishIssue.actionLabel ? <Link href={publishIssue.actionHref} className="mt-2 inline-flex rounded-lg bg-amber-200 px-3 py-1.5 font-semibold text-amber-950 transition hover:bg-amber-100">{publishIssue.actionLabel}</Link> : null}
+              </div> : null}
               <label className="mt-5 flex items-start gap-2 text-[9px] leading-4 text-white/55"><input type="checkbox" checked={launchTermsAccepted} onChange={(event) => setLaunchTermsAccepted(event.target.checked)} className="mt-0.5" />I am 18+ and accept the <Link className="underline" href="/legal/terms" target="_blank">Terms</Link> and <Link className="underline" href="/legal/privacy" target="_blank">Privacy Policy</Link>.</label>
               <button type="button" onClick={() => void publish(null)} disabled={publishing || !launchTermsAccepted} className="mt-3 flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left hover:bg-white/[0.07] disabled:opacity-50"><Rocket className="size-4 text-violet-300" /><span><span className="block text-[12px] font-semibold">Use the Eventloom address</span><span className="mt-0.5 block text-[10px] text-white/45">You can connect a custom domain later.</span></span></button>
               <div className="my-4 flex items-center gap-3 text-[9px] uppercase tracking-[0.2em] text-white/25"><span className="h-px flex-1 bg-white/10" />or include a domain<span className="h-px flex-1 bg-white/10" /></div>
