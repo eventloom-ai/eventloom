@@ -5,6 +5,7 @@ import { ExternalLink, Loader2, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/ui/fade-in";
 import type { BuildJobStatus } from "@/lib/agent/progress";
+import { hasRunningBuildJobs } from "@/lib/build-job-polling";
 import { publicSiteHost } from "@/lib/public-url";
 import type { EventRecord } from "@/lib/types";
 
@@ -31,6 +32,7 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!hasRunningBuildJobs(activeJobs)) return;
     let cancelled = false;
 
     const refresh = async () => {
@@ -42,19 +44,15 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
       }
     };
 
-    const initialTimer = window.setTimeout(() => {
-      void refresh();
-    }, 0);
     const timer = window.setInterval(() => {
-      void refresh();
+      if (document.visibilityState === "visible") void refresh();
     }, 2000);
 
     return () => {
       cancelled = true;
-      window.clearTimeout(initialTimer);
       window.clearInterval(timer);
     };
-  }, []);
+  }, [activeJobs]);
 
   const jobByEventId = new Map(activeJobs.filter((job) => job.eventId).map((job) => [job.eventId as string, job]));
 

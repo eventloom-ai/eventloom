@@ -18,6 +18,7 @@ type FeedbackCategory = (typeof categories)[number]["value"];
 
 export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: string }) {
   const pathname = usePathname();
+  const embeddedStudio = /^\/app\/events\/[^/]+\/studio$/.test(pathname);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<FeedbackCategory>("confusing");
@@ -94,7 +95,7 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
 
   return (
     <>
-      <button
+      {!embeddedStudio ? <button
         type="button"
         onClick={() => {
           setOpen(true);
@@ -105,7 +106,7 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
       >
         <MessageSquareText className="size-4" />
         Feedback
-      </button>
+      </button> : null}
 
       {open ? (
         <div className="fixed inset-0 z-[90] grid place-items-end bg-black/35 p-3 backdrop-blur-sm sm:place-items-center sm:p-6" onMouseDown={(event) => {
