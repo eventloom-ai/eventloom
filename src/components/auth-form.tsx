@@ -33,6 +33,7 @@ export function AuthForm({
   const [showPassword, setShowPassword] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const acceptanceRef = useRef<HTMLInputElement>(null);
 
   const continuingDraft = nextPath.startsWith("/app/events/new");
@@ -94,6 +95,8 @@ export function AuthForm({
       setIsSubmitting(false);
 
       if (signUpError) {
+        setCaptchaToken("");
+        setCaptchaResetKey((value) => value + 1);
         if (/already registered/i.test(signUpError.message)) {
           setShowSignInHint(true);
           setError("This email already has an account. Sign in with your existing password, or reset it below.");
@@ -313,7 +316,7 @@ export function AuthForm({
 
         {mode === "signup" ? (
           <div className="mt-5 grid gap-4">
-            <TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.creatorSignup} onToken={setCaptchaToken} />
+            <TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.creatorSignup} onToken={setCaptchaToken} resetKey={captchaResetKey} />
             {!turnstileSiteKey ? (
               <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
                 Public signup remains disabled in production until Turnstile is configured.

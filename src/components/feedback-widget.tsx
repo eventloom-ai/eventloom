@@ -25,6 +25,7 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
   const [rating, setRating] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
@@ -73,6 +74,8 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
       }),
     }).catch(() => null);
     setBusy(false);
+    setTurnstileToken("");
+    setTurnstileResetKey((value) => value + 1);
     if (!response?.ok) {
       const payload = await response?.json().catch(() => null) as { error?: string } | null;
       setError(
@@ -166,7 +169,7 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
                   <textarea value={message} onChange={(event) => setMessage(event.target.value)} required minLength={10} maxLength={2000} rows={5} placeholder="For example: I clicked Preview and wasn’t sure what to do next…" className="resize-none rounded-xl border border-black/10 bg-[#fbfbfd] px-4 py-3 text-[15px] font-normal leading-6 outline-none focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100" />
                 </label>
                 <p className="mt-2 text-xs leading-5 text-[#86868b]">Please don’t include guest names, addresses, payment details, passwords, or security codes.</p>
-                {turnstileSiteKey ? <div className="mt-4"><TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.productFeedback} onToken={setTurnstileToken} /></div> : null}
+                {turnstileSiteKey ? <div className="mt-4"><TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.productFeedback} onToken={setTurnstileToken} resetKey={turnstileResetKey} /></div> : null}
                 {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</p> : null}
                 <button type="submit" disabled={busy || message.trim().length < 10 || (Boolean(turnstileSiteKey) && !turnstileToken)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40">
                   <MessageSquareText className="size-4" />
