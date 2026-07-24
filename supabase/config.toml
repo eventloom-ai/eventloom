@@ -152,6 +152,7 @@ additional_redirect_urls = [
   "http://localhost:3000/auth/callback",
   "http://localhost:3001/auth/callback",
   "https://eventloom-beta.vercel.app/auth/callback",
+  "https://eventloom-beta.vercel.app/auth/callback**",
   "https://eventloom-beta.vercel.app/auth/reset-password",
   "https://eventloom-yousef20920s-projects.vercel.app/auth/callback",
   "https://eventloom-yousef20920s-projects.vercel.app/auth/reset-password",
