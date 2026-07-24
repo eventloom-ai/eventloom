@@ -71,6 +71,10 @@ jobs:
           printf '/app?status=published -> %s\n' "$published_login" | tee -a smoke.log
           test "$published_login" = "${BASE_URL}/login?next=%2Fapp%3Fstatus%3Dpublished"
 
+          profile_login="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --output /dev/null --write-out '%{redirect_url}' "${BASE_URL}/app/profile")"
+          printf '/app/profile -> %s\n' "$profile_login" | tee -a smoke.log
+          test "$profile_login" = "${BASE_URL}/login?next=%2Fapp%2Fprofile"
+
           legacy_target="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --location --output /dev/null --write-out '%{url_effective}' "${BASE_URL}/demo-wedding")"
           printf '/demo-wedding -> %s\n' "$legacy_target" | tee -a smoke.log
           test "$legacy_target" = "${BASE_URL}/examples/wedding"
