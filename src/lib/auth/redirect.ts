@@ -31,3 +31,20 @@ export function loginUrlForProtectedRequest(requestUrl: URL) {
   loginUrl.searchParams.set("next", `${requestUrl.pathname}${requestUrl.search}`);
   return loginUrl;
 }
+
+/**
+ * Supabase falls back to its configured Site URL when a requested OAuth
+ * redirect is not allow-listed exactly. Recover a code that lands on `/`
+ * by forwarding it to the real exchange handler instead of rendering it.
+ */
+export function authCallbackRecoveryPath(input: {
+  code?: string | null;
+  next?: string | null;
+}) {
+  const code = input.code?.trim().slice(0, 4_096);
+  if (!code) return null;
+  const query = new URLSearchParams({ code });
+  const next = safeRedirectPath(input.next, "");
+  if (next) query.set("next", next);
+  return `/auth/callback?${query.toString()}`;
+}

@@ -11,5 +11,11 @@ describe("hosted auth redirect contract", () => {
     expect(config).toContain(
       '"https://eventloom.co/auth/callback**"',
     );
+    expect(config).toContain(
+      '"https://eventloom-yousef20920s-projects.vercel.app/auth/callback**"',
+    );
+    expect(config).toContain(
+      '"https://eventloom-*-yousef20920s-projects.vercel.app/**"',
+    );
   });
 });
