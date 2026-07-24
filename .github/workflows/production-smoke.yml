@@ -50,6 +50,8 @@ jobs:
 
           check_status "/api/health/live" "200"
           check_status "/api/health/ready" "404"
+          check_status "/examples/wedding" "404"
+          check_status "/demo-wedding" "404"
 
           readiness_status="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --output readiness.body --write-out '%{http_code}' --header "Authorization: Bearer ${READINESS_TOKEN}" "${BASE_URL}/api/health/ready")"
           test "$readiness_status" = "200" || test "$readiness_status" = "503"
@@ -62,10 +64,8 @@ jobs:
           printf 'private readiness contract verified\n' | tee -a smoke.log
 
           check_contains "/" "A beautiful RSVP site in minutes."
-          check_contains "/examples/wedding" "Men’s English wedding invitation"
           check_contains "/signup?next=%2Fapp%2Fevents%2Fnew%3Fbrief%3DSmoke%2520test%2520event" 'data-signup-ux="continue-draft-v2"'
           check_contains "/robots.txt" "Sitemap:"
-          check_contains "/sitemap.xml" "/examples/wedding"
 
           published_login="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --output /dev/null --write-out '%{redirect_url}' "${BASE_URL}/app?status=published")"
           printf '/app?status=published -> %s\n' "$published_login" | tee -a smoke.log
@@ -74,10 +74,6 @@ jobs:
           profile_login="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --output /dev/null --write-out '%{redirect_url}' "${BASE_URL}/app/profile")"
           printf '/app/profile -> %s\n' "$profile_login" | tee -a smoke.log
           test "$profile_login" = "${BASE_URL}/login?next=%2Fapp%2Fprofile"
-
-          legacy_target="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --location --output /dev/null --write-out '%{url_effective}' "${BASE_URL}/demo-wedding")"
-          printf '/demo-wedding -> %s\n' "$legacy_target" | tee -a smoke.log
-          test "$legacy_target" = "${BASE_URL}/examples/wedding"
 
       - name: Open or update incident
         if: steps.checks.outcome == 'failure'

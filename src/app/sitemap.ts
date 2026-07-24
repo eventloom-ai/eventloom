@@ -3,7 +3,6 @@ import { appUrl } from "@/lib/env";
 
 const publicRoutes = [
   "/",
-  "/examples/wedding",
   "/contact",
   "/legal",
   "/legal/terms",
@@ -24,6 +23,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return publicRoutes.map((path, index) => ({
     url: `${base}${path}`,
     changeFrequency: path === "/" ? "weekly" : "monthly",
-    priority: index === 0 ? 1 : path === "/examples/wedding" ? 0.8 : 0.5,
+    priority: index === 0 ? 1 : 0.5,
   }));
 }

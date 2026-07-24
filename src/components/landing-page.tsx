@@ -83,7 +83,6 @@ export function LandingPage({
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-7 text-sm text-[#66616a] md:flex">
             <Link href="#how-it-works" className="transition hover:text-[#252329]">How it works</Link>
-            <Link href="/examples/wedding" className="transition hover:text-[#252329]">Example</Link>
             <Link href="#pricing" className="transition hover:text-[#252329]">Pricing</Link>
             <Link href="#questions" className="transition hover:text-[#252329]">Questions</Link>
           </nav>
@@ -129,18 +128,15 @@ export function LandingPage({
 
           <div className="relative mx-auto w-full max-w-[510px] lg:max-w-none">
             <div className="absolute -inset-10 -z-10 rounded-full bg-gradient-to-br from-violet-200/50 via-rose-100/50 to-amber-100/60 blur-3xl" />
-            <Link href="/examples/wedding" className="group block rounded-[2rem] border border-white/80 bg-white/60 p-3 shadow-[0_35px_100px_rgba(57,45,70,0.18)] backdrop-blur-xl transition hover:-translate-y-1">
+            <div className="rounded-[2rem] border border-white/80 bg-white/60 p-3 shadow-[0_35px_100px_rgba(57,45,70,0.18)] backdrop-blur-xl">
               <div className="overflow-hidden rounded-[1.5rem] bg-[#f5eee7]">
-                <Image src="/examples/men-english.png" alt="Wedding RSVP website example" width={1055} height={1491} priority sizes="(max-width: 1024px) 88vw, 42vw" className="h-auto w-full" />
+                <Image src="/examples/men-english.png" alt="Elegant English wedding invitation preview" width={1055} height={1491} priority sizes="(max-width: 1024px) 88vw, 42vw" className="h-auto w-full" />
               </div>
-              <div className="flex items-center justify-between gap-4 px-3 pb-2 pt-4">
-                <div>
-                  <p className="text-sm font-semibold">See a real example</p>
-                  <p className="mt-1 text-xs text-[#77717a]">Wedding invitation and guest experience</p>
-                </div>
-                <span className="grid size-10 place-items-center rounded-full bg-[#252329] text-white transition group-hover:translate-x-0.5"><ArrowRight className="size-4" /></span>
+              <div className="px-3 pb-2 pt-4">
+                <p className="text-sm font-semibold">Invitation style preview</p>
+                <p className="mt-1 text-xs text-[#77717a]">Your own site is created around your event details.</p>
               </div>
-            </Link>
+            </div>
             <div className="absolute -bottom-5 -left-4 hidden items-center gap-3 rounded-2xl border border-white bg-white/90 px-4 py-3 shadow-xl backdrop-blur sm:flex">
               <span className="grid size-9 place-items-center rounded-full bg-emerald-100 text-emerald-700"><Users className="size-4" /></span>
               <div><p className="text-xs font-semibold">Guest replies organized</p><p className="mt-0.5 text-[11px] text-[#77717a]">No spreadsheets required</p></div>

@@ -24,11 +24,7 @@ describe("tenant host resolution", () => {
     expect(normalizeHost("Mira-Adam.Eventloom.AI:443")).toBe("mira-adam.eventloom.ai");
   });
 
-  it("serves the built-in wedding example without enabling fake RSVP submissions", async () => {
-    await expect(resolveEventBySlug("demo-wedding")).resolves.toMatchObject({
-      slug: "demo-wedding",
-      status: "published",
-      rsvp_open: false,
-    });
+  it("does not expose a built-in event when the database is unavailable", async () => {
+    await expect(resolveEventBySlug("demo-wedding")).resolves.toBeNull();
   });
 });

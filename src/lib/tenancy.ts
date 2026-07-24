@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import { rootDomain } from "@/lib/env";
-import { demoEvent, demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord, EventStatus, PageArtifact } from "@/lib/types";
 import { siteDocumentSchema } from "@/lib/site-document";
@@ -52,13 +51,9 @@ type EventRow = {
 };
 
 export async function resolveEventBySlug(slug: string): Promise<EventRecord | null> {
-  if (slug === demoEvent.slug) {
-    return { ...demoEvent, rsvp_open: false };
-  }
-
   const client = serviceSupabase();
   if (!client) {
-    return demoEvents.find((event) => event.slug === slug) ?? (slug === demoEvent.slug ? demoEvent : null);
+    return null;
   }
 
   const { data: event, error } = await client
@@ -145,7 +140,7 @@ export async function resolveEventByHost(host: string): Promise<EventRecord | nu
 
   const client = serviceSupabase();
   if (!client) {
-    return demoEvent;
+    return null;
   }
 
   const { data: domain } = await client
