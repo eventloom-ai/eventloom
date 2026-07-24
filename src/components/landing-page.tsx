@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,7 +11,6 @@ import {
   Palette,
   ShieldCheck,
   Sparkles,
-  Users,
   WandSparkles,
 } from "lucide-react";
 import { StartEventPrompt } from "@/components/start-event-prompt";
@@ -102,7 +100,7 @@ export function LandingPage({
 
       <section className="relative px-5 pb-20 pt-14 sm:px-8 sm:pb-28 sm:pt-20">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(124,58,237,0.12),transparent_27rem),radial-gradient(circle_at_90%_10%,rgba(244,114,182,0.12),transparent_25rem)]" />
-        <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+        <div className="mx-auto max-w-4xl">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/75 px-3 py-1.5 text-xs font-semibold text-violet-800 shadow-sm">
               <WandSparkles className="size-3.5" />
@@ -123,23 +121,6 @@ export function LandingPage({
             </div>
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#746f77]">
               {assurances.map((item) => <span key={item} className="inline-flex items-center gap-1.5"><Check className="size-3.5 text-emerald-600" />{item}</span>)}
-            </div>
-          </div>
-
-          <div className="relative mx-auto w-full max-w-[510px] lg:max-w-none">
-            <div className="absolute -inset-10 -z-10 rounded-full bg-gradient-to-br from-violet-200/50 via-rose-100/50 to-amber-100/60 blur-3xl" />
-            <div className="rounded-[2rem] border border-white/80 bg-white/60 p-3 shadow-[0_35px_100px_rgba(57,45,70,0.18)] backdrop-blur-xl">
-              <div className="overflow-hidden rounded-[1.5rem] bg-[#f5eee7]">
-                <Image src="/examples/men-english.png" alt="Elegant English wedding invitation preview" width={1055} height={1491} priority sizes="(max-width: 1024px) 88vw, 42vw" className="h-auto w-full" />
-              </div>
-              <div className="px-3 pb-2 pt-4">
-                <p className="text-sm font-semibold">Invitation style preview</p>
-                <p className="mt-1 text-xs text-[#77717a]">Your own site is created around your event details.</p>
-              </div>
-            </div>
-            <div className="absolute -bottom-5 -left-4 hidden items-center gap-3 rounded-2xl border border-white bg-white/90 px-4 py-3 shadow-xl backdrop-blur sm:flex">
-              <span className="grid size-9 place-items-center rounded-full bg-emerald-100 text-emerald-700"><Users className="size-4" /></span>
-              <div><p className="text-xs font-semibold">Guest replies organized</p><p className="mt-0.5 text-[11px] text-[#77717a]">No spreadsheets required</p></div>
             </div>
           </div>
         </div>
