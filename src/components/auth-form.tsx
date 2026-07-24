@@ -6,6 +6,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 type AuthMode = "signin" | "signup";
 
@@ -225,7 +226,7 @@ export function AuthForm({
           </label>
         ) : null}
 
-        {mode === "signup" ? <div className="mt-5 grid gap-4"><label className="flex items-start gap-3 text-sm leading-6 text-[#424245]"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1" required /><span>I am 18 or older and accept the <Link className="underline" href="/legal/terms" target="_blank">Terms</Link>, <Link className="underline" href="/legal/privacy" target="_blank">Privacy Policy</Link>, and <Link className="underline" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link> version 2026-07-22-beta.</span></label><TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptchaToken} />{!turnstileSiteKey ? <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Public signup remains disabled in production until Turnstile is configured.</p> : null}</div> : null}
+        {mode === "signup" ? <div className="mt-5 grid gap-4"><label className="flex items-start gap-3 text-sm leading-6 text-[#424245]"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1" required /><span>I am 18 or older and accept the <Link className="underline" href="/legal/terms" target="_blank">Terms</Link>, <Link className="underline" href="/legal/privacy" target="_blank">Privacy Policy</Link>, and <Link className="underline" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link> version 2026-07-22-beta.</span></label><TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.creatorSignup} onToken={setCaptchaToken} />{!turnstileSiteKey ? <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Public signup remains disabled in production until Turnstile is configured.</p> : null}</div> : null}
 
         <label className={`grid gap-2 ${mode === "signup" ? "mt-5" : ""}`}>
           <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Email</span>

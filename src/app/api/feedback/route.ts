@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { isTurnstileConfigured } from "@/lib/env";
 import { reportOperationalEvent } from "@/lib/monitoring";
 import { getAuthContext } from "@/lib/security/auth";
 import { clientIpHash, isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
 import { verifyTurnstile } from "@/lib/security/turnstile";
+import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 import { serviceSupabase } from "@/lib/supabase/server";
 
 const feedbackSchema = z.object({
@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthContext();
   const humanVerified = auth
     ? true
-    : !isTurnstileConfigured() || await verifyTurnstile(parsed.data.turnstileToken);
+    : await verifyTurnstile(parsed.data.turnstileToken, {
+      expectedAction: TURNSTILE_ACTIONS.productFeedback,
+      expectedHostname: request.nextUrl.hostname,
+    });
   if (!auth && !humanVerified) {
     return NextResponse.json({ error: "verification_required" }, { status: 400 });
   }

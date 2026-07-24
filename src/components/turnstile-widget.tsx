@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useId, useRef, useState } from "react";
+import type { TurnstileAction } from "@/lib/security/turnstile-shared";
 
 declare global {
   interface Window {
@@ -9,7 +10,15 @@ declare global {
   }
 }
 
-export function TurnstileWidget({ siteKey, onToken }: { siteKey: string; onToken: (token: string) => void }) {
+export function TurnstileWidget({
+  siteKey,
+  action,
+  onToken,
+}: {
+  siteKey: string;
+  action: TurnstileAction;
+  onToken: (token: string) => void;
+}) {
   const reactId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
@@ -20,12 +29,12 @@ export function TurnstileWidget({ siteKey, onToken }: { siteKey: string; onToken
     rendered.current = true;
     window.turnstile.render(containerRef.current, {
       sitekey: siteKey,
-      action: "public_rsvp",
+      action,
       callback: (token: string) => onToken(token),
       "expired-callback": () => onToken(""),
       "error-callback": () => onToken(""),
     });
-  }, [loaded, onToken, siteKey]);
+  }, [action, loaded, onToken, siteKey]);
 
   if (!siteKey) return null;
   return <><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onLoad={() => setLoaded(true)} /><div id={`turnstile-${reactId.replaceAll(":", "")}`} ref={containerRef} /></>;

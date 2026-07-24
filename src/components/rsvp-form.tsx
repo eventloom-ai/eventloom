@@ -5,6 +5,7 @@ import Link from "next/link";
 import { optionalFormString } from "@/lib/form-values";
 import type { RsvpField } from "@/lib/types";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
 
@@ -133,7 +134,7 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
 
       {message ? <p className="mt-4 text-sm text-red-700">{message}</p> : null}
 
-      <div className="mt-5"><TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} /></div>
+      <div className="mt-5"><TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.publicRsvp} onToken={setTurnstileToken} /></div>
       <p className="mt-4 text-xs leading-relaxed text-stone-600">Your reply is collected for this event by its creator and processed by Eventloom. It is not sold or used for advertising. {privacyContact ? <>Privacy contact: {privacyContact}. </> : null}<Link className="underline" href="/legal/privacy">Privacy details</Link>.</p>
 
       <button disabled={status === "sending" || (Boolean(turnstileSiteKey) && !turnstileToken)} className="mt-6 w-full rounded-full bg-[#405448] px-5 py-4 font-semibold text-white disabled:opacity-60">

@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   auth: { user: { id: "10000000-0000-4000-8000-000000000010" } } as { user: { id: string } } | null,
   turnstileConfigured: false,
   verifyHuman: true,
+  verifyArgs: null as null | { token: string; options: Record<string, unknown> },
   recentCount: 0,
   recentError: null as null | { code: string },
   insertError: null as null | { code: string },
@@ -18,7 +19,12 @@ vi.mock("@/lib/env", () => ({
   isTurnstileConfigured: () => mocks.turnstileConfigured,
 }));
 vi.mock("@/lib/security/auth", () => ({ getAuthContext: () => mocks.auth }));
-vi.mock("@/lib/security/turnstile", () => ({ verifyTurnstile: () => mocks.verifyHuman }));
+vi.mock("@/lib/security/turnstile", () => ({
+  verifyTurnstile: (token: string, options: Record<string, unknown>) => {
+    mocks.verifyArgs = { token, options };
+    return mocks.verifyHuman;
+  },
+}));
 vi.mock("@/lib/monitoring", () => ({ reportOperationalEvent: mocks.operationalEvent }));
 vi.mock("@/lib/supabase/server", () => ({ serviceSupabase: () => mocks.client }));
 
@@ -83,6 +89,7 @@ describe("product feedback route", () => {
     mocks.auth = { user: { id: "10000000-0000-4000-8000-000000000010" } };
     mocks.turnstileConfigured = false;
     mocks.verifyHuman = true;
+    mocks.verifyArgs = null;
     mocks.recentCount = 0;
     mocks.recentError = null;
     mocks.insertError = null;
@@ -107,14 +114,14 @@ describe("product feedback route", () => {
     expect(mocks.operationalEvent).toHaveBeenCalledWith("info", "product_feedback_received", expect.not.objectContaining({ message: expect.anything() }));
   });
 
-  it("accepts tightly rate-limited anonymous feedback when Turnstile is not configured", async () => {
+  it("fails closed for anonymous feedback when human verification is unavailable", async () => {
     mocks.auth = null;
     mocks.verifyHuman = false;
 
     const response = await POST(request(validBody));
 
-    expect(response.status).toBe(201);
-    expect(mocks.inserted).toMatchObject({ user_id: null });
+    expect(response.status).toBe(400);
+    expect(mocks.inserted).toBeNull();
   });
 
   it("requires human verification for anonymous feedback when Turnstile is configured", async () => {
@@ -127,6 +134,13 @@ describe("product feedback route", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "verification_required" });
     expect(mocks.inserted).toBeNull();
+    expect(mocks.verifyArgs).toEqual({
+      token: "",
+      options: {
+        expectedAction: "product_feedback",
+        expectedHostname: "eventloom.test",
+      },
+    });
   });
 
   it("rate limits repeated feedback without storing another message", async () => {

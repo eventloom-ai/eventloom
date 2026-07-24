@@ -6,6 +6,7 @@ import { encryptSensitiveJson } from "@/lib/security/encryption";
 import { getAuthContext } from "@/lib/security/auth";
 import { serviceSupabase } from "@/lib/supabase/server";
 import { recordAuditEvent } from "@/lib/security/audit";
+import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const requestSchema = z.object({
   requestType: z.enum(["access", "correction", "deletion", "information", "appeal"]),
@@ -23,7 +24,10 @@ export async function POST(request: NextRequest) {
   if (!parsedBody.ok) return NextResponse.json({ error: "invalid_request" }, { status: parsedBody.error === "payload_too_large" ? 413 : 400 });
   const parsed = requestSchema.safeParse(parsedBody.data);
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  if (!(await verifyTurnstile(parsed.data.turnstileToken))) {
+  if (!(await verifyTurnstile(parsed.data.turnstileToken, {
+    expectedAction: TURNSTILE_ACTIONS.privacyRequest,
+    expectedHostname: request.nextUrl.hostname,
+  }))) {
     return NextResponse.json({ error: "verification_failed" }, { status: 400 });
   }
   const client = serviceSupabase();

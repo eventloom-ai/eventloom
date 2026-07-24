@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useState } from "react";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 export function PrivacyRequestForm({ siteKey }: { siteKey: string }) {
   const [turnstileToken, setTurnstileToken] = useState("");
@@ -35,7 +36,7 @@ export function PrivacyRequestForm({ siteKey }: { siteKey: string }) {
     <label className="grid gap-2 text-sm font-medium">Safe contact method<input name="contact" required maxLength={200} className="rounded-xl border border-black/10 px-4 py-3" /></label>
     <label className="grid gap-2 text-sm font-medium">Event slug, if applicable<input name="eventSlug" maxLength={63} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" className="rounded-xl border border-black/10 px-4 py-3" /></label>
     <label className="grid gap-2 text-sm font-medium">Request details<textarea name="details" required maxLength={2000} rows={6} className="rounded-xl border border-black/10 px-4 py-3" /></label>
-    <TurnstileWidget siteKey={siteKey} onToken={onToken} />
+    <TurnstileWidget siteKey={siteKey} action={TURNSTILE_ACTIONS.privacyRequest} onToken={onToken} />
     {!siteKey ? <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Privacy intake remains unavailable in production until Turnstile is configured.</p> : null}
     <button disabled={busy || (Boolean(siteKey) && !turnstileToken)} className="rounded-full bg-[#1d1d1f] px-6 py-3 text-white disabled:opacity-50">{busy ? "Submitting…" : "Submit privacy request"}</button>
     {status ? <p role="status" className="text-sm">{status}</p> : null}

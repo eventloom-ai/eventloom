@@ -6,6 +6,7 @@ import { publicRsvpEnabled } from "@/lib/env";
 import { verifyPublicRsvpToken } from "@/lib/security/rsvp-token";
 import { clientIpHash, readJsonWithinLimit } from "@/lib/security/request";
 import { verifyTurnstile } from "@/lib/security/turnstile";
+import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 export async function POST(req: NextRequest) {
   if (!publicRsvpEnabled()) return NextResponse.json({ error: "unavailable" }, { status: 503 });
@@ -25,7 +26,11 @@ export async function POST(req: NextRequest) {
 
   if (event.status !== "published" || !event.rsvp_open) return NextResponse.json({ error: "unavailable" }, { status: 404 });
   const remoteIp = (req.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim();
-  if (!(await verifyTurnstile(payload.turnstile_token, remoteIp))) return NextResponse.json({ error: "verification_failed" }, { status: 400 });
+  if (!(await verifyTurnstile(payload.turnstile_token, {
+    expectedAction: TURNSTILE_ACTIONS.publicRsvp,
+    expectedHostname: req.nextUrl.hostname,
+    remoteIp,
+  }))) return NextResponse.json({ error: "verification_failed" }, { status: 400 });
 
   const client = serviceSupabase();
   if (!client) {
