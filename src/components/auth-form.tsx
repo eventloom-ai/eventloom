@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
+import { SIGNUP_UX_VERSION } from "@/lib/auth/signup-ux";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
@@ -191,6 +192,7 @@ export function AuthForm({
 
       <form
         onSubmit={submit}
+        data-signup-ux={mode === "signup" ? SIGNUP_UX_VERSION : undefined}
         className="rounded-2xl border border-black/[0.08] bg-white p-6 shadow-[0_2px_24px_rgba(0,0,0,0.04)] md:p-8"
       >
         {mode === "signup" ? (

@@ -36,5 +36,6 @@ describe("signup conversion flow", () => {
     expect(google).toBeLessThan(fullName);
     expect(password).toBeLessThan(securityCheck);
     expect(html).toContain("Required once to save your event with Google or email.");
+    expect(html).toContain('data-signup-ux="consent-before-provider-v1"');
   });
 });
