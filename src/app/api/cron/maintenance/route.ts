@@ -5,6 +5,7 @@ import { safeTokenEquals } from "@/lib/security/request";
 import { serviceSupabase } from "@/lib/supabase/server";
 import { stripeClient } from "@/lib/payments/stripe";
 import { processVerifiedStripeEvent } from "@/app/api/stripe/webhook/route";
+import { DAILY_MAINTENANCE_JOB } from "@/lib/maintenance-status";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,6 +22,25 @@ export async function GET(request: NextRequest) {
   if (!client) return NextResponse.json({ error: "not_configured" }, { status: 503 });
 
   const now = new Date().toISOString();
+  const heartbeatStart = await client.from("maintenance_status").upsert({
+    job_key: DAILY_MAINTENANCE_JOB,
+    last_started_at: now,
+    updated_at: now,
+  }, { onConflict: "job_key" });
+  if (heartbeatStart.error) {
+    reportOperationalEvent("error", "maintenance_heartbeat_failed", { code: heartbeatStart.error.code });
+    return NextResponse.json({ error: "maintenance_failed" }, { status: 500 });
+  }
+
+  const markFailed = async (code: string) => {
+    const failedAt = new Date().toISOString();
+    const result = await client.from("maintenance_status").update({
+      last_failed_at: failedAt,
+      last_error_code: code,
+      updated_at: failedAt,
+    }).eq("job_key", DAILY_MAINTENANCE_JOB);
+    if (result.error) reportOperationalEvent("error", "maintenance_heartbeat_failed", { code: result.error.code });
+  };
   const feedbackHashCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const feedbackSlaCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, staleFeedbackResult, retryEventsResult] = await Promise.all([
@@ -43,6 +63,7 @@ export async function GET(request: NextRequest) {
       feedbackQueueError: staleFeedbackResult.error?.code,
       providerRetryError: retryEventsResult.error?.code,
     });
+    await markFailed("maintenance_query_failed");
     return NextResponse.json({ error: "maintenance_failed" }, { status: 500 });
   }
 
@@ -51,19 +72,42 @@ export async function GET(request: NextRequest) {
   const staleFeedback = staleFeedbackResult.count ?? 0;
   let replayedEvents = 0;
   const stripe = stripeClient();
+  let replayFailed = false;
   for (const row of retryEventsResult.data ?? []) {
     if (Number(row.attempt_count ?? 0) >= 10) {
-      await client.from("provider_webhook_events").update({ status: "failed", last_error_code: "retry_limit_reached" }).eq("id", row.id);
+      const retryLimitResult = await client.from("provider_webhook_events").update({ status: "failed", last_error_code: "retry_limit_reached" }).eq("id", row.id);
+      if (retryLimitResult.error) replayFailed = true;
       continue;
     }
-    if (!stripe) break;
+    if (!stripe) {
+      replayFailed = true;
+      break;
+    }
     try {
       const event = await stripe.events.retrieve(row.provider_event_id);
       const response = await processVerifiedStripeEvent(event, "maintenance-replay");
       if (response.ok) replayedEvents += 1;
+      else replayFailed = true;
     } catch {
+      replayFailed = true;
       reportOperationalEvent("error", "fulfillment_replay_failed", { providerEventId: row.provider_event_id, attemptCount: row.attempt_count });
     }
+  }
+  if (replayFailed) {
+    await markFailed("fulfillment_replay_failed");
+    return NextResponse.json({ error: "maintenance_failed" }, { status: 500 });
+  }
+
+  const succeededAt = new Date().toISOString();
+  const heartbeatSuccess = await client.from("maintenance_status").update({
+    last_succeeded_at: succeededAt,
+    last_error_code: null,
+    updated_at: succeededAt,
+  }).eq("job_key", DAILY_MAINTENANCE_JOB);
+  if (heartbeatSuccess.error) {
+    reportOperationalEvent("error", "maintenance_heartbeat_failed", { code: heartbeatSuccess.error.code });
+    await markFailed("heartbeat_update_failed");
+    return NextResponse.json({ error: "maintenance_failed" }, { status: 500 });
   }
   reportOperationalEvent(retryJobs || overduePrivacyRequests || staleFeedback ? "warn" : "info", "maintenance_completed", {
     purgedRsvpSubmissions: Number(purgeResult.data ?? 0),

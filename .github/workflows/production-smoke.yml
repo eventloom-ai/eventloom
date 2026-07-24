@@ -20,6 +20,7 @@ jobs:
     env:
       BASE_URL: https://eventloom-beta.vercel.app
       INCIDENT_TITLE: "Production smoke monitor failed"
+      READINESS_TOKEN: ${{ secrets.READINESS_TOKEN }}
     steps:
       - name: Check public production journey
         id: checks
@@ -48,6 +49,18 @@ jobs:
           }
 
           check_status "/api/health/live" "200"
+          check_status "/api/health/ready" "404"
+
+          readiness_status="$(curl --retry 2 --retry-all-errors --connect-timeout 10 --max-time 25 --silent --show-error --output readiness.body --write-out '%{http_code}' --header "Authorization: Bearer ${READINESS_TOKEN}" "${BASE_URL}/api/health/ready")"
+          test "$readiness_status" = "200" || test "$readiness_status" = "503"
+          node -e '
+            const fs = require("fs");
+            const body = JSON.parse(fs.readFileSync("readiness.body", "utf8"));
+            const required = ["database", "stripe", "vercel", "turnstile", "fulfillmentQueue", "privacyQueue", "feedbackQueue", "maintenance"];
+            if (!body.checks || required.some((key) => typeof body.checks[key] !== "boolean")) process.exit(1);
+          '
+          printf 'private readiness contract verified\n' | tee -a smoke.log
+
           check_contains "/" "A beautiful RSVP site in minutes."
           check_contains "/examples/wedding" "Men’s English wedding invitation"
           check_contains "/signup?next=%2Fapp%2Fevents%2Fnew%3Fbrief%3DSmoke%2520test%2520event" 'data-signup-ux="continue-draft-v2"'
