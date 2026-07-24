@@ -6,7 +6,11 @@ vi.mock("@/lib/env", () => ({
 }));
 
 import ContactPage from "@/app/contact/page";
-import { FEEDBACK_OPEN_EVENT, requestFeedbackDialog } from "@/lib/feedback";
+import {
+  FEEDBACK_OPEN_EVENT,
+  requestFeedbackDialog,
+  takePendingFeedbackDialogRequest,
+} from "@/lib/feedback";
 
 describe("contact support", () => {
   it("offers the private feedback queue without exposing internal launch configuration", () => {
@@ -26,5 +30,7 @@ describe("contact support", () => {
     expect(dispatchEvent).toHaveBeenCalledOnce();
     expect(dispatchEvent.mock.calls[0]?.[0]).toBeInstanceOf(Event);
     expect((dispatchEvent.mock.calls[0]?.[0] as Event).type).toBe(FEEDBACK_OPEN_EVENT);
+    expect(takePendingFeedbackDialogRequest()).toBe(true);
+    expect(takePendingFeedbackDialogRequest()).toBe(false);
   });
 });

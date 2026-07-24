@@ -4,7 +4,7 @@ import { Bug, Check, Heart, Lightbulb, MessageCircleQuestion, MessageSquareText,
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { TurnstileWidget } from "@/components/turnstile-widget";
-import { FEEDBACK_OPEN_EVENT } from "@/lib/feedback";
+import { FEEDBACK_OPEN_EVENT, takePendingFeedbackDialogRequest } from "@/lib/feedback";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const categories = [
@@ -30,12 +30,19 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
 
   useEffect(() => {
     function openFeedback() {
+      takePendingFeedbackDialogRequest();
       setOpen(true);
       setError("");
     }
 
     window.addEventListener(FEEDBACK_OPEN_EVENT, openFeedback);
-    return () => window.removeEventListener(FEEDBACK_OPEN_EVENT, openFeedback);
+    const pendingOpenTimer = takePendingFeedbackDialogRequest()
+      ? window.setTimeout(openFeedback, 0)
+      : null;
+    return () => {
+      window.removeEventListener(FEEDBACK_OPEN_EVENT, openFeedback);
+      if (pendingOpenTimer !== null) window.clearTimeout(pendingOpenTimer);
+    };
   }, []);
 
   useEffect(() => {
