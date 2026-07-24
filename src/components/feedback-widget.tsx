@@ -4,6 +4,7 @@ import { Bug, Check, Heart, Lightbulb, MessageCircleQuestion, MessageSquareText,
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { FEEDBACK_OPEN_EVENT } from "@/lib/feedback";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const categories = [
@@ -26,6 +27,16 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    function openFeedback() {
+      setOpen(true);
+      setError("");
+    }
+
+    window.addEventListener(FEEDBACK_OPEN_EVENT, openFeedback);
+    return () => window.removeEventListener(FEEDBACK_OPEN_EVENT, openFeedback);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
