@@ -6,10 +6,10 @@ describe("hosted auth redirect contract", () => {
     const config = readFileSync("supabase/config.toml", "utf8");
 
     expect(config).toContain(
-      'site_url = "https://eventloom-beta.vercel.app"',
+      'site_url = "https://eventloom.co"',
     );
     expect(config).toContain(
-      '"https://eventloom-beta.vercel.app/auth/callback**"',
+      '"https://eventloom.co/auth/callback**"',
     );
   });
 });
