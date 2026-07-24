@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { TurnstileWidget } from "@/components/turnstile-widget";
@@ -32,6 +32,7 @@ export function AuthForm({
   const [showPassword, setShowPassword] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const acceptanceRef = useRef<HTMLInputElement>(null);
 
   const continuingDraft = nextPath.startsWith("/app/events/new");
   const title = mode === "signup"
@@ -122,13 +123,15 @@ export function AuthForm({
   async function signInWithGoogle() {
     setError("");
     setMessage("");
+    if (mode === "signup" && !accepted) {
+      setError("Confirm that you are 18 or older and accept the legal terms before continuing.");
+      acceptanceRef.current?.focus();
+      return;
+    }
+
     const supabase = createSupabaseBrowserClient();
     if (!supabase) {
       setError("Authentication is not configured yet.");
-      return;
-    }
-    if (mode === "signup" && !accepted) {
-      setError("Confirm that you are 18 or older and accept the legal terms before continuing.");
       return;
     }
 
@@ -190,6 +193,34 @@ export function AuthForm({
         onSubmit={submit}
         className="rounded-2xl border border-black/[0.08] bg-white p-6 shadow-[0_2px_24px_rgba(0,0,0,0.04)] md:p-8"
       >
+        {mode === "signup" ? (
+          <fieldset className="mb-6 rounded-2xl border border-[#0071e3]/15 bg-[#f5f9ff] p-4">
+            <legend className="px-1 text-[13px] font-semibold text-[#1d1d1f]">Before you continue</legend>
+            <label className="flex cursor-pointer items-start gap-3 text-[13px] leading-5 text-[#424245]">
+              <input
+                ref={acceptanceRef}
+                type="checkbox"
+                checked={accepted}
+                onChange={(event) => {
+                  setAccepted(event.target.checked);
+                  if (event.target.checked) setError("");
+                }}
+                className="mt-0.5 size-4 shrink-0 accent-[#0071e3]"
+                required
+              />
+              <span>
+                I am 18 or older and accept the{" "}
+                <Link className="font-medium underline underline-offset-2" href="/legal/terms" target="_blank">Terms</Link>,{" "}
+                <Link className="font-medium underline underline-offset-2" href="/legal/privacy" target="_blank">Privacy Policy</Link>, and{" "}
+                <Link className="font-medium underline underline-offset-2" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link>.
+              </span>
+            </label>
+            <p className="mt-2 pl-7 text-[12px] leading-5 text-[#6e6e73]">
+              Required once to save your event with Google or email.
+            </p>
+          </fieldset>
+        ) : null}
+
         <button
           type="button"
           disabled={isSubmitting}
@@ -225,8 +256,6 @@ export function AuthForm({
             />
           </label>
         ) : null}
-
-        {mode === "signup" ? <div className="mt-5 grid gap-4"><label className="flex items-start gap-3 text-sm leading-6 text-[#424245]"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1" required /><span>I am 18 or older and accept the <Link className="underline" href="/legal/terms" target="_blank">Terms</Link>, <Link className="underline" href="/legal/privacy" target="_blank">Privacy Policy</Link>, and <Link className="underline" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link> version 2026-07-22-beta.</span></label><TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.creatorSignup} onToken={setCaptchaToken} />{!turnstileSiteKey ? <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Public signup remains disabled in production until Turnstile is configured.</p> : null}</div> : null}
 
         <label className={`grid gap-2 ${mode === "signup" ? "mt-5" : ""}`}>
           <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Email</span>
@@ -267,6 +296,17 @@ export function AuthForm({
           <p className="mt-3 text-[13px] leading-relaxed text-[#6e6e73]">
             Use 12+ characters with a mix of uppercase, lowercase, numbers, and symbols.
           </p>
+        ) : null}
+
+        {mode === "signup" ? (
+          <div className="mt-5 grid gap-4">
+            <TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.creatorSignup} onToken={setCaptchaToken} />
+            {!turnstileSiteKey ? (
+              <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+                Public signup remains disabled in production until Turnstile is configured.
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         {error ? (
