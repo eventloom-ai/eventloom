@@ -14,6 +14,7 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { StartEventPrompt } from "@/components/start-event-prompt";
+import { ReferralConsent } from "@/components/referral-consent";
 
 const steps = [
   {
@@ -66,13 +67,16 @@ export function LandingPage({
   initialTemplate,
   authenticated = false,
   signupEnabled = false,
+  referralJourney,
 }: {
   initialTemplate?: string;
   authenticated?: boolean;
   signupEnabled?: boolean;
+  referralJourney?: string;
 }) {
   return (
     <main className="overflow-hidden bg-[#fbfaf8] text-[#252329]">
+      <ReferralConsent referralJourney={referralJourney} />
       <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-[#fbfaf8]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight">
@@ -117,6 +121,7 @@ export function LandingPage({
                 initialTemplate={initialTemplate}
                 authenticated={authenticated}
                 signupEnabled={signupEnabled}
+                referralJourney={referralJourney}
               />
             </div>
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#746f77]">

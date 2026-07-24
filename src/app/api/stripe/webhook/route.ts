@@ -8,6 +8,7 @@ import { stripeClient } from "@/lib/payments/stripe";
 import { deleteRegistrantPayload } from "@/lib/domains/registrant";
 import { beginProviderEvent, markFulfillment, startFulfillmentJob } from "@/lib/payments/webhook-store";
 import type Stripe from "stripe";
+import { markReferralPaidPublication } from "@/lib/referrals/store";
 
 export async function POST(req: Request) {
   const requestId = req.headers.get("x-vercel-id");
@@ -181,6 +182,7 @@ export async function processVerifiedStripeEvent(event: Stripe.Event, requestId:
     return NextResponse.json({ error: "fulfillment_verification_failed" }, { status: 500 });
   }
 
+  await markReferralPaidPublication(eventId).catch(() => false);
   if (provisionedDomain) await deleteRegistrantPayload(orderId);
   if (!(await markFulfillment({ eventRowId: storedEvent.eventRowId, jobId: fulfillmentJobId, state: provisionedDomain ? "domain_active" : "service_active" }))) {
     return NextResponse.json({ error: "fulfillment_record_failed" }, { status: 500 });

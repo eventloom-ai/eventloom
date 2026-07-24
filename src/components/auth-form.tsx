@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
+import { referralJourneyFromPath } from "@/lib/event-entry";
 import { SIGNUP_UX_VERSION } from "@/lib/auth/signup-ux";
+import { LEGAL_VERSION } from "@/lib/legal-documents";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
@@ -23,6 +25,7 @@ export function AuthForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = safeRedirectPath(searchParams.get("next"));
+  const referralJourney = referralJourneyFromPath(nextPath);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
@@ -56,6 +59,15 @@ export function AuthForm({
     [continuingDraft, mode],
   );
 
+  async function claimReferral() {
+    if (!referralJourney) return;
+    await fetch("/api/referrals/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ referral: referralJourney }),
+    }).catch(() => null);
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -86,7 +98,7 @@ export function AuthForm({
         email,
         password,
         options: {
-          data: { full_name: fullName.trim(), age_18_confirmed: true, legal_version: "2026-07-22-beta" },
+          data: { full_name: fullName.trim(), age_18_confirmed: true, legal_version: LEGAL_VERSION },
           captchaToken: captchaToken || undefined,
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         },
@@ -107,6 +119,7 @@ export function AuthForm({
       }
 
       if (data.session) {
+        await claimReferral();
         router.push(nextPath);
         router.refresh();
         return;
@@ -128,6 +141,7 @@ export function AuthForm({
       return;
     }
 
+    await claimReferral();
     router.push(nextPath);
     router.refresh();
   }

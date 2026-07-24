@@ -13,6 +13,7 @@ type SiteDocumentRendererProps = {
   rsvpOpen: boolean;
   formToken?: string;
   turnstileSiteKey?: string;
+  referralHref?: string;
   selectedNodeId?: string | null;
   interactive?: boolean;
   onSelectNode?: (nodeId: string) => void;
@@ -96,7 +97,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
   if (node.type === "countdown") return <div {...common}><p style={{ fontSize: "clamp(2rem,5vw,4rem)", fontFamily: "var(--event-display)" }}>{config.date}</p><p style={{ opacity: 0.65 }}>Save the date</p></div>;
   if (node.type === "schedule") return <div {...common} style={{ display: "grid", gap: "1rem", ...common.style }}>{config.schedule.map((item) => <article key={`${item.title}-${item.time}`} style={{ display: "grid", gridTemplateColumns: "minmax(6rem,0.25fr) 1fr", gap: "1.5rem", paddingBlock: "1.25rem", borderTop: "1px solid color-mix(in srgb,currentColor 18%,transparent)" }}><p style={{ opacity: 0.65 }}>{item.time}</p><div><h3 style={{ fontSize: "1.25rem" }}>{item.title}</h3>{item.location ? <p style={{ marginTop: "0.35rem", opacity: 0.7 }}>{item.location}</p> : null}{item.description ? <p style={{ marginTop: "0.6rem", lineHeight: 1.6, opacity: 0.75 }}>{item.description}</p> : null}</div></article>)}</div>;
   if (node.type === "venue") return <div {...common}><h3 style={{ fontSize: "clamp(1.8rem,4vw,3.5rem)", fontFamily: "var(--event-display)" }}>{config.venueName}</h3>{config.venueAddress ? <p style={{ marginTop: "0.75rem", opacity: 0.75 }}>{config.venueAddress}</p> : null}{node.showMap && config.venueName ? <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${config.venueName} ${config.venueAddress ?? ""}`)}`} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "1.5rem", color: "inherit" }}>Open directions ↗</a> : null}</div>;
-  if (node.type === "rsvp") return <div {...common}><div style={{ maxWidth: "42rem", marginInline: "auto", marginBottom: "2rem", textAlign: "center" }}><h2 style={{ fontFamily: "var(--event-display)", fontSize: "clamp(2.4rem,6vw,5rem)", lineHeight: 1 }}>{node.heading ?? "Will you join us?"}</h2>{node.description ? <p style={{ marginTop: "1rem", opacity: 0.7 }}>{node.description}</p> : null}</div><RsvpForm className="eventloom-managed-rsvp__form" formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} fields={config.rsvpFields} /></div>;
+  if (node.type === "rsvp") return <div {...common}><div style={{ maxWidth: "42rem", marginInline: "auto", marginBottom: "2rem", textAlign: "center" }}><h2 style={{ fontFamily: "var(--event-display)", fontSize: "clamp(2.4rem,6vw,5rem)", lineHeight: 1 }}>{node.heading ?? "Will you join us?"}</h2>{node.description ? <p style={{ marginTop: "1rem", opacity: 0.7 }}>{node.description}</p> : null}</div><RsvpForm className="eventloom-managed-rsvp__form" formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} referralHref={context.referralHref} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} fields={config.rsvpFields} /></div>;
   return null;
 }
 

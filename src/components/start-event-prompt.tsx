@@ -15,10 +15,12 @@ export function StartEventPrompt({
   initialTemplate,
   authenticated = false,
   signupEnabled = false,
+  referralJourney,
 }: {
   initialTemplate?: string;
   authenticated?: boolean;
   signupEnabled?: boolean;
+  referralJourney?: string;
 }) {
   const router = useRouter();
   const [brief, setBrief] = useState<string>(starterBriefs[initialTemplate as keyof typeof starterBriefs] ?? "");
@@ -30,6 +32,7 @@ export function StartEventPrompt({
       brief,
       authenticated,
       signupEnabled,
+      referral: referralJourney,
     }));
   }
 

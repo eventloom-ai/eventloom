@@ -3,12 +3,18 @@ import { RsvpForm } from "@/components/rsvp-form";
 import { SiteDocumentRenderer } from "@/components/site-document-renderer";
 import { env, publicRsvpEnabled } from "@/lib/env";
 import { createPublicRsvpToken } from "@/lib/security/rsvp-token";
+import { appUrl } from "@/lib/env";
+import { createReferralSourceToken } from "@/lib/referrals/token";
 
 export function EventPage({ event }: { event: EventRecord }) {
   const formToken = createPublicRsvpToken(event.id, event.slug) ?? "";
+  const referralToken = createReferralSourceToken(event.id);
+  const referralHref = referralToken
+    ? new URL(`/referral/${encodeURIComponent(referralToken)}`, appUrl()).toString()
+    : new URL("/#create", appUrl()).toString();
   const rsvpEnabled = publicRsvpEnabled() && Boolean(formToken) && event.status === "published" && event.rsvp_open;
   if (event.document) {
-    return <SiteDocumentRenderer document={event.document} config={event.config} status={event.status} rsvpOpen={rsvpEnabled} formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} />;
+    return <SiteDocumentRenderer document={event.document} config={event.config} status={event.status} rsvpOpen={rsvpEnabled} formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} referralHref={referralHref} />;
   }
   const { config } = event;
   const colors = config.theme.colors.length >= 4 ? config.theme.colors : ["#191713", "#f7f4ee", "#b48a5a", "#405448"];
@@ -18,7 +24,7 @@ export function EventPage({ event }: { event: EventRecord }) {
       <FallbackSite event={event} />
       <section className="eventloom-managed-rsvp px-5 pb-12 sm:px-8" aria-label="Guest reply">
         <div className="mx-auto max-w-2xl">
-          <RsvpForm className="eventloom-managed-rsvp__form" formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} fields={event.config.rsvpFields} />
+          <RsvpForm className="eventloom-managed-rsvp__form" formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} referralHref={referralHref} isOpen={rsvpEnabled} fields={event.config.rsvpFields} />
         </div>
       </section>
     </main>

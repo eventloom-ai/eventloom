@@ -5,12 +5,13 @@ import { redirect } from "next/navigation";
 import { eventDraftPath } from "@/lib/event-entry";
 import { getServerUser } from "@/lib/supabase/server";
 
-export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ brief?: string }> }) {
-  const { brief } = await searchParams;
+export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ brief?: string; ref?: string }> }) {
+  const { brief, ref } = await searchParams;
   const landingBrief = brief?.trim().slice(0, 8000) ?? "";
+  const referralJourney = ref?.trim().slice(0, 4_096) ?? "";
   const user = await getServerUser();
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(eventDraftPath(landingBrief))}`);
+    redirect(`/login?next=${encodeURIComponent(eventDraftPath(landingBrief, referralJourney))}`);
   }
 
   if (!landingBrief) {
@@ -25,7 +26,7 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
       description="Describe your celebration, then shape every detail in the visual studio."
       width="wide"
     >
-      <NewEventStarter initialBrief={landingBrief} />
+      <NewEventStarter initialBrief={landingBrief} referralJourney={referralJourney} />
     </AppShell>
   );
 }

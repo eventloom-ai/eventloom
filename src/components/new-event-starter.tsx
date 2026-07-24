@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { creatorErrorMessage } from "@/lib/creator-errors";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 
-export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }) {
+export function NewEventStarter({ initialBrief = "", referralJourney = "" }: { initialBrief?: string; referralJourney?: string }) {
   const router = useRouter();
   const [prompt, setPrompt] = useState(initialBrief);
   const [slug, setSlug] = useState(normalizeSlugInput(suggestSlug(initialBrief) || ""));
@@ -20,7 +20,7 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
     setIsStarting(true); setError("");
     const selectedSlug = slugEdited ? slug : normalizeSlugInput(suggestSlug(value) || slug || "my-event");
     try {
-      const response = await fetch("/api/events/studio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: value.trim(), slug: selectedSlug }) });
+      const response = await fetch("/api/events/studio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: value.trim(), slug: selectedSlug, referral_journey: referralJourney || undefined }) });
       const payload = await response.json().catch(() => null) as { eventId?: string; error?: string; warning?: string } | null;
       if (response.ok && payload?.eventId) {
         const notice = payload.warning ? `?notice=${encodeURIComponent(payload.warning)}` : "";

@@ -1,4 +1,4 @@
-export const LEGAL_VERSION = "2026-07-22-beta";
+export const LEGAL_VERSION = "2026-07-24-beta";
 
 export type LegalDocument = { slug: string; title: string; summary: string; sections: Array<{ heading: string; body: string }> };
 
@@ -11,9 +11,9 @@ export const legalDocuments: LegalDocument[] = [
   ]},
   { slug: "privacy", title: "Privacy Policy", summary: "How Eventloom handles creator, guest, security, and payment information.", sections: [
     { heading: "Roles and purposes", body: "For RSVP information, the event creator determines why the information is collected and Eventloom processes it on the creator’s behalf. Eventloom controls account, billing, fraud-prevention, support, and security information needed to operate the service." },
-    { heading: "Data we process", body: "We process creator account details, event content, RSVP names and optional contact details, guests and answers, provider references, keyed network hashes, device class, and security events. Eventloom does not receive full card numbers from Stripe." },
-    { heading: "Use and sharing", body: "Information is used to provide, secure, support, and bill for the service. Eventloom does not sell personal data, use RSVP data for marketing, or run behavioural advertising. Providers receive only data needed for their services." },
-    { heading: "Location and retention", body: "The current database and several subprocessors operate in the United States, so information may be processed outside Canada. RSVP personal data is scheduled for deletion 90 days after the event unless a documented legal hold applies. Abuse data is kept 30 days, security logs 12 months, backups 30 days, and legally required payment records may be retained seven years." },
+    { heading: "Data we process", body: "We process creator account details, event content, RSVP names and optional contact details, guests and answers, provider references, keyed network hashes, device class, security events, and limited first-party referral journey events. Referral records never contain RSVP answers, guest names, guest contact details, raw IP addresses, or advertising identifiers. Eventloom does not receive full card numbers from Stripe." },
+    { heading: "Use and sharing", body: "Information is used to provide, secure, support, and bill for the service and, with the controls described in the Cookie Notice, measure whether an Eventloom event introduces a future creator. Eventloom does not sell personal data, use RSVP data for marketing, run behavioural advertising, or share referral journeys with advertising networks. Providers receive only data needed for their services." },
+    { heading: "Location and retention", body: "The current database and several subprocessors operate in the United States, so information may be processed outside Canada. RSVP personal data is scheduled for deletion 90 days after the event unless a documented legal hold applies. Unclaimed referral journeys are deleted after 30 days and claimed funnel records after 12 months. Abuse data is kept 30 days, security logs 12 months, backups 30 days, and legally required payment records may be retained seven years." },
     { heading: "Rights and contact", body: "Creators and guests may request access, correction, deletion, or information about processing. Identity is verified before disclosure. Eventloom targets a response within 30 days, subject to lawful extensions and exceptions." },
   ]},
   { slug: "domains", title: "Domain Registration, Renewal, and Transfer Policy", summary: "Ownership and lifecycle rules for domains purchased through Eventloom.", sections: [
@@ -34,9 +34,10 @@ export const legalDocuments: LegalDocument[] = [
     { heading: "Current providers", body: "Supabase provides authentication, database, and storage in the United States; Vercel provides hosting and delivery; Stripe provides payment processing; OpenAI supports creator-requested generation; OpenSRS is planned for domain registration; Sentry is planned for privacy-scrubbed error monitoring; and a transactional email provider will deliver service messages." },
     { heading: "Changes", body: "Material subprocessor changes will be documented here. Production contracts, data-processing terms, processing locations, and transfer safeguards must be verified before enabling each provider." },
   ]},
-  { slug: "cookies", title: "Cookie and Tracking Notice", summary: "Eventloom uses essential session and security storage only in v1.", sections: [
+  { slug: "cookies", title: "Cookie and Tracking Notice", summary: "How Eventloom uses essential storage and optional first-party referral measurement.", sections: [
     { heading: "Essential technologies", body: "Authentication, session continuity, security, load balancing, and fraud prevention may require cookies or similar storage. These are not used for behavioural advertising." },
-    { heading: "No nonessential tracking in v1", body: "Marketing, advertising, and nonessential analytics remain disabled. If introduced later, Eventloom will add consent, withdrawal, and applicable opt-out controls before activation." },
+    { heading: "Referral measurement", body: "After a guest intentionally follows the Eventloom invitation shown after an RSVP, a signed reference may connect that active journey to account creation, a first draft, and a verified paid publication. If the visitor chooses “Remember for 30 days,” Eventloom stores a first-party referral marker for up to 30 days. Declining does not prevent the visitor from continuing, and no cross-site or behavioural advertising identifier is used." },
+    { heading: "Choice and withdrawal", body: "Visitors can decline persistent referral measurement without losing product access. An accepted referral marker can be withdrawn from the controls below. Withdrawal clears the marker and prevents later persistent attribution. Referral controls must complete legal review before this feature is enabled in production." },
   ]},
   { slug: "accessibility", title: "Accessibility Statement", summary: "Eventloom aims for WCAG 2.2 Level AA.", sections: [
     { heading: "Commitment", body: "We aim to make creator and guest journeys perceivable, operable by keyboard, understandable, and compatible with assistive technology. Automated and manual testing is part of the release gate." },

@@ -5,6 +5,7 @@ import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { safeTokenEquals } from "@/lib/security/request";
 import { serviceSupabase } from "@/lib/supabase/server";
 import { DAILY_MAINTENANCE_JOB, isMaintenanceHealthy } from "@/lib/maintenance-status";
+import { LEGAL_VERSION } from "@/lib/legal-documents";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const feedbackSlaCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const [databaseResult, legalResult, fulfillmentResult, privacyResult, feedbackResult, maintenanceResult] = await Promise.all([
       client.from("orders").select("id", { count: "exact", head: true }).limit(1),
-      client.from("legal_documents").select("id", { count: "exact", head: true }).eq("status", "active").eq("version", "2026-07-22-beta").in("document_key", ["terms", "privacy", "domains"]),
+      client.from("legal_documents").select("id", { count: "exact", head: true }).eq("status", "active").eq("version", LEGAL_VERSION).in("document_key", ["terms", "privacy", "domains"]),
       client.from("fulfillment_jobs").select("id", { count: "exact", head: true }).in("state", ["received", "verified", "domain_pending", "retry"]).lte("next_attempt_at", now),
       client.from("privacy_requests").select("id", { count: "exact", head: true }).not("status", "in", '("completed","denied")').lte("due_at", now),
       client.from("product_feedback").select("id", { count: "exact", head: true }).in("status", ["new", "reviewing", "planned"]).lte("created_at", feedbackSlaCutoff),

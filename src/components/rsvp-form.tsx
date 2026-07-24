@@ -6,10 +6,11 @@ import { optionalFormString } from "@/lib/form-values";
 import type { RsvpField } from "@/lib/types";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
+import { RsvpSuccess } from "@/components/rsvp-success";
 
 const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
 
-export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, fields = defaultFields, className = "" }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; fields?: RsvpField[]; className?: string }) {
+export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, referralHref, isOpen, fields = defaultFields, className = "" }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; referralHref?: string; isOpen: boolean; fields?: RsvpField[]; className?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [attending, setAttending] = useState(true);
   const [partySize, setPartySize] = useState(1);
@@ -73,12 +74,7 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
   }
 
   if (status === "done") {
-    return (
-      <section className={`rounded-[8px] border border-[#405448]/20 bg-[#405448] p-6 text-white ${className}`}>
-        <h2 className="text-2xl font-semibold">Reply received</h2>
-        <p className="mt-2 text-white/80">Your response has been recorded.</p>
-      </section>
-    );
+    return <RsvpSuccess className={className} referralHref={referralHref} />;
   }
 
   return (

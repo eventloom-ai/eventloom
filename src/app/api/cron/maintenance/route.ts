@@ -43,8 +43,9 @@ export async function GET(request: NextRequest) {
   };
   const feedbackHashCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const feedbackSlaCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, staleFeedbackResult, retryEventsResult] = await Promise.all([
+  const [purgeResult, referralPurgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, staleFeedbackResult, retryEventsResult] = await Promise.all([
     client.rpc("purge_expired_rsvp_data"),
+    client.rpc("cleanup_referral_journeys"),
     client.from("domain_registrant_payloads").delete({ count: "exact" }).lt("expires_at", now),
     client.from("product_feedback").update({ ip_hash: null }, { count: "exact" }).lt("created_at", feedbackHashCutoff).not("ip_hash", "is", null),
     client.from("fulfillment_jobs").select("id", { count: "exact", head: true }).in("state", ["received", "verified", "domain_pending", "retry"]).lte("next_attempt_at", now),
@@ -53,9 +54,10 @@ export async function GET(request: NextRequest) {
     client.from("provider_webhook_events").select("id, provider_event_id, attempt_count").eq("provider", "stripe").eq("status", "retry").order("received_at").limit(5),
   ]);
 
-  if (purgeResult.error || registrantResult.error || feedbackHashResult.error || retryResult.error || overduePrivacyResult.error || staleFeedbackResult.error || retryEventsResult.error) {
+  if (purgeResult.error || referralPurgeResult.error || registrantResult.error || feedbackHashResult.error || retryResult.error || overduePrivacyResult.error || staleFeedbackResult.error || retryEventsResult.error) {
     reportOperationalEvent("error", "maintenance_failed", {
       purgeError: purgeResult.error?.code,
+      referralPurgeError: referralPurgeResult.error?.code,
       registrantError: registrantResult.error?.code,
       feedbackHashError: feedbackHashResult.error?.code,
       retryError: retryResult.error?.code,
@@ -111,6 +113,7 @@ export async function GET(request: NextRequest) {
   }
   reportOperationalEvent(retryJobs || overduePrivacyRequests || staleFeedback ? "warn" : "info", "maintenance_completed", {
     purgedRsvpSubmissions: Number(purgeResult.data ?? 0),
+    purgedReferralJourneys: Number(referralPurgeResult.data ?? 0),
     expiredRegistrantPayloads: registrantResult.count ?? 0,
     purgedFeedbackIpHashes: feedbackHashResult.count ?? 0,
     retryJobs,
@@ -122,6 +125,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     purged_rsvp_submissions: Number(purgeResult.data ?? 0),
+    purged_referral_journeys: Number(referralPurgeResult.data ?? 0),
     expired_registrant_payloads: registrantResult.count ?? 0,
     purged_feedback_ip_hashes: feedbackHashResult.count ?? 0,
     fulfillment_jobs_needing_attention: retryJobs,

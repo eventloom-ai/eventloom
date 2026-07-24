@@ -68,6 +68,12 @@ export function publicRsvpEnabled() {
   return enabled("PUBLIC_RSVP_ENABLED");
 }
 
+export function referralGrowthEnabled() {
+  const requested = enabled("REFERRAL_GROWTH_ENABLED", false);
+  const production = process.env.NODE_ENV === "production" || read("VERCEL_ENV") === "production";
+  return requested && (!production || enabled("LEGAL_REVIEW_APPROVED", false));
+}
+
 export function publicDomainPurchasingEnabled() {
   return enabled("DOMAIN_PURCHASING_ENABLED");
 }
@@ -122,6 +128,7 @@ export const env = {
   openSrsApiUrl: () => read("OPENSRS_API_URL"),
   registrantEncryptionKey,
   rsvpTokenSecret: () => read("RSVP_TOKEN_SECRET"),
+  referralTokenSecret: () => read("REFERRAL_TOKEN_SECRET"),
   ipHashSecret: () => read("IP_HASH_SECRET"),
   turnstileSecretKey: () => read("TURNSTILE_SECRET_KEY"),
   turnstileSiteKey: () => read("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),

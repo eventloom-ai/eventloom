@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventDraftEntryPath, eventDraftPath } from "@/lib/event-entry";
+import { eventDraftEntryPath, eventDraftPath, referralJourneyFromPath } from "@/lib/event-entry";
 
 describe("event entry routing", () => {
   it("preserves a visitor's event description through signup", () => {
@@ -36,5 +36,18 @@ describe("event entry routing", () => {
 
   it("builds the empty draft path without a dangling query", () => {
     expect(eventDraftPath()).toBe("/app/events/new");
+  });
+
+  it("preserves a signed referral through signup and extracts it from the destination", () => {
+    const entry = eventDraftEntryPath({
+      brief: "Graduation dinner",
+      authenticated: false,
+      signupEnabled: true,
+      referral: "payload.signature",
+    });
+    const next = new URL(entry, "https://eventloom.test").searchParams.get("next")!;
+
+    expect(next).toContain("ref=payload.signature");
+    expect(referralJourneyFromPath(next)).toBe("payload.signature");
   });
 });

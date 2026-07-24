@@ -72,7 +72,7 @@ function createClient() {
         update: vi.fn(), delete: vi.fn(), in: vi.fn(),
       };
       builder.select.mockImplementation(() => builder);
-      builder.in.mockImplementation((_column, values: string[]) => Promise.resolve({ data: values.map((document_key) => ({ id: `doc-${document_key}`, document_key, version: "2026-07-22-beta" })), error: null }));
+      builder.in.mockImplementation((_column, values: string[]) => Promise.resolve({ data: values.map((document_key) => ({ id: `doc-${document_key}`, document_key, version: "2026-07-24-beta" })), error: null }));
       builder.delete.mockReturnValue(builder);
       builder.eq.mockImplementation(() => operation === "update"
         ? Promise.resolve({ error: mocks.orderUpdateError })
@@ -116,7 +116,7 @@ describe("Stripe launch checkout", () => {
     mocks.deleteRegistrant.mockReset().mockResolvedValue(undefined);
   });
 
-  const acceptance = { version: "2026-07-22-beta", ipHash: "hash", userAgentClass: "desktop" };
+  const acceptance = { version: "2026-07-24-beta", ipHash: "hash", userAgentClass: "desktop" };
   const registrant = { firstName: "Mira", lastName: "Hadi", organization: "", email: "mira@example.com", phone: "+14165550123", address1: "1 King St", address2: "", city: "Toronto", state: "ON", postalCode: "M5V1A1", country: "CA" as const };
 
   it("creates a server-owned order and matching one-time Checkout Session", async () => {
