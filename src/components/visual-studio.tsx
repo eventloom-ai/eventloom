@@ -8,14 +8,15 @@ import { StudioDrawer } from "@/components/studio-drawer";
 import { StudioInspector } from "@/components/studio-inspector";
 import { StudioOutline } from "@/components/studio-outline";
 import { StudioToolbar } from "@/components/studio-toolbar";
+import { creatorErrorMessage } from "@/lib/creator-errors";
 import { applySiteOperations, type SiteOperation } from "@/lib/site-document-operations";
 import { findSiteNode } from "@/lib/site-document";
 import type { StudioState } from "@/lib/studio-store";
 import type { BuilderMessage, EventConfig, SiteRevision } from "@/lib/types";
 
-type VisualStudioProps = { initialState: StudioState };
+type VisualStudioProps = { initialState: StudioState; initialNotice?: string };
 
-export function VisualStudio({ initialState }: VisualStudioProps) {
+export function VisualStudio({ initialState, initialNotice }: VisualStudioProps) {
   const [revision, setRevision] = useState(initialState.revision);
   const [event, setEvent] = useState({ ...initialState.event, config: initialState.revision.config });
   const [versions, setVersions] = useState(initialState.versions);
@@ -26,7 +27,7 @@ export function VisualStudio({ initialState }: VisualStudioProps) {
   const [zoom, setZoom] = useState(80);
   const [composer, setComposer] = useState("");
   const [activity, setActivity] = useState(initialState.activeRun?.progress_message ?? "");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => initialNotice ? creatorErrorMessage(initialNotice) : "");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
   const [drawer, setDrawer] = useState<"history" | "code" | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(false);
@@ -86,7 +87,7 @@ export function VisualStudio({ initialState }: VisualStudioProps) {
     const failed = (raw: Event) => {
       if (!(raw instanceof MessageEvent)) return;
       const message = (JSON.parse(raw.data) as { message?: string }).message;
-      setError(message ?? "The edit could not be applied."); setActiveRunId(null); setActivity(""); source.close(); void refreshState();
+      setError(creatorErrorMessage(message, "We couldn’t apply that change, but your previous version is safe.")); setActiveRunId(null); setActivity(""); source.close(); void refreshState();
     };
     source.addEventListener("error", failed);
     source.addEventListener("cancelled", failed);
@@ -104,13 +105,13 @@ export function VisualStudio({ initialState }: VisualStudioProps) {
     const base = revision;
     setError(""); setSaveStatus("saving");
     if (operations) {
-      try { const optimistic = applySiteOperations(base.document, operations); setRevision((current) => ({ ...current, document: optimistic.document })); highlight(optimistic.changedNodeIds); } catch { setSaveStatus("error"); return; }
+      try { const optimistic = applySiteOperations(base.document, operations); setRevision((current) => ({ ...current, document: optimistic.document })); highlight(optimistic.changedNodeIds); } catch { setSaveStatus("error"); setError(creatorErrorMessage("invalid_edit")); return; }
     }
     if (eventPatch) setEvent((current) => ({ ...current, config: { ...current.config, ...eventPatch } }));
     const response = await fetch(`/api/events/${event.id}/studio`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ baseVersionId: base.id, operations, eventPatch, summary }) });
     const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; state?: StudioState; changedNodeIds?: string[] } | null;
     if (!response.ok || !payload?.revision) {
-      setSaveStatus("error"); setError(payload?.error === "version_conflict" ? "This site changed in another tab. The latest version has been loaded." : payload?.error ?? "This edit could not be saved.");
+      setSaveStatus("error"); setError(creatorErrorMessage(payload?.error, "We couldn’t save that edit, but your previous version is safe."));
       if (payload?.state) { setRevision(payload.state.revision); setVersions(payload.state.versions); setEvent({ ...payload.state.event, config: payload.state.revision.config }); } else { setRevision(base); setEvent((current) => ({ ...current, config: base.config })); }
       return;
     }
@@ -127,7 +128,7 @@ export function VisualStudio({ initialState }: VisualStudioProps) {
     const payload = await response.json().catch(() => null) as { runId?: string; message?: BuilderMessage; error?: string; state?: StudioState } | null;
     if (!response.ok || !payload?.runId) {
       setMessages((current) => current.filter((message) => message.id !== optimistic.id));
-      setError(payload?.error === "ai_credit_limit_reached" ? "Your AI build credit is used. Direct editing is still available." : payload?.error === "version_conflict" ? "The site changed before this request could start. Your message is still here." : payload?.error ?? "The agent could not start.");
+      setError(creatorErrorMessage(payload?.error, "We couldn’t start that change. Your message and draft are safe."));
       if (payload?.state) { setRevision(payload.state.revision); setVersions(payload.state.versions); }
       return;
     }
@@ -140,7 +141,7 @@ export function VisualStudio({ initialState }: VisualStudioProps) {
     const response = await fetch(`/api/events/${event.id}/assets`, { method: "POST", body: form });
     const payload = await response.json().catch(() => null) as { url?: string; error?: string } | null;
     setUploadingAttachment(false);
-    if (!response.ok || !payload?.url) { setError(payload?.error ?? "The reference image could not be uploaded."); return; }
+    if (!response.ok || !payload?.url) { setError(creatorErrorMessage(payload?.error, "We couldn’t upload that reference image.")); return; }
     setAttachment({ name: file.name, url: payload.url });
     if (!composer.trim()) setComposer("Use this image as a visual reference for the site.");
   }
@@ -151,7 +152,7 @@ export function VisualStudio({ initialState }: VisualStudioProps) {
     const previous = revision.id; setSaveStatus("saving");
     const response = await fetch(`/api/events/${event.id}/studio/versions/${versionId}/restore`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ baseVersionId: revision.id }) });
     const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string } | null;
-    if (response.ok && payload?.revision) { if (pushRedo) setRedoStack((current) => [previous, ...current]); applyCommittedRevision(payload.revision); setDrawer(null); } else { setSaveStatus("error"); setError(payload?.error ?? "The version could not be restored."); }
+    if (response.ok && payload?.revision) { if (pushRedo) setRedoStack((current) => [previous, ...current]); applyCommittedRevision(payload.revision); setDrawer(null); } else { setSaveStatus("error"); setError(creatorErrorMessage(payload?.error, "We couldn’t restore that version. Your current version is unchanged.")); }
   }
   const canUndo = Boolean(revision.parent_version_id && versions.some((version) => version.id === revision.parent_version_id));
   async function undo() { if (revision.parent_version_id) await restore(revision.parent_version_id); }

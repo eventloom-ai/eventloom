@@ -3,6 +3,7 @@
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { creatorErrorMessage } from "@/lib/creator-errors";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 
 export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }) {
@@ -18,10 +19,20 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
     if (!value.trim() || isStarting) return;
     setIsStarting(true); setError("");
     const selectedSlug = slugEdited ? slug : normalizeSlugInput(suggestSlug(value) || slug || "my-event");
-    const response = await fetch("/api/events/studio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: value.trim(), slug: selectedSlug }) });
-    const payload = await response.json().catch(() => null) as { eventId?: string; error?: string } | null;
-    if (response.ok && payload?.eventId) { router.replace(`/app/events/${payload.eventId}/studio`); return; }
-    setIsStarting(false); setError(payload?.error === "slug_taken" ? "That link is already in use. Choose another one." : payload?.error ?? "The workspace could not be created.");
+    try {
+      const response = await fetch("/api/events/studio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: value.trim(), slug: selectedSlug }) });
+      const payload = await response.json().catch(() => null) as { eventId?: string; error?: string; warning?: string } | null;
+      if (response.ok && payload?.eventId) {
+        const notice = payload.warning ? `?notice=${encodeURIComponent(payload.warning)}` : "";
+        router.replace(`/app/events/${payload.eventId}/studio${notice}`);
+        return;
+      }
+      setIsStarting(false);
+      setError(creatorErrorMessage(payload?.error, "We couldn’t create the workspace. Nothing was charged—please try again."));
+    } catch {
+      setIsStarting(false);
+      setError(creatorErrorMessage("network_error"));
+    }
   }
 
   useEffect(() => {
