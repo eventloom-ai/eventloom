@@ -36,6 +36,10 @@ describe("signup conversion flow", () => {
     expect(google).toBeLessThan(fullName);
     expect(password).toBeLessThan(securityCheck);
     expect(html).toContain("Required once to save your event with Google or email.");
-    expect(html).toContain('data-signup-ux="consent-before-provider-v1"');
+    expect(html).toContain("Save your free draft");
+    expect(html).toContain("Fastest — no password to remember");
+    expect(html).toContain("continue building after sign-in");
+    expect(html).toContain('minLength="12"');
+    expect(html).toContain('data-signup-ux="continue-draft-v2"');
   });
 });

@@ -23,7 +23,31 @@ describe("nontechnical studio language", () => {
 
     expect(html).toContain("Published · All changes saved");
     expect(html).toContain('aria-label="Send feedback"');
+    expect(html).toContain("Update site");
+    expect(html).not.toContain(">Publish<");
     expect(html).not.toContain("Inspect generated source");
+  });
+
+  it("offers first-time publishing without showing paid-update language", () => {
+    const html = renderToStaticMarkup(
+      <StudioToolbar
+        eventId="10000000-0000-4000-8000-000000000001"
+        title="Maya & Adam"
+        status="draft"
+        saveStatus="saved"
+        viewport="desktop"
+        canUndo={false}
+        canRedo={false}
+        onViewport={vi.fn()}
+        onUndo={vi.fn()}
+        onRedo={vi.fn()}
+        onToggleHistory={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("Draft · All changes saved");
+    expect(html).toContain(">Publish<");
+    expect(html).not.toContain("Update site");
   });
 
   it("invites plain-language changes without developer terminology", () => {

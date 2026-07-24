@@ -37,14 +37,18 @@ export function AuthForm({
 
   const continuingDraft = nextPath.startsWith("/app/events/new");
   const title = mode === "signup"
-    ? "Save your event"
+    ? continuingDraft
+      ? "Save your free draft"
+      : "Create your account"
     : continuingDraft
       ? "Continue your event"
       : "Open your events";
   const subtitle = useMemo(
     () =>
       mode === "signup"
-        ? "Add your email and password so your site does not get lost."
+        ? continuingDraft
+          ? "Choose Google or email. We’ll keep your event description and continue building after sign-in."
+          : "Choose Google or email to create and manage your event sites."
         : continuingDraft
           ? "Sign in and we’ll keep your description ready for an editable first draft."
           : "Sign in to keep working on your event sites.",
@@ -105,7 +109,11 @@ export function AuthForm({
         return;
       }
 
-      setMessage("Check your email to confirm your account, then sign in.");
+      setMessage(
+        continuingDraft
+          ? "Check your email and select the confirmation link. We’ll sign you in and continue your draft automatically."
+          : "Check your email and select the confirmation link. We’ll sign you in automatically.",
+      );
       return;
     }
 
@@ -235,7 +243,10 @@ export function AuthForm({
             <path fill="#FBBC05" d="M6.42 13.91A6 6 0 0 1 6.1 12c0-.66.11-1.3.32-1.91V7.5H3.08A10 10 0 0 0 2 12c0 1.61.39 3.13 1.08 4.5l3.34-2.59Z" />
             <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.51l2.87-2.87C16.96 2.99 14.7 2 12 2a10 10 0 0 0-8.92 5.5l3.34 2.59C7.2 7.73 9.4 5.97 12 5.97Z" />
           </svg>
-          Continue with Google
+          <span className="text-left">
+            <span className="block">Continue with Google</span>
+            {mode === "signup" ? <span className="mt-0.5 block text-[12px] font-normal text-[#6e6e73]">Fastest — no password to remember</span> : null}
+          </span>
         </button>
 
         <div className="my-6 flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.14em] text-[#86868b]">
@@ -277,7 +288,7 @@ export function AuthForm({
           <input
               type={showPassword ? "text" : "password"}
             required
-            minLength={8}
+            minLength={mode === "signup" ? 12 : 8}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
@@ -296,7 +307,7 @@ export function AuthForm({
 
         {mode === "signup" ? (
           <p className="mt-3 text-[13px] leading-relaxed text-[#6e6e73]">
-            Use 12+ characters with a mix of uppercase, lowercase, numbers, and symbols.
+            Use at least 12 characters. A unique passphrase is easiest to remember.
           </p>
         ) : null}
 
