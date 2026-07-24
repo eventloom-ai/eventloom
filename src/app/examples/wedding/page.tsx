@@ -49,7 +49,7 @@ export default function WeddingExamplePage() {
             </div>
           </div>
           <p className="mt-8 max-w-xl text-center text-sm leading-7 text-[#5f5955]">
-            This example is adapted from RSVP OS. Street addresses, map links, and guest submissions are intentionally omitted.
+            This example is adapted from RSVP OS. Venue details and guest submissions are intentionally omitted.
           </p>
         </div>
       </section>

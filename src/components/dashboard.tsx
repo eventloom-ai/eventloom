@@ -4,16 +4,13 @@ import { AppShell } from "@/components/app-shell";
 import { EventsList } from "@/components/events-list";
 import { FadeIn } from "@/components/ui/fade-in";
 import { listActiveGenerationJobs } from "@/lib/agent/tools";
-import { demoEvents } from "@/lib/sample-data";
+import { listCreatorEvents } from "@/lib/dashboard-events";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import type { EventRecord } from "@/lib/types";
 
 async function loadEvents(filter: "all" | "published", userId: string | null): Promise<EventRecord[]> {
-  if (!isSupabaseConfigured()) {
-    return filter === "published" ? demoEvents.filter((event) => event.status === "published") : demoEvents;
-  }
-  if (!userId) {
+  if (!isSupabaseConfigured() || !userId) {
     return [];
   }
 
@@ -22,18 +19,7 @@ async function loadEvents(filter: "all" | "published", userId: string | null): P
     return [];
   }
 
-  let query = client
-    .from("events")
-    .select("id, owner_id, slug, status, rsvp_open, config")
-    .eq("owner_id", userId);
-  if (filter === "published") {
-    query = query.eq("status", "published");
-  }
-  const { data } = await query
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  return (data ?? []) as EventRecord[];
+  return listCreatorEvents(client, userId, filter);
 }
 
 export async function Dashboard({ filter = "all" }: { filter?: "all" | "published" }) {
