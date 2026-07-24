@@ -50,7 +50,7 @@ jobs:
           check_status "/api/health/live" "200"
           check_contains "/" "A beautiful RSVP site in minutes."
           check_contains "/examples/wedding" "Men’s English wedding invitation"
-          check_contains "/signup?next=%2Fapp%2Fevents%2Fnew%3Fbrief%3DSmoke%2520test%2520event" 'data-signup-ux="consent-before-provider-v1"'
+          check_contains "/signup?next=%2Fapp%2Fevents%2Fnew%3Fbrief%3DSmoke%2520test%2520event" 'data-signup-ux="continue-draft-v2"'
           check_contains "/robots.txt" "Sitemap:"
           check_contains "/sitemap.xml" "/examples/wedding"
 
