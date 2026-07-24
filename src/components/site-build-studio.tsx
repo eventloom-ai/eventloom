@@ -43,7 +43,12 @@ const steps: { id: BuildProgressStep; label: string; detail: string }[] = [
   { id: "done", label: "Ready to review", detail: "Your draft is live" },
 ];
 
-type SiteBuildStudioProps = { initialPrompt?: string; initialTemplate?: string; variant?: "home" | "app" | "studio" };
+type SiteBuildStudioProps = {
+  initialPrompt?: string;
+  initialTemplate?: string;
+  variant?: "home" | "app" | "studio";
+  fullBleed?: boolean;
+};
 
 function stepState(step: BuildProgressStep, current: BuildProgressStep) {
   const currentIndex = steps.findIndex((item) => item.id === current);
@@ -52,7 +57,7 @@ function stepState(step: BuildProgressStep, current: BuildProgressStep) {
   return index < currentIndex ? "done" : index === currentIndex ? "active" : "pending";
 }
 
-export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app" }: SiteBuildStudioProps) {
+export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app", fullBleed = false }: SiteBuildStudioProps) {
   const router = useRouter();
   const { state: build, startBuild, resumeStoredJob } = useBuildJob();
   const seed = examples.find((example) => example.label.toLowerCase() === initialTemplate)?.prompt ?? "";
@@ -130,7 +135,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
   const previewSlug = build.slug || activeSlug || "your-event";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#151515] text-[#f5f5f5] shadow-[0_28px_100px_rgba(0,0,0,0.26)]">
+    <div className={`overflow-hidden bg-[#151515] text-[#f5f5f5] ${fullBleed ? "min-h-[100svh] rounded-none border-0 shadow-none lg:h-[100svh]" : "rounded-2xl border border-white/10 shadow-[0_28px_100px_rgba(0,0,0,0.26)]"}`}>
       <header className="flex min-h-12 flex-col gap-3 border-b border-white/10 bg-[#1a1a1a] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="grid size-7 place-items-center rounded-lg bg-[#8b5cf6] text-white shadow-lg shadow-violet-950/30"><Sparkles className="size-3.5" /></div>
@@ -148,7 +153,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
         </div>
       </header>
 
-      <div className="grid min-h-[760px] lg:h-[calc(100vh-76px)] lg:min-h-0 lg:grid-cols-[minmax(330px,0.72fr)_minmax(0,1.5fr)]">
+      <div className={`grid min-h-[760px] lg:min-h-0 lg:grid-cols-[minmax(330px,0.72fr)_minmax(0,1.5fr)] ${fullBleed ? "lg:h-[calc(100svh-49px)]" : "lg:h-[calc(100vh-76px)]"}`}>
         <form onSubmit={submit} className="flex min-h-[760px] flex-col border-b border-white/10 bg-[#191919] p-4 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a9a9ae]">Agent conversation</p>
