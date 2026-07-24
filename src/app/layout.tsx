@@ -44,13 +44,11 @@ export const metadata: Metadata = {
     description: "Describe your event, get a polished website, and collect every guest reply in one place.",
     siteName: "Eventloom",
     url: "/",
-    images: [{ url: "/examples/men-english.png", width: 1055, height: 1491, alt: "Eventloom wedding website example" }],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Create a Beautiful RSVP Website in Minutes",
     description: "A simple way to create an event site and collect guest replies.",
-    images: ["/examples/men-english.png"],
   },
 };
 
