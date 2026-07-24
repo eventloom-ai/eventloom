@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Loader2, Trash2, X } from "lucide-react";
+import { ExternalLink, Loader2, Trash2, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/ui/fade-in";
 import type { BuildJobStatus } from "@/lib/agent/progress";
@@ -124,6 +124,12 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <Link
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-black/10 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f5f5f7]"
+                    href={`/app/events/${event.id}/rsvps`}
+                  >
+                    <Users className="size-3.5" /> RSVPs
+                  </Link>
                   <Link
                     className="inline-flex items-center justify-center rounded-full border border-black/10 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f5f5f7]"
                     href={`/app/events/${event.id}/preview`}

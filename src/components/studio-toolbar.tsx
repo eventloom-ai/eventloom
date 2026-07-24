@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ChevronLeft, Eye, Globe2, History, Laptop, Loader2, MessageSquareText, Redo2, Rocket, Smartphone, Tablet, Undo2, X } from "lucide-react";
+import { ChevronLeft, Eye, Globe2, History, Laptop, Loader2, MessageSquareText, Redo2, Rocket, Smartphone, Tablet, Undo2, Users, X } from "lucide-react";
 import Link from "next/link";
 import { requestFeedbackDialog } from "@/lib/feedback";
 import { publishErrorPresentation } from "@/lib/publish-errors";
@@ -119,6 +119,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
         <button type="button" onClick={onRedo} disabled={!canRedo} aria-label="Redo" className="grid size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-25"><Redo2 className="size-3.5" /></button>
         <button type="button" onClick={onToggleHistory} aria-label="Version history" title="Version history" className="hidden size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white sm:grid"><History className="size-3.5" /></button>
         <button type="button" onClick={() => requestFeedbackDialog()} aria-label="Send feedback" title="Send feedback" className="grid size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white"><MessageSquareText className="size-3.5" /></button>
+        <Link href={`/app/events/${eventId}/rsvps`} className="hidden items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:bg-white/10 sm:inline-flex"><Users className="size-3.5" /> RSVPs</Link>
         <Link href={`/app/events/${eventId}/preview`} target="_blank" className="hidden items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:bg-white/10 sm:inline-flex"><Eye className="size-3.5" /> Preview</Link>
         <Link href={`/app/events/${eventId}/privacy`} className="hidden rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:bg-white/10 lg:inline-flex">Privacy</Link>
         <form
