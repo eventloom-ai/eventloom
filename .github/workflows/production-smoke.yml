@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
-      BASE_URL: https://eventloom-beta.vercel.app
+      BASE_URL: https://eventloom.co
       INCIDENT_TITLE: "Production smoke monitor failed"
       READINESS_TOKEN: ${{ secrets.READINESS_TOKEN }}
     steps:
