@@ -8,7 +8,6 @@ import {
   ExternalLink,
   ImagePlus,
   Loader2,
-  MapPin,
   Monitor,
   Palette,
   Smartphone,
@@ -26,6 +25,7 @@ import { enrichBriefWithIntake, intakeQuestionsForBrief, type IntakeAnswers } fr
 import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { useBuildJob } from "@/hooks/use-build-job";
+import { VenueSearchInput } from "@/components/venue-search-input";
 
 const examples = [
   { label: "Wedding", prompt: "A luxury bilingual wedding site with guest replies, separate men's and women's hall details, and a soft blush design.", mood: "blush" },
@@ -79,8 +79,6 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
   const localPreviewImage = useMemo(() => (files[0] ? URL.createObjectURL(files[0]) : undefined), [files]);
   const imageUrl = build.previewConfig?.heroImageUrl ?? localPreviewImage;
   const intakeQuestions = useMemo(() => intakeQuestionsForBrief(prompt), [prompt]);
-  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(intakeAnswers.venue?.trim() || "event venue")}`;
-
   useEffect(() => {
     void resumeStoredJob();
   }, [resumeStoredJob]);
@@ -195,11 +193,18 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
                   <p className="mt-1 text-[11px] leading-5 text-[#c3b5e9]">Answer what you know. We will clearly mark anything you skip as to be announced—never make it up.</p>
                   <div className="mt-4 space-y-3">
                     {intakeQuestions.map((question, index) => index === intakeStep ? (
-                      <label key={question.id} className="block">
+                      <div key={question.id} className="block">
                         <span className="block text-[11px] font-semibold text-[#eeeeef]">{question.label}</span>
                         <span className="mt-0.5 block text-[10px] text-[#aaa5b8]">{question.hint}</span>
-                        {question.input === "select" ? (
+                        {question.id === "venue" ? (
+                          <VenueSearchInput
+                            value={intakeAnswers.venue ?? ""}
+                            onChange={(value) => setIntakeAnswers((current) => ({ ...current, venue: value }))}
+                            disabled={build.isBuilding}
+                          />
+                        ) : question.input === "select" ? (
                           <select
+                            aria-label={question.label}
                             value={intakeAnswers[question.id] ?? ""}
                             onChange={(event) => setIntakeAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
                             disabled={build.isBuilding}
@@ -210,6 +215,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
                           </select>
                         ) : (
                           <input
+                            aria-label={question.label}
                             type={question.input ?? "text"}
                             value={intakeAnswers[question.id] ?? ""}
                             onChange={(event) => setIntakeAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
@@ -218,20 +224,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
                             className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#181818] px-3 py-2 text-[12px] text-white outline-none placeholder:text-[#777780] focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/15 disabled:opacity-60"
                           />
                         )}
-                        {question.id === "venue" ? (
-                          <div className="mt-2 overflow-hidden rounded-lg border border-white/10 bg-[#181818]">
-                            <div className="flex items-center justify-between gap-3 px-3 py-2">
-                              <span className="inline-flex items-center gap-1.5 text-[10px] text-[#aaaab2]"><MapPin className="size-3.5 text-violet-300" /> Map preview</span>
-                              <a href={mapSearchUrl} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-violet-300 hover:underline">Search in Google Maps</a>
-                            </div>
-                            {intakeAnswers.venue?.trim() ? (
-                              <iframe title="Venue map preview" src={`https://www.google.com/maps?q=${encodeURIComponent(intakeAnswers.venue.trim())}&output=embed`} className="h-40 w-full border-0" loading="lazy" />
-                            ) : (
-                              <div className="grid h-20 place-items-center bg-white/[0.03] px-3 text-center text-[10px] text-[#85858d]">Enter a venue or city to preview it here.</div>
-                            )}
-                          </div>
-                        ) : null}
-                      </label>
+                      </div>
                     ) : null)}
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-violet-300/15 pt-3">
