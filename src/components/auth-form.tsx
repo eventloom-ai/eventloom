@@ -13,6 +13,10 @@ import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 type AuthMode = "signin" | "signup";
 
+function authRedirectOrigin() {
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") || window.location.origin;
+}
+
 export function AuthForm({
   mode,
   turnstileSiteKey = "",
@@ -100,7 +104,7 @@ export function AuthForm({
         options: {
           data: { full_name: fullName.trim(), age_18_confirmed: true, legal_version: LEGAL_VERSION },
           captchaToken: captchaToken || undefined,
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+          emailRedirectTo: `${authRedirectOrigin()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         },
       });
 
@@ -165,7 +169,7 @@ export function AuthForm({
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        redirectTo: `${authRedirectOrigin()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
     });
 
@@ -193,7 +197,7 @@ export function AuthForm({
 
     setIsSubmitting(true);
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: `${authRedirectOrigin()}/auth/reset-password`,
     });
     setIsSubmitting(false);
 
