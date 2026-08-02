@@ -8,6 +8,7 @@ vi.mock("@/lib/env", () => ({
 import ContactPage from "@/app/contact/page";
 import {
   FEEDBACK_OPEN_EVENT,
+  isFeedbackSubmitDisabled,
   requestFeedbackDialog,
   takePendingFeedbackDialogRequest,
 } from "@/lib/feedback";
@@ -32,5 +33,11 @@ describe("contact support", () => {
     expect((dispatchEvent.mock.calls[0]?.[0] as Event).type).toBe(FEEDBACK_OPEN_EVENT);
     expect(takePendingFeedbackDialogRequest()).toBe(true);
     expect(takePendingFeedbackDialogRequest()).toBe(false);
+  });
+
+  it("lets the server decide whether human verification is required", () => {
+    expect(isFeedbackSubmitDisabled(false, "This feedback is ready to send.")).toBe(false);
+    expect(isFeedbackSubmitDisabled(true, "This feedback is ready to send.")).toBe(true);
+    expect(isFeedbackSubmitDisabled(false, "Too short")).toBe(true);
   });
 });

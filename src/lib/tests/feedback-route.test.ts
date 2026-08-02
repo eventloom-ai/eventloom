@@ -114,6 +114,17 @@ describe("product feedback route", () => {
     expect(mocks.operationalEvent).toHaveBeenCalledWith("info", "product_feedback_received", expect.not.objectContaining({ message: expect.anything() }));
   });
 
+  it("does not require Turnstile for an authenticated session", async () => {
+    mocks.turnstileConfigured = true;
+    mocks.verifyHuman = false;
+
+    const response = await POST(request(validBody));
+
+    expect(response.status).toBe(201);
+    expect(mocks.verifyArgs).toBeNull();
+    expect(mocks.inserted).toMatchObject({ user_id: mocks.auth?.user.id });
+  });
+
   it("fails closed for anonymous feedback when human verification is unavailable", async () => {
     mocks.auth = null;
     mocks.verifyHuman = false;

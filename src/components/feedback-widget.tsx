@@ -4,7 +4,7 @@ import { Bug, Check, Heart, Lightbulb, MessageCircleQuestion, MessageSquareText,
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { TurnstileWidget } from "@/components/turnstile-widget";
-import { FEEDBACK_OPEN_EVENT, takePendingFeedbackDialogRequest } from "@/lib/feedback";
+import { FEEDBACK_OPEN_EVENT, isFeedbackSubmitDisabled, takePendingFeedbackDialogRequest } from "@/lib/feedback";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const categories = [
@@ -171,7 +171,7 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
                 <p className="mt-2 text-xs leading-5 text-[#86868b]">Please don’t include guest names, addresses, payment details, passwords, or security codes.</p>
                 {turnstileSiteKey ? <div className="mt-4"><TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.productFeedback} onToken={setTurnstileToken} resetKey={turnstileResetKey} /></div> : null}
                 {error ? <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</p> : null}
-                <button type="submit" disabled={busy || message.trim().length < 10 || (Boolean(turnstileSiteKey) && !turnstileToken)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40">
+                <button type="submit" disabled={isFeedbackSubmitDisabled(busy, message)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40">
                   <MessageSquareText className="size-4" />
                   {busy ? "Sending…" : "Send feedback"}
                 </button>
