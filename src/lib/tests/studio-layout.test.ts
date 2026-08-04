@@ -8,6 +8,9 @@ describe("desktop studio layout", () => {
 
     expect(source).toContain("grid-rows-[minmax(0,1fr)]");
     expect(source).toContain('className="relative min-h-0 min-w-0 overflow-hidden"');
+
+    const canvasSource = readFileSync("src/components/studio-canvas.tsx", "utf8");
+    expect(canvasSource).toContain('className="relative h-full min-h-0 overflow-auto');
   });
 
   it("keeps the shared legal footer out of the full-screen studio", () => {
