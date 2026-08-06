@@ -10,14 +10,16 @@ export function eventDraftPath(brief?: string) {
 export function eventDraftEntryPath({
   brief,
   authenticated,
+  authConfigured = true,
   signupEnabled,
 }: {
   brief: string;
   authenticated: boolean;
+  authConfigured?: boolean;
   signupEnabled: boolean;
 }) {
   const draftPath = eventDraftPath(brief);
-  if (authenticated) return draftPath;
+  if (authenticated || !authConfigured) return draftPath;
   const authPath = signupEnabled ? "/signup" : "/login";
   return `${authPath}?next=${encodeURIComponent(draftPath)}`;
 }

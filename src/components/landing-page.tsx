@@ -55,10 +55,12 @@ const featureCards = [
 export function LandingPage({
   initialTemplate,
   authenticated = false,
+  authConfigured = true,
   signupEnabled = false,
 }: {
   initialTemplate?: string;
   authenticated?: boolean;
+  authConfigured?: boolean;
   signupEnabled?: boolean;
 }) {
   return (
@@ -77,10 +79,10 @@ export function LandingPage({
           </nav>
           <div className="flex items-center gap-2">
             <Link
-              href={authenticated ? "/app" : "/login?next=/app"}
+              href={authenticated || !authConfigured ? "/app" : "/login?next=/app"}
               className="rounded-full px-3 py-2 text-sm font-medium text-[#4f4a54] transition hover:bg-black/[0.04] hover:text-[#252329] sm:px-4"
             >
-              {authenticated ? "My events" : "Sign in"}
+              {authenticated ? "My events" : authConfigured ? "Sign in" : "Open local demo"}
             </Link>
             <Link
               href="#create"
@@ -108,6 +110,7 @@ export function LandingPage({
             <StartEventPrompt
               initialTemplate={initialTemplate}
               authenticated={authenticated}
+              authConfigured={authConfigured}
               signupEnabled={signupEnabled}
             />
             <p className="mt-4 text-sm text-[#6a6570]">

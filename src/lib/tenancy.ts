@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { rootDomain } from "@/lib/env";
 import { serviceSupabase } from "@/lib/supabase/server";
+import { getLocalDemoEventBySlug } from "@/lib/local-demo-store";
 import type { EventConfig, EventRecord, EventStatus, PageArtifact } from "@/lib/types";
 import { siteDocumentSchema } from "@/lib/site-document";
 
@@ -53,7 +54,7 @@ type EventRow = {
 export async function resolveEventBySlug(slug: string): Promise<EventRecord | null> {
   const client = serviceSupabase();
   if (!client) {
-    return null;
+    return getLocalDemoEventBySlug(slug);
   }
 
   const { data: event, error } = await client

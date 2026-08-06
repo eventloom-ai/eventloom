@@ -1,5 +1,6 @@
 import { LandingPage } from "@/components/landing-page";
 import { publicSignupEnabled } from "@/lib/env";
+import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getServerUser } from "@/lib/supabase/server";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ template?: string }> }) {
@@ -8,6 +9,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
     <LandingPage
       initialTemplate={template}
       authenticated={Boolean(user)}
+      authConfigured={hasSupabasePublicEnv()}
       signupEnabled={publicSignupEnabled()}
     />
   );

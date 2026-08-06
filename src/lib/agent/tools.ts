@@ -4,6 +4,7 @@ import { progressForStep } from "@/lib/agent/build-progress";
 import type { BuildJobStatus, BuildProgressEvent, BuildProgressStep } from "@/lib/agent/progress";
 import { addDomainToVercelProject } from "@/lib/domains/vercel";
 import { appUrl } from "@/lib/env";
+import { createLocalDemoJob, finishLocalDemoJob, getLocalDemoEventById, getLocalDemoJob, updateLocalDemoJob } from "@/lib/local-demo-store";
 import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord, PageArtifact } from "@/lib/types";
 
@@ -62,7 +63,7 @@ export async function createEventRecord(input: {
 
 export async function getEventRecord(eventId: string, ownerId?: string | null): Promise<EventRecord | null> {
   const client = await writableClient(ownerId);
-  if (!client) return null;
+  if (!client) return getLocalDemoEventById(eventId);
 
   const { data, error } = await client
     .from("events")
@@ -108,7 +109,7 @@ export async function createGenerationJob(input: {
   ownerId?: string | null;
 }) {
   const client = await writableClient(input.ownerId);
-  if (!client) return null;
+  if (!client) return createLocalDemoJob(input.slug).id;
 
   const { data } = await client
     .from("generation_jobs")
@@ -142,7 +143,10 @@ export async function updateGenerationJobProgress(
 ) {
   if (!jobId) return;
   const client = await writableClient(ownerId);
-  if (!client) return;
+  if (!client) {
+    updateLocalDemoJob(jobId, input);
+    return;
+  }
 
   await client
     .from("generation_jobs")
@@ -158,7 +162,7 @@ export async function updateGenerationJobProgress(
 
 export async function getGenerationJob(jobId: string, ownerId?: string | null): Promise<BuildJobStatus | null> {
   const client = await writableClient(ownerId);
-  if (!client) return null;
+  if (!client) return getLocalDemoJob(jobId);
 
   const { data, error } = await client
     .from("generation_jobs")
@@ -238,7 +242,10 @@ export function placeholderEventConfig(slug: string): EventConfig {
 export async function finishGenerationJob(jobId: string | null, status: "succeeded" | "failed", error?: string, ownerId?: string | null) {
   if (!jobId) return;
   const client = await writableClient(ownerId);
-  if (!client) return;
+  if (!client) {
+    finishLocalDemoJob(jobId, status, error);
+    return;
+  }
 
   await client
     .from("generation_jobs")
