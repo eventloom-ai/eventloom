@@ -3,10 +3,14 @@ import {
   ArrowRight,
   CalendarCheck,
   Check,
+  CircleCheckBig,
   ChevronRight,
+  Clock3,
   Heart,
+  LockKeyhole,
   MessageSquareText,
   Palette,
+  ShieldCheck,
 } from "lucide-react";
 import { EventloomLogo, EventloomMark } from "@/components/logo";
 import { StartEventPrompt } from "@/components/start-event-prompt";
@@ -51,6 +55,31 @@ const frequentlyAsked = [
   },
 ];
 
+const trustPillars = [
+  {
+    title: "No payment to begin",
+    description: "Start your draft for free and decide later if you want to publish.",
+    icon: CircleCheckBig,
+  },
+  {
+    title: "Private guest data",
+    description: "RSVP details stay visible only to you and authorized collaborators.",
+    icon: LockKeyhole,
+  },
+  {
+    title: "Secure account access",
+    description: "Sign in with trusted providers and keep control over your event.",
+    icon: ShieldCheck,
+  },
+];
+
+const firstFiveMinutes = [
+  "Write one short event description.",
+  "Review a complete draft website instantly.",
+  "Adjust colors, details, and RSVP questions with plain-language edits.",
+  "Share only when you feel fully ready.",
+];
+
 export function LandingPage({
   initialTemplate,
   authenticated = false,
@@ -90,13 +119,13 @@ export function LandingPage({
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(109,40,217,0.07),transparent_55%)]" />
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-[13px] font-medium tracking-[0.04em] text-[#6f6a72]">
-            Event websites with guest replies, built for you
+            Thoughtful event websites with secure guest replies
           </p>
           <h1 className="mt-5 text-[clamp(2.5rem,6.5vw,4.75rem)] font-semibold leading-[1.02] tracking-[-0.045em] text-[#252329]">
-            A beautiful RSVP site in minutes.
+            Feel confident from your very first draft.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-[17px] leading-7 text-[#68636b] sm:text-lg sm:leading-8">
-            Describe the occasion. Get a polished page, collect replies, and share one link—no design tools required.
+            Describe your event once. Eventloom creates a polished RSVP website you can refine in plain language before sharing with guests.
           </p>
           <div id="create" className="mt-10 scroll-mt-28 text-left">
             <StartEventPrompt
@@ -106,16 +135,48 @@ export function LandingPage({
             />
           </div>
           <p className="mt-5 text-[13px] leading-6 text-[#7a757e]">
-            Free to start · Pay $20 only when you publish · Guest data stays private
+            Free to start · Pay only when you publish · Private by default
           </p>
         </div>
       </section>
 
       <section className="border-y border-black/[0.06] bg-white px-5 py-6 sm:px-8">
-        <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-2 text-center text-[13px] text-[#625d66] sm:flex-row sm:gap-0 sm:divide-x sm:divide-black/10">
-          <p className="sm:px-5">Privacy-first guest data</p>
-          <p className="sm:px-5">Secure Google or email sign-in</p>
-          <p className="sm:px-5">One simple link for every guest</p>
+        <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-3">
+          {trustPillars.map((pillar) => (
+            <article key={pillar.title} className="rounded-2xl border border-black/[0.06] bg-[#fbfaf8] px-4 py-4 text-left sm:px-5">
+              <span className="grid size-9 place-items-center rounded-xl bg-violet-100 text-violet-700">
+                <pillar.icon className="size-4.5" />
+              </span>
+              <p className="mt-3 text-sm font-semibold text-[#252329]">{pillar.title}</p>
+              <p className="mt-1 text-[13px] leading-6 text-[#67616a]">{pillar.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-5 py-16 sm:px-8 sm:py-20">
+        <div className="mx-auto max-w-4xl rounded-[1.75rem] border border-black/[0.07] bg-white p-6 shadow-[0_20px_60px_rgba(38,31,43,0.06)] sm:p-8">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">
+            <Clock3 className="size-4" />
+            Your first five minutes
+          </div>
+          <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-[#252329] sm:text-4xl">
+            Simple start, no pressure.
+          </h2>
+          <ul className="mt-6 grid gap-3 text-sm leading-7 text-[#645f68]">
+            {firstFiveMinutes.map((item) => (
+              <li key={item} className="flex items-start gap-3">
+                <span className="mt-1 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                  <Check className="size-3.5" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Link href="#create" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#252329] px-5 py-3 text-sm font-semibold text-white transition hover:bg-black">
+            Start my free draft
+            <ArrowRight className="size-4" />
+          </Link>
         </div>
       </section>
 
@@ -144,8 +205,8 @@ export function LandingPage({
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Made for normal event planning</p>
-            <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Ask for changes the way you naturally speak.</h2>
-            <p className="mt-6 max-w-xl text-base leading-8 text-white/60">No templates to wrestle with and no design tools to learn. Say “make it warmer,” “add the dinner time,” or “show the RSVP before the schedule.”</p>
+            <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Creative control without technical stress.</h2>
+            <p className="mt-6 max-w-xl text-base leading-8 text-white/60">No template wrestling and no design jargon. Just ask for updates naturally, preview every change, and publish only when it feels right.</p>
             <Link href="#create" className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#252329] transition hover:bg-violet-100">Start my draft <ChevronRight className="size-4" /></Link>
           </div>
           <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur sm:p-7">
@@ -160,8 +221,8 @@ export function LandingPage({
         <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-600">Simple pricing</p>
-            <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Create first. Pay when you publish.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#6f6a72]">Explore your draft before making a purchase decision.</p>
+            <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Transparent pricing you can trust.</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#6f6a72]">Explore your full draft first, then publish only when you are comfortable.</p>
           </div>
           <div className="mx-auto mt-12 max-w-xl rounded-[2rem] border border-violet-200 bg-white p-7 shadow-[0_30px_90px_rgba(79,52,115,0.13)] sm:p-9">
             <div className="flex items-start justify-between gap-6">
