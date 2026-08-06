@@ -34,6 +34,15 @@ describe("event entry routing", () => {
     })).toBe("/app/events/new?brief=Engagement%20party");
   });
 
+  it("takes an unconfigured local demo directly to the draft", () => {
+    expect(eventDraftEntryPath({
+      brief: "Local birthday demo",
+      authenticated: false,
+      authConfigured: false,
+      signupEnabled: false,
+    })).toBe("/app/events/new?brief=Local%20birthday%20demo");
+  });
+
   it("builds the empty draft path without a dangling query", () => {
     expect(eventDraftPath()).toBe("/app/events/new");
   });

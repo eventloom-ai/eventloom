@@ -6,6 +6,10 @@
   --muted: #6e6e73;
   --border: rgba(0, 0, 0, 0.08);
   --accent: #0071e3;
+  --font-geist-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-inter: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-playfair: Georgia, "Times New Roman", serif;
   color-scheme: light;
 }
 

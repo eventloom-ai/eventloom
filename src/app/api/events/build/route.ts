@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseBuildForm } from "@/lib/agent/parse-build-form";
 import { startBuildJob } from "@/lib/agent/start-build";
+import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
 
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
 
   const parsed = await parseBuildForm(form, body);
   const ownerId = (await getServerUser())?.id ?? null;
-  if (!ownerId) {
+  if (hasSupabasePublicEnv() && !ownerId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const result = await startBuildJob(parsed, ownerId);

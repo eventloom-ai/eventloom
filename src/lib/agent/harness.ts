@@ -4,6 +4,7 @@ import { progressForStep } from "@/lib/agent/build-progress";
 import type { BuildProgressEvent, BuildProgressReporter } from "@/lib/agent/progress";
 import { applyImagesToConfig } from "@/lib/agent/parse-build-form";
 import { getAgentRuntime } from "@/lib/agent/runtime";
+import { saveLocalDemoEvent } from "@/lib/local-demo-store";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
 import {
@@ -68,7 +69,7 @@ async function report(
       step: payload.step,
       message: payload.message,
       progressPercent,
-      eventId: input.placeholderEventId ?? input.existingEventId ?? null,
+      eventId: payload.eventId,
       phase: "phase" in payload ? payload.phase : undefined,
       resultConfig: payload.step === "planned" || payload.step === "done" ? payload.config : undefined,
     },
@@ -119,7 +120,15 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     });
 
     if (!runtime.capabilities.persist_events) {
-      await finishGenerationJob(input.jobId, "succeeded", undefined, input.ownerId);
+      const event: EventRecord = {
+        id: input.existingEventId ?? `demo-${input.slug}`,
+        slug: input.slug,
+        status: "draft",
+        rsvp_open: false,
+        config,
+        artifact,
+      };
+      saveLocalDemoEvent(event);
       await report(input, {
         step: "done",
         message: "Preview ready in demo mode.",
@@ -130,17 +139,11 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
         config,
         progressPercent: 100,
       });
+      await finishGenerationJob(input.jobId, "succeeded", undefined, input.ownerId);
       return {
         ok: true,
         mode: "demo",
-        event: {
-          id: `demo-${input.slug}`,
-          slug: input.slug,
-          status: input.publish ? "published" : "draft",
-          rsvp_open: Boolean(input.publish),
-          config,
-          artifact,
-        },
+        event,
         preview: previewUrls(input.slug),
         runtime,
         artifactModel: artifact.model,

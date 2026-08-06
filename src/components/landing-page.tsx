@@ -65,10 +65,12 @@ const frequentlyAsked = [
 export function LandingPage({
   initialTemplate,
   authenticated = false,
+  authConfigured = true,
   signupEnabled = false,
 }: {
   initialTemplate?: string;
   authenticated?: boolean;
+  authConfigured?: boolean;
   signupEnabled?: boolean;
 }) {
   return (
@@ -86,10 +88,10 @@ export function LandingPage({
           </nav>
           <div className="flex items-center gap-2">
             <Link
-              href={authenticated ? "/app" : "/login?next=/app"}
+              href={authenticated || !authConfigured ? "/app" : "/login?next=/app"}
               className="rounded-full px-3 py-2 text-sm font-medium text-[#66616a] transition hover:bg-black/[0.04] hover:text-[#252329] sm:px-4"
             >
-              {authenticated ? "My events" : "Sign in"}
+              {authenticated ? "My events" : authConfigured ? "Sign in" : "Open local demo"}
             </Link>
             <Link href="#create" className="hidden rounded-full bg-[#252329] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:inline-flex">
               {authenticated ? "New event" : "Create my RSVP"}
@@ -116,6 +118,7 @@ export function LandingPage({
               <StartEventPrompt
                 initialTemplate={initialTemplate}
                 authenticated={authenticated}
+                authConfigured={authConfigured}
                 signupEnabled={signupEnabled}
               />
             </div>
@@ -129,7 +132,7 @@ export function LandingPage({
       <section className="border-y border-black/[0.06] bg-white px-5 py-7 sm:px-8">
         <div className="mx-auto grid max-w-6xl gap-5 text-center text-sm text-[#625d66] sm:grid-cols-3">
           <p className="inline-flex items-center justify-center gap-2"><ShieldCheck className="size-4 text-violet-600" /> Privacy-first guest data</p>
-          <p className="inline-flex items-center justify-center gap-2"><LockKeyhole className="size-4 text-violet-600" /> Secure Google or email sign-in</p>
+          <p className="inline-flex items-center justify-center gap-2"><LockKeyhole className="size-4 text-violet-600" /> {authConfigured ? "Secure Google or email sign-in" : "Local demo — no sign-in required"}</p>
           <p className="inline-flex items-center justify-center gap-2"><Globe2 className="size-4 text-violet-600" /> One simple link for every guest</p>
         </div>
       </section>

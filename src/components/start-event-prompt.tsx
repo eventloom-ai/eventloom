@@ -14,10 +14,12 @@ const starterBriefs = {
 export function StartEventPrompt({
   initialTemplate,
   authenticated = false,
+  authConfigured = true,
   signupEnabled = false,
 }: {
   initialTemplate?: string;
   authenticated?: boolean;
+  authConfigured?: boolean;
   signupEnabled?: boolean;
 }) {
   const router = useRouter();
@@ -29,6 +31,7 @@ export function StartEventPrompt({
     router.push(eventDraftEntryPath({
       brief,
       authenticated,
+      authConfigured,
       signupEnabled,
     }));
   }
@@ -39,13 +42,15 @@ export function StartEventPrompt({
       <textarea value={brief} onChange={(event) => setBrief(event.target.value)} maxLength={2000} rows={5} aria-label="Describe your event" placeholder="For example: A warm summer wedding for Maya and Adam with dinner, dancing, and online RSVP…" className="mt-2 w-full resize-none bg-transparent px-3 py-2 text-[16px] leading-6 text-[#242226] outline-none placeholder:text-[#9a969e]" />
       <div className="flex items-center justify-between border-t border-black/[0.08] px-2 py-2">
         <span className="hidden text-[11px] text-[#86818a] sm:inline">
-          {!authenticated && !signupEnabled
+          {!authConfigured
+            ? "Local demo: drafts are temporary and reset with the server."
+            : !authenticated && !signupEnabled
             ? "Invited beta: sign in to keep your description."
             : "No technical or design experience needed."}
         </span>
         <button type="submit" disabled={!brief.trim()} className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-violet-500 disabled:opacity-40">
           <ArrowUp className="size-3.5" />
-          {!authenticated && !signupEnabled ? "Sign in to create draft" : "Create free draft"}
+          {authConfigured && !authenticated && !signupEnabled ? "Sign in to create draft" : "Create free draft"}
         </button>
       </div>
     </form>
