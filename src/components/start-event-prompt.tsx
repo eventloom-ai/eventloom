@@ -14,10 +14,12 @@ const starterBriefs = {
 export function StartEventPrompt({
   initialTemplate,
   authenticated = false,
+  authConfigured = true,
   signupEnabled = false,
 }: {
   initialTemplate?: string;
   authenticated?: boolean;
+  authConfigured?: boolean;
   signupEnabled?: boolean;
 }) {
   const router = useRouter();
@@ -33,14 +35,17 @@ export function StartEventPrompt({
     router.push(eventDraftEntryPath({
       brief,
       authenticated,
+      authConfigured,
       signupEnabled,
     }));
   }
 
-  const ctaLabel = !authenticated && !signupEnabled ? "Sign in to continue" : "Create free draft";
-  const helperText = !authenticated && !signupEnabled
-    ? "Invited beta — sign in to save your description."
-    : "Takes about a minute. You can edit everything after.";
+  const ctaLabel = authConfigured && !authenticated && !signupEnabled ? "Sign in to continue" : "Create free draft";
+  const helperText = !authConfigured
+    ? "Local demo — drafts are temporary and reset with the server."
+    : !authenticated && !signupEnabled
+      ? "Invited beta — sign in to save your description."
+      : "Takes about a minute. You can edit everything after.";
 
   return (
     <form

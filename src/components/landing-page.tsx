@@ -54,10 +54,12 @@ const frequentlyAsked = [
 export function LandingPage({
   initialTemplate,
   authenticated = false,
+  authConfigured = true,
   signupEnabled = false,
 }: {
   initialTemplate?: string;
   authenticated?: boolean;
+  authConfigured?: boolean;
   signupEnabled?: boolean;
 }) {
   return (
@@ -74,10 +76,10 @@ export function LandingPage({
           </nav>
           <div className="flex items-center gap-2">
             <Link
-              href={authenticated ? "/app" : "/login?next=/app"}
+              href={authenticated || !authConfigured ? "/app" : "/login?next=/app"}
               className="rounded-full px-3 py-2 text-sm font-medium text-[#66616a] transition hover:bg-black/[0.04] hover:text-[#252329] sm:px-4"
             >
-              {authenticated ? "My events" : "Sign in"}
+              {authenticated ? "My events" : authConfigured ? "Sign in" : "Open local demo"}
             </Link>
             <Link href="#create" className="hidden rounded-full bg-[#252329] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:inline-flex">
               {authenticated ? "New event" : "Create my RSVP"}
@@ -102,6 +104,7 @@ export function LandingPage({
             <StartEventPrompt
               initialTemplate={initialTemplate}
               authenticated={authenticated}
+              authConfigured={authConfigured}
               signupEnabled={signupEnabled}
             />
           </div>
@@ -114,7 +117,7 @@ export function LandingPage({
       <section className="border-y border-black/[0.06] bg-white px-5 py-6 sm:px-8">
         <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-2 text-center text-[13px] text-[#625d66] sm:flex-row sm:gap-0 sm:divide-x sm:divide-black/10">
           <p className="sm:px-5">Privacy-first guest data</p>
-          <p className="sm:px-5">Secure Google or email sign-in</p>
+          <p className="sm:px-5">{authConfigured ? "Secure Google or email sign-in" : "Local demo — no sign-in required"}</p>
           <p className="sm:px-5">One simple link for every guest</p>
         </div>
       </section>
