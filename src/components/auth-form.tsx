@@ -6,6 +6,7 @@ import { FormEvent, useMemo, useRef, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
 import { SIGNUP_UX_VERSION } from "@/lib/auth/signup-ux";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { EventloomLogo } from "@/components/logo";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
@@ -194,8 +195,8 @@ export function AuthForm({
   return (
     <div className="mx-auto w-full max-w-md">
       <div className="mb-8 text-center">
-        <Link href="/" className="text-[17px] font-semibold tracking-tight text-[#1d1d1f]">
-          Eventloom
+        <Link href="/" className="inline-flex justify-center text-[17px] font-semibold text-[#1d1d1f]">
+          <EventloomLogo markClassName="size-7" />
         </Link>
         <h1 className="mt-8 text-[32px] font-semibold tracking-[-0.02em]">{title}</h1>
         <p className="mt-3 text-[15px] leading-relaxed text-[#6e6e73]">{subtitle}</p>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EventloomLogo } from "@/components/logo";
 import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 
 type AppHeaderProps = {
@@ -21,8 +22,8 @@ export async function AppHeader({ active = "events" }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-[#fbfbfd]/80 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-        <Link className="text-[17px] font-semibold tracking-tight" href="/">
-          Eventloom
+        <Link className="text-[17px] font-semibold text-[#1d1d1f]" href="/">
+          <EventloomLogo markClassName="size-7" />
         </Link>
         <nav className="flex items-center gap-1 text-[14px]">
           <Link

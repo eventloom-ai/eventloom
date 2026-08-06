@@ -20,6 +20,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { EventloomMark } from "@/components/logo";
 import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
 import { enrichBriefWithIntake, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
@@ -138,7 +139,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
     <div className={`overflow-hidden bg-[#151515] text-[#f5f5f5] ${fullBleed ? "min-h-[100svh] rounded-none border-0 shadow-none lg:h-[100svh]" : "rounded-2xl border border-white/10 shadow-[0_28px_100px_rgba(0,0,0,0.26)]"}`}>
       <header className="flex min-h-12 flex-col gap-3 border-b border-white/10 bg-[#1a1a1a] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="grid size-7 place-items-center rounded-lg bg-[#8b5cf6] text-white shadow-lg shadow-violet-950/30"><Sparkles className="size-3.5" /></div>
+          <EventloomMark className="size-7 shadow-lg shadow-violet-950/30" />
           <div>
             <p className="text-[13px] font-semibold tracking-tight">Eventloom Studio</p>
             <p className="text-[11px] text-[#9c9ca2]">{build.isBuilding ? "Agent is building your experience" : build.completedEventId ? "Draft ready to review" : "New event workspace"}</p>

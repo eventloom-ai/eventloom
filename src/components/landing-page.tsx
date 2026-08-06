@@ -4,15 +4,11 @@ import {
   CalendarCheck,
   Check,
   ChevronRight,
-  Globe2,
   Heart,
-  LockKeyhole,
   MessageSquareText,
   Palette,
-  ShieldCheck,
-  Sparkles,
-  WandSparkles,
 } from "lucide-react";
+import { EventloomLogo, EventloomMark } from "@/components/logo";
 import { StartEventPrompt } from "@/components/start-event-prompt";
 
 const steps = [
@@ -34,13 +30,6 @@ const steps = [
     description: "Publish when it feels right and keep every guest reply organized.",
     icon: CalendarCheck,
   },
-];
-
-const assurances = [
-  "Start your draft free",
-  "No design skills needed",
-  "Secure guest replies",
-  "Pay only when you publish",
 ];
 
 const frequentlyAsked = [
@@ -75,9 +64,8 @@ export function LandingPage({
     <main className="overflow-hidden bg-[#fbfaf8] text-[#252329]">
       <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-[#fbfaf8]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight">
-            <span className="grid size-8 place-items-center rounded-xl bg-violet-600 text-white shadow-sm"><Sparkles className="size-4" /></span>
-            Eventloom
+          <Link href="/" className="text-base font-semibold text-[#252329]">
+            <EventloomLogo />
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-7 text-sm text-[#66616a] md:flex">
             <Link href="#how-it-works" className="transition hover:text-[#252329]">How it works</Link>
@@ -98,39 +86,36 @@ export function LandingPage({
         </div>
       </header>
 
-      <section className="relative px-5 pb-20 pt-14 sm:px-8 sm:pb-28 sm:pt-20">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(124,58,237,0.12),transparent_27rem),radial-gradient(circle_at_90%_10%,rgba(244,114,182,0.12),transparent_25rem)]" />
-        <div className="mx-auto max-w-4xl">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/75 px-3 py-1.5 text-xs font-semibold text-violet-800 shadow-sm">
-              <WandSparkles className="size-3.5" />
-              Your event website, made simple
-            </div>
-            <h1 className="mt-6 max-w-3xl text-[clamp(2.65rem,7vw,5.65rem)] font-semibold leading-[0.96] tracking-[-0.055em]">
-              A beautiful RSVP site in minutes.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#68636b] sm:text-xl">
-              Tell us what you’re celebrating. Eventloom creates the website, collects guest replies, and keeps everything in one calm place.
-            </p>
-            <div id="create" className="mt-9 scroll-mt-28">
-              <StartEventPrompt
-                initialTemplate={initialTemplate}
-                authenticated={authenticated}
-                signupEnabled={signupEnabled}
-              />
-            </div>
-            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#746f77]">
-              {assurances.map((item) => <span key={item} className="inline-flex items-center gap-1.5"><Check className="size-3.5 text-emerald-600" />{item}</span>)}
-            </div>
+      <section className="relative px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(109,40,217,0.07),transparent_55%)]" />
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-[13px] font-medium tracking-[0.04em] text-[#6f6a72]">
+            Event websites with guest replies, built for you
+          </p>
+          <h1 className="mt-5 text-[clamp(2.5rem,6.5vw,4.75rem)] font-semibold leading-[1.02] tracking-[-0.045em] text-[#252329]">
+            A beautiful RSVP site in minutes.
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-7 text-[#68636b] sm:text-lg sm:leading-8">
+            Describe the occasion. Get a polished page, collect replies, and share one link—no design tools required.
+          </p>
+          <div id="create" className="mt-10 scroll-mt-28 text-left">
+            <StartEventPrompt
+              initialTemplate={initialTemplate}
+              authenticated={authenticated}
+              signupEnabled={signupEnabled}
+            />
           </div>
+          <p className="mt-5 text-[13px] leading-6 text-[#7a757e]">
+            Free to start · Pay $20 only when you publish · Guest data stays private
+          </p>
         </div>
       </section>
 
-      <section className="border-y border-black/[0.06] bg-white px-5 py-7 sm:px-8">
-        <div className="mx-auto grid max-w-6xl gap-5 text-center text-sm text-[#625d66] sm:grid-cols-3">
-          <p className="inline-flex items-center justify-center gap-2"><ShieldCheck className="size-4 text-violet-600" /> Privacy-first guest data</p>
-          <p className="inline-flex items-center justify-center gap-2"><LockKeyhole className="size-4 text-violet-600" /> Secure Google or email sign-in</p>
-          <p className="inline-flex items-center justify-center gap-2"><Globe2 className="size-4 text-violet-600" /> One simple link for every guest</p>
+      <section className="border-y border-black/[0.06] bg-white px-5 py-6 sm:px-8">
+        <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-2 text-center text-[13px] text-[#625d66] sm:flex-row sm:gap-0 sm:divide-x sm:divide-black/10">
+          <p className="sm:px-5">Privacy-first guest data</p>
+          <p className="sm:px-5">Secure Google or email sign-in</p>
+          <p className="sm:px-5">One simple link for every guest</p>
         </div>
       </section>
 
@@ -164,7 +149,7 @@ export function LandingPage({
             <Link href="#create" className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#252329] transition hover:bg-violet-100">Start my draft <ChevronRight className="size-4" /></Link>
           </div>
           <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur sm:p-7">
-            <div className="flex items-center gap-2 text-sm font-semibold"><span className="grid size-8 place-items-center rounded-xl bg-violet-500"><Sparkles className="size-4" /></span> Eventloom helper</div>
+            <div className="flex items-center gap-2 text-sm font-semibold"><EventloomMark className="size-8" /> Eventloom helper</div>
             <div className="mt-6 rounded-2xl bg-white px-5 py-4 text-sm leading-7 text-[#38323b] shadow-xl">Make the page feel romantic and elegant. Add a dinner at 8:00 PM and ask guests about dietary restrictions.</div>
             <div className="mt-4 ml-8 rounded-2xl border border-violet-300/20 bg-violet-400/10 px-5 py-4 text-sm leading-7 text-white/75">Done. I updated the style, added dinner to the schedule, and included a dietary question in the RSVP form.</div>
           </div>
