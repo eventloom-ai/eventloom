@@ -64,7 +64,7 @@ export function LandingPage({ initialTemplate, authenticated = false, authConfig
       </header>
 
       <section className="eventloom-hero relative isolate min-h-[calc(100svh-4rem)] overflow-hidden px-5 pb-20 pt-24 text-white sm:px-8 sm:pb-28 sm:pt-32">
-        <div aria-hidden="true" className="eventloom-aurora"><span /><span /><span /></div>
+        <div aria-hidden="true" className="eventloom-water-reflection"><span /><span /></div>
         <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Event websites and RSVPs, made personal</p>
           <h1 className="mx-auto mt-6 max-w-4xl font-[family-name:var(--font-playfair)] text-[clamp(3.3rem,8vw,6.8rem)] leading-[0.86] tracking-[-0.065em]">Make the invitation everyone remembers.</h1>
