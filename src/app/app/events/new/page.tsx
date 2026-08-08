@@ -10,8 +10,13 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
   const { brief } = await searchParams;
   const landingBrief = brief?.trim().slice(0, 8000) ?? "";
   const user = await getServerUser();
-  if (hasSupabasePublicEnv() && !user) {
+  const authConfigured = hasSupabasePublicEnv();
+  if (authConfigured && !user) {
     redirect(`/login?next=${encodeURIComponent(eventDraftPath(landingBrief))}`);
+  }
+
+  if (!authConfigured) {
+    return <SiteBuildStudio initialPrompt={landingBrief} variant="app" fullBleed />;
   }
 
   if (!landingBrief) {

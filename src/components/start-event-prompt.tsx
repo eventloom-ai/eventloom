@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Sparkles, WandSparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { eventDraftEntryPath } from "@/lib/event-entry";
@@ -46,51 +46,40 @@ export function StartEventPrompt({
     : !authenticated && !signupEnabled
       ? "Invited beta — sign in to save your description."
       : "Takes about a minute. You can edit everything after.";
-  const templates = Object.entries(starterBriefs);
 
   return (
-    <form
-      onSubmit={submit}
-      className="rounded-3xl border border-black/10 bg-white p-4 shadow-[0_1px_2px_rgba(37,35,41,0.04),0_24px_64px_rgba(37,35,41,0.08)] sm:p-5"
-    >
-      <div className="flex items-center gap-2 text-sm text-[#6f6a72]">
-        <Sparkles className="size-4 text-emerald-700" />
-        Describe your event in one sentence
-      </div>
+    <form onSubmit={submit} className="border border-[#302821]/15 bg-[#fffaf3] shadow-[0_18px_55px_rgba(65,43,28,0.12)]">
+      <label htmlFor="event-brief" className="block px-5 pt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153]">
+        Describe your event
+      </label>
       <textarea
         ref={textareaRef}
         id="event-brief"
         value={brief}
         onChange={(event) => setBrief(event.target.value)}
         maxLength={2000}
-        rows={3}
+        rows={4}
         aria-label="Describe your event"
-        placeholder="Example: Elegant bilingual wedding website with schedule, location details, and RSVPs."
-        className="mt-2 w-full resize-none bg-transparent py-1 text-[16px] leading-7 text-[#252329] outline-none placeholder:text-[#9a969e]"
+        placeholder="A garden wedding with dinner, dancing, and a thoughtful RSVP for our guests…"
+        className="mt-2 w-full resize-none bg-transparent px-5 py-1 text-[16px] leading-7 text-[#302821] outline-none placeholder:text-[#a89b90]"
       />
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-black/[0.06] pt-3">
-        {templates.map(([key, value]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setBrief(value)}
-            className="rounded-full border border-black/10 bg-[#f4f4f6] px-3 py-1.5 text-xs font-medium text-[#504a54] transition hover:border-emerald-700/30 hover:bg-emerald-50"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <WandSparkles className="size-3" />
+      <div className="border-t border-[#302821]/10 px-4 py-3.5 sm:px-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-[11px] font-medium text-[#796c61]">Start with</span>
+          {Object.entries(starterBriefs).map(([key, value]) => (
+            <button key={key} type="button" onClick={() => setBrief(value)} className="rounded-full border border-[#302821]/10 px-3 py-1.5 text-[11px] font-medium capitalize text-[#574c43] transition hover:border-[#a37561] hover:bg-[#f3e7d9]">
               {key}
-            </span>
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-[12px] leading-5 text-[#796c61]">{helperText}</span>
+          <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#302821] px-5 py-2.5 text-[13px] font-semibold text-[#fffaf3] transition hover:bg-[#4a2d2a] active:scale-[0.98]">
+            {ctaLabel}
+            <ArrowRight className="size-3.5" strokeWidth={2.25} />
           </button>
-        ))}
-        <button
-          type="submit"
-          className="ml-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#111111] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-black active:scale-[0.98]"
-        >
-          {ctaLabel}
-          <ArrowRight className="size-3.5" strokeWidth={2.25} />
-        </button>
+        </div>
       </div>
-      <p className="mt-2 text-[12px] leading-5 text-[#86818a]">{helperText}</p>
     </form>
   );
 }

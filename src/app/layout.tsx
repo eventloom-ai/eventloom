@@ -8,24 +8,24 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(env.appUrl()),
   title: {
-    default: "Create a Beautiful RSVP Website in Minutes | Eventloom",
+    default: "Event Websites and RSVPs, Made Personal | Eventloom",
     template: "%s | Eventloom",
   },
-  description: "Create a beautiful event website, collect guest RSVPs, and share one simple link. No design or technical experience needed.",
+  description: "Create a custom event website, collect guest RSVPs, and keep every reply organized in one beautiful place.",
   applicationName: "Eventloom",
   keywords: ["RSVP website", "online RSVP", "event website", "wedding RSVP", "party invitations"],
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    title: "Create a Beautiful RSVP Website in Minutes",
-    description: "Describe your event, get a polished website, and collect every guest reply in one place.",
+    title: "Event Websites and RSVPs, Made Personal",
+    description: "Create an event site, collect guest replies, and share one elegant link with Eventloom.",
     siteName: "Eventloom",
     url: "/",
   },
   twitter: {
     card: "summary",
-    title: "Create a Beautiful RSVP Website in Minutes",
-    description: "A simple way to create an event site and collect guest replies.",
+    title: "Event Websites and RSVPs, Made Personal",
+    description: "Create an event site, collect guest replies, and share one elegant link.",
   },
 };
 

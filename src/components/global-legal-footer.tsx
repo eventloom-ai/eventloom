@@ -15,9 +15,9 @@ export function GlobalLegalFooter() {
   if (!shouldRenderGlobalLegalFooter(pathname)) return null;
 
   return (
-    <footer className="border-t border-black/10 bg-[#fbfbfd] px-6 py-8 text-[#424245]">
+    <footer className="border-t border-[#302821]/10 bg-[#f7f1e8] px-6 py-8 text-[#66594f]">
       <nav aria-label="Legal and support" className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-3 text-sm">
-        <Link href="/" className="font-semibold text-[#1d1d1f]">
+        <Link href="/" className="font-semibold text-[#302821]">
           <EventloomLogo markClassName="size-6" />
         </Link>
         {links.map(([label, href]) => (

@@ -1,179 +1,81 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarCheck,
-  LockKeyhole,
-  Palette,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { EventloomLogo } from "@/components/logo";
+import { LandingMobileNavigation } from "@/components/landing-mobile-navigation";
 import { StartEventPrompt } from "@/components/start-event-prompt";
 
-const navItems = [
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Questions", href: "#questions" },
-  { label: "Contact", href: "/contact" },
+const capabilities = [
+  { number: "01", title: "A site with a point of view.", description: "Start with the feeling, the details, or a rough idea. Eventloom turns it into an event page that feels considered from the first draft." },
+  { number: "02", title: "Details that stay in step.", description: "Update the schedule, venue, gallery, wording, and RSVP questions in plain language as the event comes together." },
+  { number: "03", title: "Every reply in one place.", description: "Give guests one elegant link, then keep attendance, party size, meal choices, and notes organized behind the scenes." },
 ];
 
-const trustHighlights = [
-  {
-    title: "No payment to start",
-    description: "Create and refine your draft first. Pay only when you publish.",
-    icon: CalendarCheck,
-  },
-  {
-    title: "Private guest information",
-    description: "RSVP details are visible only to your event team.",
-    icon: LockKeyhole,
-  },
-  {
-    title: "Secure sign-in",
-    description: "Use trusted account sign-in and keep full ownership of your event.",
-    icon: ShieldCheck,
-  },
+const steps = [
+  ["01", "Describe the occasion", "Tell us what you are hosting and the atmosphere you want to create."],
+  ["02", "Shape the first draft", "Refine the page, event details, and guest questions until it is right."],
+  ["03", "Share when ready", "Publish your link and manage every guest response from Eventloom."],
+] as const;
+
+const frequentlyAsked = [
+  { question: "Do I need to know how to build a website?", answer: "No. Describe the event the way you would explain it to a friend. Eventloom creates the first draft, and you can request changes in plain language." },
+  { question: "Can I see the site before I pay?", answer: "Yes. Create and edit your draft first. Payment is only requested when you are ready to publish it for guests." },
+  { question: "What do guests need to do?", answer: "Guests open one link, read the event details, and send their RSVP. They do not need an Eventloom account." },
+  { question: "Who can see guest information?", answer: "RSVP details are available only to the event creator and authorized collaborators. Eventloom does not sell guest information or use it for advertising." },
 ];
 
-const featureCards = [
-  {
-    title: "Creative",
-    description: "Turn one sentence into a polished website and keep refining the tone, layout, and details.",
-    icon: Palette,
-  },
-  {
-    title: "Simple",
-    description: "No templates to learn. Just describe what you want and make edits in plain language.",
-    icon: ArrowRight,
-  },
-  {
-    title: "Trustworthy",
-    description: "Clear pricing, private guest data, and a calm setup flow before sharing your link.",
-    icon: ShieldCheck,
-  },
-];
-
-export function LandingPage({
-  initialTemplate,
-  authenticated = false,
-  authConfigured = true,
-  signupEnabled = false,
-}: {
-  initialTemplate?: string;
-  authenticated?: boolean;
-  authConfigured?: boolean;
-  signupEnabled?: boolean;
-}) {
+function EventloomShowcase() {
   return (
-    <main className="min-h-screen bg-[#f5f7f2] text-[#16161a]">
-      <header className="sticky top-0 z-50 border-b border-emerald-700/30 bg-[#f7f9f3]/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="text-base font-semibold text-[#252329]">
-            <EventloomLogo />
-          </Link>
-          <nav aria-label="Main navigation" className="hidden items-center gap-6 text-sm text-[#585260] md:flex">
-            {navItems.map((item) => (
-              <Link key={item.label} href={item.href} className="transition hover:text-[#16161a]">
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link
-              href={authenticated || !authConfigured ? "/app" : "/login?next=/app"}
-              className="rounded-full px-3 py-2 text-sm font-medium text-[#4f4a54] transition hover:bg-black/[0.04] hover:text-[#252329] sm:px-4"
-            >
-              {authenticated ? "My events" : authConfigured ? "Sign in" : "Open local demo"}
-            </Link>
-            <Link
-              href="#create"
-              className="hidden rounded-full bg-[#101111] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:inline-flex"
-            >
-              {authenticated ? "New event" : "Get started free"}
-            </Link>
+    <div className="relative mx-auto max-w-6xl rounded-[2rem] border border-[#302821]/10 bg-[#fffaf3] p-3 shadow-[0_28px_80px_rgba(65,43,28,0.12)] sm:p-5">
+      <div className="grid overflow-hidden rounded-[1.35rem] border border-[#302821]/10 bg-[#f7efe5] lg:grid-cols-[1.22fr_0.78fr]">
+        <article className="relative min-h-[420px] overflow-hidden bg-[#4a2d2a] px-7 py-8 text-[#fff9f2] sm:px-11 sm:py-12">
+          <div className="absolute inset-x-0 top-0 h-48 bg-[radial-gradient(ellipse_at_62%_4%,rgba(202,158,117,0.58),transparent_58%)]" />
+          <div className="relative flex h-full flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-white/20 pb-4 text-[11px] uppercase tracking-[0.18em] text-[#f5ddc8]"><span>The evening of</span><span>June 14, 2027</span></div>
+            <div className="max-w-md py-10"><p className="font-[family-name:var(--font-playfair)] text-[clamp(3.25rem,8vw,6.6rem)] leading-[0.82] tracking-[-0.055em]">Amara<br />&amp; Leo</p><p className="mt-7 max-w-xs text-sm leading-6 text-[#f7e7da]/75">A garden celebration, dinner under the lights, and a long night with the people we love.</p></div>
+            <div className="flex items-end justify-between border-t border-white/20 pt-4 text-sm text-[#f7e7da]"><span>Hawthorn House</span><span>Toronto, Ontario</span></div>
           </div>
+        </article>
+        <aside className="flex min-h-[420px] flex-col justify-between bg-[#fffaf3] p-7 text-[#302821] sm:p-9">
+          <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a6153]">Guest replies</p><p className="mt-3 font-[family-name:var(--font-playfair)] text-4xl tracking-[-0.045em]">A clear yes.</p><p className="mt-3 max-w-xs text-sm leading-6 text-[#74675d]">The details guests need, and the answers you need to plan confidently.</p></div>
+          <div className="mt-8 space-y-3">
+            <div className="rounded-2xl border border-[#302821]/10 bg-white px-4 py-3.5"><div className="flex items-center justify-between text-sm"><span className="font-medium">Responses</span><span className="font-[family-name:var(--font-playfair)] text-xl">128</span></div><div className="mt-3 h-px bg-[#302821]/10" /><div className="mt-3 flex justify-between text-xs text-[#74675d]"><span>Attending 112</span><span>Pending 16</span></div></div>
+            <div className="rounded-2xl border border-[#302821]/10 bg-[#f3e7d9] px-4 py-3.5 text-sm leading-6 text-[#574239]">Dietary notes, party sizes, and special messages stay with the event—not scattered across your inbox.</div>
+          </div>
+        </aside>
+      </div>
+      <p className="px-2 pt-4 text-center text-xs leading-5 text-[#786b60]">An Eventloom site gives guests a polished place to arrive—and you a simple way to stay organized.</p>
+    </div>
+  );
+}
+
+export function LandingPage({ initialTemplate, authenticated = false, authConfigured = true, signupEnabled = false }: { initialTemplate?: string; authenticated?: boolean; authConfigured?: boolean; signupEnabled?: boolean }) {
+  const accountHref = authenticated || !authConfigured ? "/app" : "/login?next=/app";
+  const accountLabel = authenticated ? "My events" : authConfigured ? "Sign in" : "Open local demo";
+  const createLabel = authenticated ? "New event" : "Create an event";
+
+  return (
+    <main className="overflow-hidden bg-[#f7f1e8] text-[#302821]">
+      <header className="sticky top-0 z-50 border-b border-[#302821]/10 bg-[#f7f1e8]/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
+          <Link href="/" className="text-base font-semibold text-[#302821]" aria-label="Eventloom home"><EventloomLogo markClassName="size-7" /></Link>
+          <nav aria-label="Main navigation" className="hidden items-center gap-7 text-sm text-[#66594f] md:flex"><Link href="#product" className="transition hover:text-[#302821]">Product</Link><Link href="#how-it-works" className="transition hover:text-[#302821]">How it works</Link><Link href="#pricing" className="transition hover:text-[#302821]">Pricing</Link><Link href="#questions" className="transition hover:text-[#302821]">Questions</Link><Link href="/contact" className="transition hover:text-[#302821]">Contact</Link></nav>
+          <div className="flex items-center gap-2"><Link href={accountHref} className="rounded-full px-3 py-2 text-sm font-medium text-[#66594f] transition hover:bg-[#ede3d6] hover:text-[#302821] sm:px-4">{accountLabel}</Link><Link href="#create" className="hidden rounded-full bg-[#302821] px-4 py-2 text-sm font-semibold text-[#fffaf3] transition hover:bg-[#4a2d2a] sm:inline-flex">{createLabel}</Link><LandingMobileNavigation /></div>
         </div>
       </header>
 
-      <section className="relative overflow-hidden border-b border-emerald-700/20 px-5 pb-20 pt-16 sm:px-8 sm:pb-24 sm:pt-24">
-        <div className="pointer-events-none absolute inset-0 -z-20 bg-[linear-gradient(to_right,rgba(63,112,75,0.09)_1px,transparent_1px),linear-gradient(to_bottom,rgba(63,112,75,0.09)_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="pointer-events-none absolute inset-x-0 top-20 -z-10 mx-auto h-[560px] max-w-5xl bg-[radial-gradient(circle_at_center,rgba(117,182,135,0.18),transparent_70%)]" />
+      <section className="relative px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24"><div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[34rem] bg-[radial-gradient(ellipse_at_50%_0%,rgba(194,144,116,0.2),transparent_62%)]" /><div className="mx-auto max-w-4xl text-center"><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Event websites and RSVPs, made personal</p><h1 className="mx-auto mt-6 max-w-4xl font-[family-name:var(--font-playfair)] text-[clamp(3.4rem,8vw,6.7rem)] leading-[0.87] tracking-[-0.065em] text-[#302821]">Bring the whole event together in one beautiful place.</h1><p className="mx-auto mt-7 max-w-2xl text-[17px] leading-8 text-[#66594f] sm:text-lg">Eventloom creates a custom event website, gathers RSVPs, and keeps every guest reply organized—without asking you to become a designer.</p><div id="create" className="mx-auto mt-10 max-w-2xl scroll-mt-28 text-left"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div><p className="mt-5 text-[12px] leading-6 text-[#796c61]">Free to shape your draft · $20 USD when you publish · Guest data stays private</p></div></section>
 
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-[clamp(2.3rem,6vw,4.5rem)] font-semibold leading-[1.05] tracking-[-0.04em] text-[#101114]">
-            <span className="text-[#3f7e54]">Creative event websites</span> without the complexity.
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-[18px] leading-8 text-[#5f5966]">
-            Eventloom helps you launch a polished RSVP page quickly, then improve every detail before any guest sees it.
-          </p>
+      <section id="product" className="scroll-mt-24 border-y border-[#302821]/10 bg-[#efe4d5] px-5 py-16 sm:px-8 sm:py-24"><div className="mx-auto max-w-6xl"><div className="mx-auto mb-10 max-w-2xl text-center sm:mb-14"><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Made for the moment</p><h2 className="mt-4 font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-5xl">The invitation, the details, and the replies.</h2></div><EventloomShowcase /></div></section>
 
-          <div id="create" className="mx-auto mt-10 max-w-3xl scroll-mt-28 rounded-[1.8rem] border border-emerald-700/35 bg-white/90 p-4 shadow-[0_30px_80px_rgba(31,39,30,0.12)] backdrop-blur-sm sm:p-5">
-            <StartEventPrompt
-              initialTemplate={initialTemplate}
-              authenticated={authenticated}
-              authConfigured={authConfigured}
-              signupEnabled={signupEnabled}
-            />
-            <p className="mt-4 text-sm text-[#6a6570]">
-              Start for free · First draft in about a minute · Publish only when ready
-            </p>
-          </div>
+      <section className="px-5 py-24 sm:px-8 sm:py-32"><div className="mx-auto max-w-7xl"><div className="grid gap-px overflow-hidden rounded-[1.5rem] border border-[#302821]/10 bg-[#302821]/10 lg:grid-cols-3">{capabilities.map((capability) => <article key={capability.number} className="min-h-72 bg-[#f7f1e8] p-7 sm:p-9"><p className="text-[11px] font-semibold tracking-[0.18em] text-[#a37561]">{capability.number}</p><h2 className="mt-14 max-w-xs font-[family-name:var(--font-playfair)] text-3xl leading-[0.98] tracking-[-0.045em]">{capability.title}</h2><p className="mt-5 max-w-sm text-sm leading-7 text-[#6d6055]">{capability.description}</p></article>)}</div></div></section>
 
-          <div className="mx-auto mt-10 grid max-w-4xl gap-3 text-left md:grid-cols-3">
-            {trustHighlights.map((item) => (
-              <article key={item.title} className="rounded-2xl border border-black/10 bg-white/85 p-4">
-                <span className="grid size-9 place-items-center rounded-xl bg-emerald-100 text-emerald-800">
-                  <item.icon className="size-4" />
-                </span>
-                <p className="mt-3 text-sm font-semibold text-[#19171d]">{item.title}</p>
-                <p className="mt-1 text-[13px] leading-6 text-[#66616a]">{item.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section id="how-it-works" className="scroll-mt-24 bg-[#302821] px-5 py-24 text-[#fff9f2] sm:px-8 sm:py-32"><div className="mx-auto max-w-7xl"><div className="grid gap-10 border-b border-white/15 pb-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-end"><div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#dfb89f]">A simpler way to plan</p><h2 className="mt-5 max-w-lg font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-5xl">From an idea to a link worth sharing.</h2></div><p className="max-w-xl text-base leading-8 text-[#eadbd0]/70">Make decisions in the order that feels natural. Start with the occasion, then refine the page as the guest list and plans take shape.</p></div><ol className="grid divide-y divide-white/15 lg:grid-cols-3 lg:divide-x lg:divide-y-0">{steps.map(([number, title, description]) => <li key={number} className="py-8 first:lg:pr-8 lg:px-8 lg:py-10 lg:first:pl-0"><p className="text-[11px] font-semibold tracking-[0.18em] text-[#dfb89f]">{number}</p><h3 className="mt-8 text-xl font-medium tracking-[-0.025em]">{title}</h3><p className="mt-3 max-w-xs text-sm leading-7 text-[#eadbd0]/65">{description}</p></li>)}</ol></div></section>
 
-      <section id="how-it-works" className="px-5 py-20 sm:px-8 sm:py-24">
-        <div className="mx-auto max-w-7xl rounded-[2rem] border border-emerald-700/35 bg-[linear-gradient(135deg,#e8efe2,#f5f8ef)] p-4 sm:p-6">
-          <div className="grid gap-3 md:grid-cols-3">
-            {featureCards.map((card) => (
-              <article key={card.title} className="rounded-[1.25rem] border border-black/10 bg-white/92 p-6 shadow-[0_20px_40px_rgba(30,35,30,0.08)]">
-                <span className="grid size-10 place-items-center rounded-xl bg-emerald-100 text-emerald-800">
-                  <card.icon className="size-5" />
-                </span>
-                <h2 className="mt-5 text-3xl font-semibold tracking-[-0.03em] text-[#15141a]">{card.title}</h2>
-                <p className="mt-3 text-base leading-7 text-[#5f5966]">{card.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <section id="pricing" className="scroll-mt-24 px-5 py-24 sm:px-8 sm:py-32"><div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1fr_0.9fr] lg:items-center"><div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Simple pricing</p><h2 className="mt-5 max-w-xl font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-5xl">Make it yours before you decide.</h2><p className="mt-6 max-w-lg text-base leading-8 text-[#6d6055]">Create and refine your event site first. Pay only when you are ready to publish it for your guests.</p></div><article className="border-y border-[#302821]/15 py-7 sm:px-1 sm:py-9"><div className="flex items-end justify-between gap-4"><div><p className="text-lg font-semibold">One published event</p><p className="mt-1 text-sm text-[#74675d]">One year of Eventloom service</p></div><p className="font-[family-name:var(--font-playfair)] text-5xl tracking-[-0.055em]">$20</p></div><ul className="mt-8 space-y-3 border-t border-[#302821]/10 pt-6 text-sm leading-6 text-[#5f5248]"><li>Custom event website and shareable Eventloom link</li><li>Guest RSVP collection and response management</li><li>Plain-language editing and secure hosting</li></ul><p className="mt-6 text-xs leading-6 text-[#796c61]">A custom domain is optional and charged separately at the live registrar cost shown before payment. Taxes, when applicable, are shown at checkout.</p><Link href="#create" className="mt-7 inline-flex items-center gap-2 border-b border-[#302821] pb-1 text-sm font-semibold text-[#302821] transition hover:border-[#a37561] hover:text-[#8a6153]">Create your draft <ArrowRight className="size-4" aria-hidden="true" /></Link></article></div></section>
 
-      <section id="pricing" className="px-5 pb-12 sm:px-8">
-        <div className="mx-auto max-w-3xl rounded-[1.8rem] border border-black/10 bg-white p-7 text-center shadow-[0_20px_60px_rgba(32,28,37,0.08)] sm:p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Pricing</p>
-          <h2 className="mt-4 text-4xl font-semibold tracking-[-0.03em] text-[#14131a] sm:text-5xl">$20 when you publish</h2>
-          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#625d66]">
-            You can create, test, and refine your event page first. Payment is required only when you publish for guests.
-          </p>
-          <Link href="#create" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#101111] px-6 py-3 text-sm font-semibold text-white transition hover:bg-black">
-            Create my free draft
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-      </section>
+      <section id="questions" className="scroll-mt-24 border-y border-[#302821]/10 bg-[#fffaf3] px-5 py-24 sm:px-8 sm:py-32"><div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.72fr_1.28fr]"><div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Questions, answered</p><h2 className="mt-5 max-w-sm font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em]">Everything you need to know before you begin.</h2><p className="mt-6 max-w-sm text-sm leading-7 text-[#6d6055]">Need a hand with something specific? Visit our <Link className="font-semibold text-[#604139] underline decoration-[#c19a7d] underline-offset-4 transition hover:text-[#8a6153]" href="/contact">support page</Link>.</p></div><div className="border-t border-[#302821]/15">{frequentlyAsked.map((item) => <details key={item.question} className="group border-b border-[#302821]/15 py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-base font-semibold marker:content-none">{item.question}<span aria-hidden="true" className="text-xl font-normal text-[#a37561] transition group-open:rotate-45">+</span></summary><p className="max-w-2xl pt-4 text-sm leading-7 text-[#6d6055]">{item.answer}</p></details>)}</div></div></section>
 
-      <section id="questions" className="px-5 pb-20 sm:px-8 sm:pb-24">
-        <div className="mx-auto max-w-3xl rounded-[1.6rem] border border-black/10 bg-white px-6 py-8 sm:px-8">
-          <h2 className="text-2xl font-semibold tracking-[-0.02em] text-[#14131a]">Still deciding?</h2>
-          <p className="mt-3 text-sm leading-7 text-[#66616a]">
-            You can start a draft first and only share when it feels right. If you need help, visit our{" "}
-            <Link className="font-medium text-emerald-700 underline underline-offset-4" href="/contact">
-              support page
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
+      <section className="px-5 py-20 sm:px-8 sm:py-28"><div className="mx-auto max-w-6xl border-y border-[#302821]/15 py-14 text-center sm:py-20"><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Start with what you know</p><h2 className="mx-auto mt-5 max-w-3xl font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-6xl">One place for the event your guests will remember.</h2><p className="mx-auto mt-6 max-w-xl text-base leading-7 text-[#6d6055]">Tell us about the occasion. You can change every detail before your link is shared.</p><Link href="#create" className="mt-9 inline-flex items-center gap-2 rounded-full bg-[#302821] px-6 py-3.5 text-sm font-semibold text-[#fffaf3] transition hover:bg-[#4a2d2a]">Create your event <ArrowRight className="size-4" aria-hidden="true" /></Link></div></section>
     </main>
   );
 }
