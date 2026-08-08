@@ -25,14 +25,15 @@ describe("landing page", () => {
     expect(authenticated).toContain("My events");
     expect(authenticated).toContain("New event");
     expect(localDemo).toContain("Open local demo");
-    expect(localDemo).toContain("Local demo — drafts are temporary and reset with the server.");
+    expect(localDemo).toContain("Start building");
   });
 
   it("keeps the real event brief composer and compact FAQ available", () => {
     const html = renderToStaticMarkup(<LandingPage authConfigured signupEnabled />);
 
     expect(html).toContain('id="event-brief"');
-    expect(html).toContain("Create free draft");
+    expect(html).toContain("Start building");
+    expect(html).toContain('aria-label="Event type"');
     expect(html).toContain("Do I need to know how to build a website?");
     expect(html).toContain("A site with a point of view.");
   });

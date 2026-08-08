@@ -32,6 +32,78 @@ html {
   scroll-behavior: smooth;
 }
 
+.eventloom-hero {
+  background: #16121c;
+}
+
+.eventloom-aurora {
+  position: absolute;
+  inset: -20%;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 1%, rgba(74, 102, 190, 0.64), transparent 39%),
+    radial-gradient(ellipse at 20% 80%, rgba(217, 69, 135, 0.76), transparent 42%),
+    radial-gradient(ellipse at 79% 82%, rgba(245, 99, 91, 0.7), transparent 44%),
+    #16121c;
+}
+
+.eventloom-aurora span {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  filter: blur(42px);
+  opacity: 0.72;
+  will-change: transform;
+}
+
+.eventloom-aurora span:nth-child(1) {
+  width: 48vw;
+  height: 48vw;
+  top: 2%;
+  left: 6%;
+  background: rgba(84, 115, 255, 0.76);
+  animation: eventloom-aurora-drift-one 18s ease-in-out infinite alternate;
+}
+
+.eventloom-aurora span:nth-child(2) {
+  width: 54vw;
+  height: 38vw;
+  right: 2%;
+  bottom: 1%;
+  background: rgba(255, 82, 184, 0.7);
+  animation: eventloom-aurora-drift-two 21s ease-in-out infinite alternate;
+}
+
+.eventloom-aurora span:nth-child(3) {
+  width: 40vw;
+  height: 30vw;
+  bottom: -4%;
+  left: 34%;
+  background: rgba(255, 131, 72, 0.68);
+  animation: eventloom-aurora-drift-three 16s ease-in-out infinite alternate;
+}
+
+@keyframes eventloom-aurora-drift-one {
+  from { transform: translate3d(-8%, 4%, 0) scale(0.95); }
+  to { transform: translate3d(22%, 18%, 0) scale(1.13); }
+}
+
+@keyframes eventloom-aurora-drift-two {
+  from { transform: translate3d(7%, 3%, 0) scale(0.98); }
+  to { transform: translate3d(-24%, -16%, 0) scale(1.17); }
+}
+
+@keyframes eventloom-aurora-drift-three {
+  from { transform: translate3d(-6%, 14%, 0) scale(0.92); }
+  to { transform: translate3d(18%, -22%, 0) scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventloom-aurora span {
+    animation: none;
+  }
+}
+
 button,
 input,
 textarea,

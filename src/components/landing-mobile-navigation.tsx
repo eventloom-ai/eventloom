@@ -21,14 +21,14 @@ export function LandingMobileNavigation() {
         aria-expanded={open}
         aria-controls="landing-mobile-navigation"
         onClick={() => setOpen((current) => !current)}
-        className="flex h-10 items-center rounded-full border border-[#302821]/15 px-4 text-sm font-medium text-[#302821] transition hover:border-[#302821]/35 hover:bg-[#fffdf9]"
+        className="flex h-10 items-center rounded-full border border-white/15 px-4 text-sm font-medium text-white/85 transition hover:border-white/30 hover:bg-white/10"
       >
         Menu
       </button>
       {open ? (
-        <nav id="landing-mobile-navigation" aria-label="Mobile navigation" className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-[#302821]/10 bg-[#fffdf9] p-2 shadow-[0_18px_48px_rgba(51,39,29,0.16)]">
+        <nav id="landing-mobile-navigation" aria-label="Mobile navigation" className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-white/10 bg-[#211b28] p-2 shadow-[0_18px_48px_rgba(5,2,11,0.38)]">
           {links.map(([label, href]) => (
-            <Link key={href} href={href} onClick={() => setOpen(false)} className="block rounded-xl px-4 py-3 text-sm text-[#574c43] transition hover:bg-[#f3ece2] hover:text-[#302821]">
+            <Link key={href} href={href} onClick={() => setOpen(false)} className="block rounded-xl px-4 py-3 text-sm text-white/70 transition hover:bg-white/10 hover:text-white">
               {label}
             </Link>
           ))}

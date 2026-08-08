@@ -55,15 +55,24 @@ export function LandingPage({ initialTemplate, authenticated = false, authConfig
 
   return (
     <main className="overflow-hidden bg-[#f7f1e8] text-[#302821]">
-      <header className="sticky top-0 z-50 border-b border-[#302821]/10 bg-[#f7f1e8]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#16121c]/80 text-white backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="text-base font-semibold text-[#302821]" aria-label="Eventloom home"><EventloomLogo markClassName="size-7" /></Link>
-          <nav aria-label="Main navigation" className="hidden items-center gap-7 text-sm text-[#66594f] md:flex"><Link href="#product" className="transition hover:text-[#302821]">Product</Link><Link href="#how-it-works" className="transition hover:text-[#302821]">How it works</Link><Link href="#pricing" className="transition hover:text-[#302821]">Pricing</Link><Link href="#questions" className="transition hover:text-[#302821]">Questions</Link><Link href="/contact" className="transition hover:text-[#302821]">Contact</Link></nav>
-          <div className="flex items-center gap-2"><Link href={accountHref} className="rounded-full px-3 py-2 text-sm font-medium text-[#66594f] transition hover:bg-[#ede3d6] hover:text-[#302821] sm:px-4">{accountLabel}</Link><Link href="#create" className="hidden rounded-full bg-[#302821] px-4 py-2 text-sm font-semibold text-[#fffaf3] transition hover:bg-[#4a2d2a] sm:inline-flex">{createLabel}</Link><LandingMobileNavigation /></div>
+          <Link href="/" className="text-base font-semibold text-white" aria-label="Eventloom home"><EventloomLogo markClassName="size-7" /></Link>
+          <nav aria-label="Main navigation" className="hidden items-center gap-7 text-sm text-white/65 md:flex"><Link href="#product" className="transition hover:text-white">Product</Link><Link href="#how-it-works" className="transition hover:text-white">How it works</Link><Link href="#pricing" className="transition hover:text-white">Pricing</Link><Link href="#questions" className="transition hover:text-white">Questions</Link><Link href="/contact" className="transition hover:text-white">Contact</Link></nav>
+          <div className="flex items-center gap-2"><Link href={accountHref} className="rounded-full px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white sm:px-4">{accountLabel}</Link><Link href="#create" className="hidden rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#211927] transition hover:bg-[#f9e7df] sm:inline-flex">{createLabel}</Link><LandingMobileNavigation /></div>
         </div>
       </header>
 
-      <section className="relative px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24"><div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[34rem] bg-[radial-gradient(ellipse_at_50%_0%,rgba(194,144,116,0.2),transparent_62%)]" /><div className="mx-auto max-w-4xl text-center"><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Event websites and RSVPs, made personal</p><h1 className="mx-auto mt-6 max-w-4xl font-[family-name:var(--font-playfair)] text-[clamp(3.4rem,8vw,6.7rem)] leading-[0.87] tracking-[-0.065em] text-[#302821]">Bring the whole event together in one beautiful place.</h1><p className="mx-auto mt-7 max-w-2xl text-[17px] leading-8 text-[#66594f] sm:text-lg">Eventloom creates a custom event website, gathers RSVPs, and keeps every guest reply organized—without asking you to become a designer.</p><div id="create" className="mx-auto mt-10 max-w-2xl scroll-mt-28 text-left"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div><p className="mt-5 text-[12px] leading-6 text-[#796c61]">Free to shape your draft · $20 USD when you publish · Guest data stays private</p></div></section>
+      <section className="eventloom-hero relative isolate min-h-[calc(100svh-4rem)] overflow-hidden px-5 pb-20 pt-24 text-white sm:px-8 sm:pb-28 sm:pt-32">
+        <div aria-hidden="true" className="eventloom-aurora"><span /><span /><span /></div>
+        <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Event websites and RSVPs, made personal</p>
+          <h1 className="mx-auto mt-6 max-w-4xl font-[family-name:var(--font-playfair)] text-[clamp(3.3rem,8vw,6.8rem)] leading-[0.86] tracking-[-0.065em]">Make the invitation everyone remembers.</h1>
+          <p className="mx-auto mt-7 max-w-2xl text-[17px] leading-8 text-white/75 sm:text-lg">Tell Eventloom about your occasion. We’ll turn it into a custom event site, a clear RSVP, and one place for every guest reply.</p>
+          <div id="create" className="mx-auto mt-10 w-full max-w-xl scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
+          <p className="mt-5 text-[12px] leading-6 text-white/55">Start privately · Publish when ready · Guest data stays private</p>
+        </div>
+      </section>
 
       <section id="product" className="scroll-mt-24 border-y border-[#302821]/10 bg-[#efe4d5] px-5 py-16 sm:px-8 sm:py-24"><div className="mx-auto max-w-6xl"><div className="mx-auto mb-10 max-w-2xl text-center sm:mb-14"><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Made for the moment</p><h2 className="mt-4 font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-5xl">The invitation, the details, and the replies.</h2></div><EventloomShowcase /></div></section>
 
