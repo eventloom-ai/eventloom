@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, ChevronDown } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { eventDraftEntryPath } from "@/lib/event-entry";
@@ -70,18 +70,21 @@ export function StartEventPrompt({
         className="block w-full resize-none bg-transparent px-5 py-4 text-[15px] leading-6 text-white outline-none placeholder:text-white/40"
       />
       <div className="flex items-center justify-between gap-3 border-t border-white/10 px-3 py-3">
-        <select
-          value={eventType}
-          onChange={(event) => {
-            const nextEventType = event.target.value as EventType;
-            setEventType(nextEventType);
-            if (!brief.trim()) setBrief(eventTypes.find((type) => type.value === nextEventType)?.starter ?? "");
-          }}
-          aria-label="Event type"
-          className="min-w-0 appearance-none bg-transparent px-2 py-2 text-sm font-medium text-white/70 outline-none transition hover:text-white focus:text-white"
-        >
-          {eventTypes.map((type) => <option key={type.value} value={type.value} className="bg-[#1d1a21] text-white">{type.label}</option>)}
-        </select>
+        <div className="relative min-w-0">
+          <select
+            value={eventType}
+            onChange={(event) => {
+              const nextEventType = event.target.value as EventType;
+              setEventType(nextEventType);
+              if (!brief.trim()) setBrief(eventTypes.find((type) => type.value === nextEventType)?.starter ?? "");
+            }}
+            aria-label="Event type"
+            className="min-w-0 appearance-none bg-transparent py-2 pl-2 pr-7 text-sm font-medium text-white/70 outline-none transition hover:text-white focus:text-white"
+          >
+            {eventTypes.map((type) => <option key={type.value} value={type.value} className="bg-[#1d1a21] text-white">{type.label}</option>)}
+          </select>
+          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-1 top-1/2 size-3.5 -translate-y-1/2 text-white/45" />
+        </div>
         <button type="submit" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#221b29] transition hover:bg-[#f9e7df] active:scale-[0.98]">
           {ctaLabel}
           <ArrowUp className="size-4" aria-hidden="true" />

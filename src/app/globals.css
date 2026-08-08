@@ -33,7 +33,7 @@ html {
 }
 
 .eventloom-hero {
-  background: #16121c;
+  background: #0d2c38;
 }
 
 .eventloom-aurora {
@@ -41,10 +41,10 @@ html {
   inset: -20%;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 50% 1%, rgba(74, 102, 190, 0.64), transparent 39%),
-    radial-gradient(ellipse at 20% 80%, rgba(217, 69, 135, 0.76), transparent 42%),
-    radial-gradient(ellipse at 79% 82%, rgba(245, 99, 91, 0.7), transparent 44%),
-    #16121c;
+    radial-gradient(ellipse at 50% 1%, rgba(58, 162, 183, 0.62), transparent 40%),
+    radial-gradient(ellipse at 15% 80%, rgba(35, 127, 159, 0.7), transparent 44%),
+    radial-gradient(ellipse at 82% 80%, rgba(238, 156, 103, 0.6), transparent 46%),
+    #0d2c38;
 }
 
 .eventloom-aurora span {
@@ -61,7 +61,7 @@ html {
   height: 48vw;
   top: 2%;
   left: 6%;
-  background: rgba(84, 115, 255, 0.76);
+  background: rgba(39, 144, 173, 0.74);
   animation: eventloom-aurora-drift-one 18s ease-in-out infinite alternate;
 }
 
@@ -70,7 +70,7 @@ html {
   height: 38vw;
   right: 2%;
   bottom: 1%;
-  background: rgba(255, 82, 184, 0.7);
+  background: rgba(100, 197, 183, 0.68);
   animation: eventloom-aurora-drift-two 21s ease-in-out infinite alternate;
 }
 
@@ -79,7 +79,7 @@ html {
   height: 30vw;
   bottom: -4%;
   left: 34%;
-  background: rgba(255, 131, 72, 0.68);
+  background: rgba(248, 177, 113, 0.66);
   animation: eventloom-aurora-drift-three 16s ease-in-out infinite alternate;
 }
 
