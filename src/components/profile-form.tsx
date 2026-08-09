@@ -38,11 +38,11 @@ export function ProfileForm({ initialName }: { initialName: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm sm:p-7">
+    <section className="eventloom-app-card rounded-2xl p-6 sm:p-7">
       <h2 className="text-xl font-semibold">About you</h2>
-      <p className="mt-2 text-sm leading-6 text-[#6e6e73]">This name appears only inside your Eventloom account.</p>
+      <p className="mt-2 text-sm leading-6 text-[#66736c]">This name appears only inside your Eventloom account.</p>
       <form onSubmit={submit} className="mt-6">
-        <label className="grid gap-2 text-sm font-medium text-[#1d1d1f]">
+        <label className="grid gap-2 text-sm font-medium text-[#302821]">
           Display name
           <input
             type="text"
@@ -56,14 +56,14 @@ export function ProfileForm({ initialName }: { initialName: string }) {
               setError("");
               setStatus("");
             }}
-            className="rounded-xl border border-black/10 bg-[#fbfbfd] px-4 py-3 text-base outline-none transition focus:border-[#0071e3]/50 focus:bg-white focus:ring-4 focus:ring-[#0071e3]/10"
+            className="eventloom-app-field rounded-xl border px-4 py-3 text-base outline-none transition"
           />
         </label>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="submit"
             disabled={busy || normalizedName.length < 2 || normalizedName === savedName}
-            className="rounded-full bg-[#0071e3] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#0077ed] disabled:cursor-not-allowed disabled:opacity-40"
+            className="eventloom-app-button-primary rounded-full px-5 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy ? "Saving…" : "Save name"}
           </button>

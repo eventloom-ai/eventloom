@@ -66,25 +66,25 @@ export function RsvpManager({ eventId, initialSubmissions }: { eventId: string; 
   }
 
   const cards = [
-    { label: "Responses", value: summary.responses, icon: Mail, tone: "bg-blue-50 text-blue-700" },
-    { label: "Attending", value: summary.attending, icon: Check, tone: "bg-emerald-50 text-emerald-700" },
+    { label: "Responses", value: summary.responses, icon: Mail, tone: "bg-[#d8eff0] text-[#155166]" },
+    { label: "Attending", value: summary.attending, icon: Check, tone: "bg-[#dcebd8] text-[#285b47]" },
     { label: "Not attending", value: summary.declined, icon: X, tone: "bg-rose-50 text-rose-700" },
-    { label: "Expected guests", value: summary.expectedGuests, icon: Users, tone: "bg-violet-50 text-violet-700" },
+    { label: "Expected guests", value: summary.expectedGuests, icon: Users, tone: "bg-[#f2e2bd] text-[#755531]" },
   ] as const;
 
   return (
     <>
       <section aria-label="RSVP summary" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(({ label, value, icon: Icon, tone }) => (
-          <div key={label} className="rounded-2xl border border-black/[0.06] bg-white p-5 shadow-[0_4px_18px_rgba(0,0,0,0.03)]">
+          <div key={label} className="eventloom-app-card rounded-2xl p-5">
             <div className={`grid size-9 place-items-center rounded-xl ${tone}`}><Icon className="size-4" /></div>
             <p className="mt-5 text-3xl font-semibold tabular-nums">{value}</p>
-            <p className="mt-1 text-sm text-[#6e6e73]">{label}</p>
+            <p className="mt-1 text-sm text-[#66736c]">{label}</p>
           </div>
         ))}
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-black/[0.07] bg-white">
+      <section className="eventloom-app-card mt-6 overflow-hidden rounded-2xl">
         <div className="flex flex-col gap-3 border-b border-black/[0.06] p-4 md:flex-row md:items-center md:justify-between">
           <label className="relative block min-w-0 flex-1 md:max-w-sm">
             <span className="sr-only">Search guest replies</span>
@@ -94,10 +94,10 @@ export function RsvpManager({ eventId, initialSubmissions }: { eventId: string; 
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search names, email, phone, or notes"
-              className="w-full rounded-xl border border-black/10 bg-[#f5f5f7] py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[#0071e3] focus:bg-white"
+              className="eventloom-app-field w-full rounded-xl border py-2.5 pl-10 pr-4 text-sm outline-none"
             />
           </label>
-          <div className="flex rounded-xl bg-[#f5f5f7] p-1" aria-label="Filter guest replies">
+          <div className="flex rounded-xl bg-[#e7ecdf] p-1" aria-label="Filter guest replies">
             {([
               ["all", "All"],
               ["attending", "Attending"],
@@ -108,7 +108,7 @@ export function RsvpManager({ eventId, initialSubmissions }: { eventId: string; 
                 type="button"
                 onClick={() => setFilter(value)}
                 aria-pressed={filter === value}
-                className={`rounded-lg px-3 py-2 text-xs font-medium transition ${filter === value ? "bg-white text-[#1d1d1f] shadow-sm" : "text-[#6e6e73]"}`}
+                className={`rounded-lg px-3 py-2 text-xs font-medium transition ${filter === value ? "bg-[#fffaf3] text-[#155166] shadow-sm" : "text-[#66736c]"}`}
               >
                 {label}
               </button>

@@ -50,7 +50,7 @@ export default async function EventRsvpsPage({ params }: { params: Promise<{ eve
           </p>
           <Link
             href="/app/profile"
-            className="mt-6 inline-flex rounded-full bg-[#1d1d1f] px-5 py-2.5 text-sm font-medium text-white"
+            className="eventloom-app-button-primary mt-6 inline-flex rounded-full px-5 py-2.5 text-sm font-medium"
           >
             Open security settings
           </Link>
@@ -77,13 +77,13 @@ export default async function EventRsvpsPage({ params }: { params: Promise<{ eve
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/app/events/${eventId}/studio`}
-            className="inline-flex rounded-full border border-black/10 px-5 py-2.5 text-sm font-medium hover:bg-white"
+            className="eventloom-app-button inline-flex rounded-full px-5 py-2.5 text-sm font-medium"
           >
             Open studio
           </Link>
           <a
             href={`/api/events/${eventId}/rsvps/export`}
-            className="inline-flex rounded-full bg-[#1d1d1f] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
+            className="eventloom-app-button-primary inline-flex rounded-full px-5 py-2.5 text-sm font-medium"
           >
             Export CSV
           </a>

@@ -17,10 +17,10 @@ function statusLabel(status: EventRecord["status"], isBuilding: boolean) {
 }
 
 function statusStyles(status: EventRecord["status"], isBuilding: boolean) {
-  if (isBuilding) return "bg-[#e3f2fd] text-[#1565c0]";
-  if (status === "published") return "bg-[#e8f5e9] text-[#1b5e20]";
-  if (status === "archived") return "bg-[#f5f5f7] text-[#6e6e73]";
-  return "bg-[#fff8e1] text-[#8d6e00]";
+  if (isBuilding) return "bg-[#d8eff0] text-[#155166]";
+  if (status === "published") return "bg-[#dcebd8] text-[#285b47]";
+  if (status === "archived") return "bg-[#e7ecdf] text-[#66736c]";
+  return "bg-[#f2e2bd] text-[#755531]";
 }
 
 export function EventsList({ events, activeJobs: initialJobs, currentUserId }: { events: EventRecord[]; activeJobs: BuildJobStatus[]; currentUserId: string | null }) {
@@ -88,8 +88,8 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
         return (
           <FadeIn key={event.id} delay={index * 60}>
             <article
-              className={`rounded-2xl border bg-white p-6 transition-shadow md:p-7 ${
-                isBuilding ? "border-[#0071e3]/20 shadow-[0_8px_30px_rgba(0,113,227,0.08)]" : "border-black/[0.06] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
+              className={`rounded-2xl border bg-[#fffaf3] p-6 transition-shadow md:p-7 ${
+                isBuilding ? "border-[#4b9399]/40 shadow-[0_8px_30px_rgba(21,81,102,0.12)]" : "border-[#155166]/15 hover:shadow-[0_8px_30px_rgba(21,81,102,0.1)]"
               }`}
             >
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -100,22 +100,22 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
                       {statusLabel(event.status, isBuilding)}
                     </span>
                   </div>
-                  <p className="mt-2 text-[14px] text-[#6e6e73]">
+                  <p className="mt-2 text-[14px] text-[#66736c]">
                     {previewHost}/{event.slug}
                   </p>
 
                   {isBuilding && job ? (
                     <div className="mt-4">
-                      <div className="flex items-center justify-between gap-3 text-[12px] text-[#6e6e73]">
+                      <div className="flex items-center justify-between gap-3 text-[12px] text-[#66736c]">
                         <span className="inline-flex items-center gap-2">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0071e3]" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#155166]" />
                           {job.progressMessage ?? "Building your site…"}
                         </span>
                         <span className="tabular-nums">{job.progressPercent}%</span>
                       </div>
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#155166]/10">
                         <div
-                          className="h-full rounded-full bg-[#0071e3] transition-all duration-500"
+                          className="h-full rounded-full bg-[#155166] transition-all duration-500"
                           style={{ width: `${job.progressPercent}%` }}
                         />
                       </div>
@@ -125,20 +125,20 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
 
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-black/10 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f5f5f7]"
+                    className="eventloom-app-button inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
                     href={`/app/events/${event.id}/rsvps`}
                   >
                     <Users className="size-3.5" /> RSVPs
                   </Link>
                   <Link
-                    className="inline-flex items-center justify-center rounded-full border border-black/10 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f5f5f7]"
+                    className="eventloom-app-button inline-flex items-center justify-center rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
                     href={`/app/events/${event.id}/preview`}
                   >
                     Preview
                   </Link>
                   {event.status === "published" ? (
                     <Link
-                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-black/10 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f5f5f7]"
+                      className="eventloom-app-button inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
                       href={`/${event.slug}`}
                       target="_blank"
                     >
@@ -147,14 +147,14 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
                   ) : null}
                   {isBuilding ? (
                     <Link
-                      className="inline-flex items-center justify-center rounded-full bg-[#0071e3] px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-[#0077ed]"
+                      className="eventloom-app-button-primary inline-flex items-center justify-center rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
                       href={job?.eventId ? `/app/events/${job.eventId}/studio` : "/app/events/new"}
                     >
                       Open build
                     </Link>
                   ) : (
                     <Link
-                      className="inline-flex items-center justify-center rounded-full bg-[#1d1d1f] px-4 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90"
+                      className="inline-flex items-center justify-center rounded-full bg-[#0b2d39] px-4 py-2.5 text-[14px] font-medium text-[#fffaf3] transition hover:bg-[#155166]"
                       href={`/app/events/${event.id}/studio`}
                     >
                       Open studio
@@ -179,9 +179,9 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
         );
       })}
       {eventRows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-black/[0.12] bg-white px-8 py-14 text-center">
+        <div className="eventloom-app-card rounded-2xl border border-dashed px-8 py-14 text-center">
           <p className="text-[18px] font-semibold">No events yet</p>
-          <Link href="/app/events/new" className="mt-5 inline-flex rounded-full bg-[#0071e3] px-5 py-2.5 text-sm font-medium text-white">Create an event</Link>
+          <Link href="/app/events/new" className="eventloom-app-button-primary mt-5 inline-flex rounded-full px-5 py-2.5 text-sm font-medium">Create an event</Link>
         </div>
       ) : null}
       {deleteTarget ? (

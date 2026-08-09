@@ -20,15 +20,15 @@ export async function AppHeader({ active = "events" }: AppHeaderProps) {
   const initial = displayName?.charAt(0).toUpperCase() || "?";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-[#fbfbfd]/80 backdrop-blur-xl backdrop-saturate-150">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0b2d39]/95 text-[#fffaf3] shadow-[0_2px_18px_rgba(8,45,57,0.14)] backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-        <Link className="text-[17px] font-semibold text-[#1d1d1f]" href="/">
+        <Link className="text-[17px] font-semibold text-[#fffaf3]" href="/">
           <EventloomLogo markClassName="size-7" />
         </Link>
         <nav className="flex items-center gap-1 text-[14px]">
           <Link
             className={`hidden rounded-full px-4 py-2 transition-colors sm:inline-flex ${
-              active === "home" ? "font-medium text-[#1d1d1f]" : "text-[#6e6e73] hover:text-[#1d1d1f]"
+              active === "home" ? "bg-[#b9d4c1] font-medium text-[#0b2d39]" : "text-white/68 hover:text-white"
             }`}
             href="/"
           >
@@ -38,8 +38,8 @@ export async function AppHeader({ active = "events" }: AppHeaderProps) {
             <Link
               className={`rounded-full px-4 py-2 transition-colors ${
                 active === "events"
-                  ? "bg-[#1d1d1f] font-medium text-white"
-                  : "text-[#6e6e73] hover:text-[#1d1d1f]"
+                  ? "bg-[#b9d4c1] font-medium text-[#0b2d39]"
+                  : "text-white/68 hover:text-white"
               }`}
               href="/app"
             >
@@ -47,32 +47,32 @@ export async function AppHeader({ active = "events" }: AppHeaderProps) {
             </Link>
           ) : (
             <Link
-              className="rounded-full px-4 py-2 text-[#6e6e73] transition-colors hover:text-[#1d1d1f]"
+              className="rounded-full px-4 py-2 text-white/68 transition-colors hover:text-white"
               href="/login?next=/app"
             >
               Sign in
             </Link>
           )}
           {user ? (
-            <div className="ms-2 flex items-center gap-2 border-s border-black/[0.08] ps-3">
+            <div className="ms-2 flex items-center gap-2 border-s border-white/15 ps-3">
               <Link
                 href="/app/profile"
                 aria-label={`Profile for ${displayName}`}
                 className={`inline-flex min-h-10 items-center gap-2 rounded-full px-2 py-1.5 transition-colors ${
                   active === "profile"
-                    ? "bg-[#1d1d1f] font-medium text-white"
-                    : "text-[#6e6e73] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                    ? "bg-white/14 font-medium text-white"
+                    : "text-white/68 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <span className={`grid size-7 place-items-center rounded-full text-xs font-semibold ${
-                  active === "profile" ? "bg-white/15 text-white" : "bg-violet-100 text-violet-700"
+                  active === "profile" ? "bg-[#b9d4c1]/30 text-[#eff8ef]" : "bg-[#b9d4c1] text-[#0b2d39]"
                 }`}>{initial}</span>
                 <span className="hidden max-w-[8rem] truncate sm:inline">Profile</span>
               </Link>
               <form action="/auth/signout" method="post">
                 <button
                   type="submit"
-                  className="rounded-full px-3 py-2 text-[#6e6e73] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                  className="rounded-full px-3 py-2 text-white/68 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   Sign out
                 </button>
@@ -80,7 +80,7 @@ export async function AppHeader({ active = "events" }: AppHeaderProps) {
             </div>
           ) : (
             <Link
-              className="ms-1 rounded-full bg-[#1d1d1f] px-4 py-2 font-medium text-white transition-opacity hover:opacity-90"
+              className="ms-1 rounded-full bg-[#b9d4c1] px-4 py-2 font-medium text-[#0b2d39] transition hover:bg-[#d8ead9]"
               href="/signup?next=/app"
             >
               Get started

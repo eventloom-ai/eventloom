@@ -158,7 +158,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
   async function undo() { if (revision.parent_version_id) await restore(revision.parent_version_id); }
   async function redo() { const target = redoStack[0]; if (!target) return; setRedoStack((current) => current.slice(1)); await restore(target, false); }
 
-  return <main className="flex h-[100svh] min-h-[680px] flex-col overflow-hidden bg-[#111]">
+  return <main className="eventloom-studio flex h-[100svh] min-h-[680px] flex-col overflow-hidden bg-[#111]">
     <StudioToolbar eventId={event.id} title={event.config.title} status={event.status} saveStatus={saveStatus} viewport={viewport} canUndo={canUndo} canRedo={redoStack.length > 0} onViewport={setViewport} onUndo={undo} onRedo={redo} onToggleHistory={() => setDrawerOpen((current) => !current)} />
     <div className="relative min-h-0 flex-1">
       <div className="hidden h-full min-h-0 grid-cols-[320px_minmax(0,1fr)_300px] grid-rows-[minmax(0,1fr)] overflow-hidden lg:grid">

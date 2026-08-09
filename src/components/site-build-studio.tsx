@@ -136,7 +136,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
   const previewSlug = build.slug || activeSlug || "your-event";
 
   return (
-    <div className={`overflow-hidden bg-[#151515] text-[#f5f5f5] ${fullBleed ? "min-h-[100svh] rounded-none border-0 shadow-none lg:h-[100svh]" : "rounded-2xl border border-white/10 shadow-[0_28px_100px_rgba(0,0,0,0.26)]"}`}>
+    <div className={`eventloom-studio overflow-hidden bg-[#151515] text-[#f5f5f5] ${fullBleed ? "min-h-[100svh] rounded-none border-0 shadow-none lg:h-[100svh]" : "rounded-2xl border border-white/10 shadow-[0_28px_100px_rgba(0,0,0,0.26)]"}`}>
       <header className="flex min-h-12 flex-col gap-3 border-b border-white/10 bg-[#1a1a1a] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <EventloomMark className="size-7 shadow-lg shadow-[#0b3c50]/35" />

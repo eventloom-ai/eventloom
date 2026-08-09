@@ -40,13 +40,13 @@ export async function Dashboard({ filter = "all" }: { filter?: "all" | "publishe
       action={
         <div className="flex flex-wrap gap-2">
           <Link
-            className="inline-flex shrink-0 items-center justify-center rounded-full border border-black/10 px-5 py-2.5 text-[15px] font-medium transition-colors hover:bg-white"
+            className="eventloom-app-button inline-flex shrink-0 items-center justify-center rounded-full px-5 py-2.5 text-[15px] font-medium transition-colors"
             href={publishedOnly ? "/app" : "/app?status=published"}
           >
             {publishedOnly ? "All events" : "Published sites"}
           </Link>
           <Link
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#0071e3] px-5 py-2.5 text-[15px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.98]"
+            className="eventloom-app-button-primary inline-flex shrink-0 items-center justify-center rounded-full px-5 py-2.5 text-[15px] font-medium transition-all active:scale-[0.98]"
             href="/app/events/new"
           >
             New event
@@ -56,13 +56,13 @@ export async function Dashboard({ filter = "all" }: { filter?: "all" | "publishe
     >
       {events.length === 0 ? (
         <FadeIn>
-          <div className="rounded-2xl border border-dashed border-black/[0.12] bg-white px-8 py-16 text-center">
+          <div className="eventloom-app-card rounded-2xl border border-dashed px-8 py-16 text-center">
             <p className="text-[21px] font-semibold tracking-tight">{publishedOnly ? "No published sites yet" : "No events yet"}</p>
-            <p className="mx-auto mt-3 max-w-sm text-[15px] leading-relaxed text-[#6e6e73]">
+            <p className="mx-auto mt-3 max-w-sm text-[15px] leading-relaxed text-[#66736c]">
               {publishedOnly ? "Publish an event when it is ready and it will appear here." : "Describe your first celebration and Eventloom will draft a page for you."}
             </p>
             <Link
-              className="mt-8 inline-flex items-center justify-center rounded-full bg-[#0071e3] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#0077ed]"
+              className="eventloom-app-button-primary mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 text-[15px] font-medium transition-all"
               href={publishedOnly ? "/app" : "/app/events/new"}
             >
               {publishedOnly ? "View all events" : "Create your first site"}

@@ -26,19 +26,19 @@ export function AppShell({
   const maxWidth = width === "narrow" ? "max-w-2xl" : width === "wide" ? "max-w-6xl" : "max-w-5xl";
 
   return (
-    <div className="min-h-screen text-[#1d1d1f]">
+    <div className="eventloom-app min-h-screen text-[#302821]">
       <AppHeader active={active} />
       <main className={`mx-auto ${maxWidth} px-6 py-10 md:py-14`}>
         {backHref ? (
-          <Link className="text-[14px] font-medium text-[#0071e3] transition-colors hover:text-[#0077ed]" href={backHref}>
+          <Link className="text-[14px] font-medium text-[#155166] transition-colors hover:text-[#0b2d39]" href={backHref}>
             ← {backLabel}
           </Link>
         ) : null}
 
         <header className={`flex flex-col justify-between gap-5 ${backHref ? "mt-6" : ""} sm:flex-row sm:items-end`}>
           <div>
-            <h1 className="text-[32px] font-semibold tracking-[-0.02em] md:text-[40px]">{title}</h1>
-            {description ? <p className="mt-3 max-w-2xl text-[17px] leading-relaxed text-[#6e6e73]">{description}</p> : null}
+            <h1 className="font-[family-name:var(--font-playfair)] text-[34px] font-medium tracking-[-0.035em] md:text-[42px]">{title}</h1>
+            {description ? <p className="mt-3 max-w-2xl text-[17px] leading-relaxed text-[#66736c]">{description}</p> : null}
           </div>
           {action}
         </header>
