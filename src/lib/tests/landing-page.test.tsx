@@ -10,7 +10,7 @@ describe("landing page", () => {
   it("uses only working homepage anchors and application destinations", () => {
     const html = renderToStaticMarkup(<LandingPage authConfigured signupEnabled />);
 
-    for (const href of ["#product", "#how-it-works", "#pricing", "#questions", "#create", "/login?next=/app", "/contact"]) {
+    for (const href of ["#top", "#product", "#how-it-works", "#pricing", "#questions", "/login?next=/app", "/contact"]) {
       expect(html).toContain(`href=\"${href}\"`);
     }
     expect(html).not.toContain("/demo-wedding");
