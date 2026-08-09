@@ -4,26 +4,21 @@ type LogoProps = {
   showWordmark?: boolean;
 };
 
-/**
- * Eventloom mark — a threaded “E” with a loom eye on the middle bar.
- * Suggests events woven together; stays clear at 24–32px.
- */
+/** A woven tide mark: an event's details coming together around one shared point. */
 export function EventloomMark({ className = "size-8" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect width="32" height="32" rx="9" fill="#6D28D9" />
-      {/* Loom post + top/bottom weft forming the E spine */}
+      <rect width="32" height="32" rx="9" fill="#155166" />
       <path
-        d="M21.5 9H12.25c-.97 0-1.75.78-1.75 1.75v10.5c0 .97.78 1.75 1.75 1.75H21.5"
-        stroke="white"
-        strokeWidth="2.6"
+        d="M23 8H12.5A3.5 3.5 0 0 0 9 11.5v9A3.5 3.5 0 0 0 12.5 24H23"
+        stroke="#F6F1E6"
+        strokeWidth="2.25"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* Middle weft through the loom eye */}
-      <path d="M10.5 16h8.25" stroke="white" strokeWidth="2.6" strokeLinecap="round" />
-      {/* Loom / needle eye — the signature detail */}
-      <circle cx="21.25" cy="16" r="2.55" stroke="white" strokeWidth="2.2" />
+      <path d="M9 16h9.25" stroke="#F6F1E6" strokeWidth="2.25" strokeLinecap="round" />
+      <circle cx="22.5" cy="16" r="3.4" fill="#B9D4C1" stroke="#F6F1E6" strokeWidth="1.5" />
+      <circle cx="22.5" cy="16" r="1" fill="#155166" />
     </svg>
   );
 }

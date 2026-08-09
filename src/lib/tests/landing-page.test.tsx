@@ -28,13 +28,13 @@ describe("landing page", () => {
     expect(localDemo).toContain("Start building");
   });
 
-  it("keeps the real event brief composer and compact FAQ available", () => {
+  it("keeps the real event brief composer and compact FAQ available without the removed capability section", () => {
     const html = renderToStaticMarkup(<LandingPage authConfigured signupEnabled />);
 
     expect(html).toContain('id="event-brief"');
     expect(html).toContain("Start building");
     expect(html).toContain('aria-label="Event type"');
     expect(html).toContain("Do I need to know how to build a website?");
-    expect(html).toContain("A site with a point of view.");
+    expect(html).not.toContain("A site with a point of view.");
   });
 });

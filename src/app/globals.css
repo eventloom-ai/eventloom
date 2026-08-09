@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbfbfd;
+  --background: #e7ecdf;
   --foreground: #1d1d1f;
   --muted: #6e6e73;
   --border: rgba(0, 0, 0, 0.08);
@@ -33,49 +33,66 @@ html {
 }
 
 .eventloom-hero {
-  background: linear-gradient(180deg, #0c2d3a 0%, #1c596a 58%, #6da9a8 80%, #f1cb95 100%);
+  background: linear-gradient(180deg, #0c2d3a 0%, #155166 48%, #4b9399 70%, #b7d0bd 88%, #e7ecdf 100%);
 }
 
 .eventloom-water-reflection {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  background: radial-gradient(ellipse 88% 38% at 50% 100%, rgba(231, 236, 223, 0.68), transparent 74%);
 }
 
 .eventloom-water-reflection span {
   position: absolute;
-  left: -30%;
-  width: 160%;
-  height: 13rem;
-  opacity: 0.24;
-  background: repeating-linear-gradient(
-    177deg,
-    transparent 0 15px,
-    rgba(255, 255, 255, 0.48) 16px 17px,
-    transparent 18px 33px
+  inset: -26% -18%;
+  opacity: 0.34;
+  background: repeating-radial-gradient(
+    ellipse 96% 16% at 50% 100%,
+    transparent 0 25px,
+    rgba(238, 247, 241, 0.5) 30px 33px,
+    transparent 39px 67px
   );
-  will-change: transform;
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
 }
 
 .eventloom-water-reflection span:nth-child(1) {
-  top: 20%;
-  animation: eventloom-water-drift-one 16s linear infinite alternate;
+  animation: eventloom-water-swell-one 11s ease-in-out infinite alternate;
 }
 
 .eventloom-water-reflection span:nth-child(2) {
-  top: 47%;
-  opacity: 0.16;
-  animation: eventloom-water-drift-two 22s linear infinite alternate;
+  inset: -38% -24%;
+  opacity: 0.22;
+  background-size: 112% 82%;
+  filter: blur(5px);
+  animation: eventloom-water-swell-two 15s ease-in-out infinite alternate;
 }
 
-@keyframes eventloom-water-drift-one {
-  from { transform: translateX(-4%) skewX(-8deg); }
-  to { transform: translateX(6%) skewX(-8deg); }
+.eventloom-water-reflection span:nth-child(3) {
+  inset: auto -25% -24%;
+  height: 52%;
+  opacity: 0.4;
+  background: radial-gradient(ellipse 62% 74% at 50% 100%, rgba(236, 246, 237, 0.52), transparent 72%);
+  filter: blur(22px);
+  animation: eventloom-water-swell-three 12s ease-in-out infinite alternate;
 }
 
-@keyframes eventloom-water-drift-two {
-  from { transform: translateX(5%) skewX(-8deg); }
-  to { transform: translateX(-5%) skewX(-8deg); }
+@keyframes eventloom-water-swell-one {
+  from { transform: translate3d(-3%, 2%, 0) scale(1.01, 0.98); }
+  to { transform: translate3d(4%, -2%, 0) scale(1.08, 1.04); }
+}
+
+@keyframes eventloom-water-swell-two {
+  from { transform: translate3d(4%, -2%, 0) scale(1.1, 1.03); }
+  to { transform: translate3d(-4%, 3%, 0) scale(1.02, 1.1); }
+}
+
+@keyframes eventloom-water-swell-three {
+  from { transform: translate3d(-5%, 4%, 0) scaleX(1.03); }
+  to { transform: translate3d(5%, -4%, 0) scaleX(1.12); }
 }
 
 @media (prefers-reduced-motion: reduce) {
