@@ -63,7 +63,7 @@ jobs:
           '
           printf 'private readiness contract verified\n' | tee -a smoke.log
 
-          check_contains "/" "Creative event websites"
+          check_contains "/" "Event websites and RSVPs, made personal"
           check_contains "/signup?next=%2Fapp%2Fevents%2Fnew%3Fbrief%3DSmoke%2520test%2520event" 'data-signup-ux="continue-draft-v2"'
           check_contains "/robots.txt" "Sitemap:"
 
