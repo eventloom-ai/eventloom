@@ -17,10 +17,10 @@ function statusLabel(status: EventRecord["status"], isBuilding: boolean) {
 }
 
 function statusStyles(status: EventRecord["status"], isBuilding: boolean) {
-  if (isBuilding) return "bg-[#d8eff0] text-[#155166]";
+  if (isBuilding) return "bg-[#e4eeeb] text-[#315c5d]";
   if (status === "published") return "bg-[#dcebd8] text-[#285b47]";
-  if (status === "archived") return "bg-[#e7ecdf] text-[#66736c]";
-  return "bg-[#f2e2bd] text-[#755531]";
+  if (status === "archived") return "bg-[#e7ecdf] text-[#74675d]";
+  return "bg-[#f3e7d9] text-[#8a6153]";
 }
 
 export function EventsList({ events, activeJobs: initialJobs, currentUserId }: { events: EventRecord[]; activeJobs: BuildJobStatus[]; currentUserId: string | null }) {
@@ -88,14 +88,14 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
         return (
           <FadeIn key={event.id} delay={index * 60}>
             <article
-              className={`rounded-2xl border bg-[#fffaf3] p-6 transition-shadow md:p-7 ${
-                isBuilding ? "border-[#4b9399]/40 shadow-[0_8px_30px_rgba(21,81,102,0.12)]" : "border-[#155166]/15 hover:shadow-[0_8px_30px_rgba(21,81,102,0.1)]"
+              className={`rounded-[1.5rem] border bg-[#fffaf3] p-6 transition-all md:p-7 ${
+                isBuilding ? "border-[#8a6153]/25 shadow-[0_18px_48px_rgba(65,43,28,0.12)]" : "border-[#302821]/12 shadow-[0_12px_32px_rgba(65,43,28,0.06)] hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(65,43,28,0.11)]"
               }`}
             >
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-[21px] font-semibold tracking-tight">{event.config.title}</h2>
+                    <h2 className="font-[family-name:var(--font-playfair)] text-[28px] font-medium leading-none tracking-[-0.04em]">{event.config.title}</h2>
                     <span className={`rounded-full px-2.5 py-1 text-[12px] font-medium ${statusStyles(event.status, isBuilding)}`}>
                       {statusLabel(event.status, isBuilding)}
                     </span>
@@ -108,14 +108,14 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
                     <div className="mt-4">
                       <div className="flex items-center justify-between gap-3 text-[12px] text-[#66736c]">
                         <span className="inline-flex items-center gap-2">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#155166]" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#8a6153]" />
                           {job.progressMessage ?? "Building your site…"}
                         </span>
                         <span className="tabular-nums">{job.progressPercent}%</span>
                       </div>
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#155166]/10">
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#302821]/10">
                         <div
-                          className="h-full rounded-full bg-[#155166] transition-all duration-500"
+                          className="h-full rounded-full bg-[#8a6153] transition-all duration-500"
                           style={{ width: `${job.progressPercent}%` }}
                         />
                       </div>
@@ -154,7 +154,7 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
                     </Link>
                   ) : (
                     <Link
-                      className="inline-flex items-center justify-center rounded-full bg-[#0b2d39] px-4 py-2.5 text-[14px] font-medium text-[#fffaf3] transition hover:bg-[#155166]"
+                      className="inline-flex items-center justify-center rounded-full bg-[#302821] px-4 py-2.5 text-[14px] font-medium text-[#fffaf3] transition hover:bg-[#4a2d2a]"
                       href={`/app/events/${event.id}/studio`}
                     >
                       Open studio

@@ -195,22 +195,22 @@ export function AuthForm({
   return (
     <div className="mx-auto w-full max-w-md">
       <div className="mb-8 text-center">
-        <Link href="/" className="inline-flex justify-center text-[17px] font-semibold text-[#1d1d1f]">
+        <Link href="/" className="inline-flex justify-center text-[17px] font-semibold text-[#302821]">
           <EventloomLogo markClassName="size-7" />
         </Link>
-        <h1 className="mt-8 text-[32px] font-semibold tracking-[-0.02em]">{title}</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-[#6e6e73]">{subtitle}</p>
+        <h1 className="mt-8 font-[family-name:var(--font-playfair)] text-[42px] font-medium tracking-[-0.05em]">{title}</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-[#6d6055]">{subtitle}</p>
       </div>
 
       <form
         onSubmit={submit}
         data-signup-ux={mode === "signup" ? SIGNUP_UX_VERSION : undefined}
-        className="rounded-2xl border border-black/[0.08] bg-white p-6 shadow-[0_2px_24px_rgba(0,0,0,0.04)] md:p-8"
+        className="eventloom-app-card rounded-[1.5rem] p-6 md:p-8"
       >
         {mode === "signup" ? (
-          <fieldset className="mb-6 rounded-2xl border border-[#0071e3]/15 bg-[#f5f9ff] p-4">
-            <legend className="px-1 text-[13px] font-semibold text-[#1d1d1f]">Before you continue</legend>
-            <label className="flex cursor-pointer items-start gap-3 text-[13px] leading-5 text-[#424245]">
+          <fieldset className="mb-6 rounded-2xl border border-[#8a6153]/20 bg-[#f3e7d9] p-4">
+            <legend className="px-1 text-[13px] font-semibold text-[#302821]">Before you continue</legend>
+            <label className="flex cursor-pointer items-start gap-3 text-[13px] leading-5 text-[#574239]">
               <input
                 ref={acceptanceRef}
                 type="checkbox"
@@ -219,7 +219,7 @@ export function AuthForm({
                   setAccepted(event.target.checked);
                   if (event.target.checked) setError("");
                 }}
-                className="mt-0.5 size-4 shrink-0 accent-[#0071e3]"
+                className="mt-0.5 size-4 shrink-0 accent-[#8a6153]"
                 required
               />
               <span>
@@ -229,7 +229,7 @@ export function AuthForm({
                 <Link className="font-medium underline underline-offset-2" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link>.
               </span>
             </label>
-            <p className="mt-2 pl-7 text-[12px] leading-5 text-[#6e6e73]">
+            <p className="mt-2 pl-7 text-[12px] leading-5 text-[#74675d]">
               Required once to save your event with Google or email.
             </p>
           </fieldset>
@@ -239,7 +239,7 @@ export function AuthForm({
           type="button"
           disabled={isSubmitting}
           onClick={signInWithGoogle}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-black/[0.12] bg-white py-3.5 text-[16px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] disabled:cursor-not-allowed disabled:opacity-40"
+          className="eventloom-app-button flex w-full items-center justify-center gap-3 rounded-xl py-3.5 text-[16px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5">
             <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.3 2.98-7.36Z" />
@@ -249,25 +249,25 @@ export function AuthForm({
           </svg>
           <span className="text-left">
             <span className="block">Continue with Google</span>
-            {mode === "signup" ? <span className="mt-0.5 block text-[12px] font-normal text-[#6e6e73]">Fastest — no password to remember</span> : null}
+            {mode === "signup" ? <span className="mt-0.5 block text-[12px] font-normal text-[#74675d]">Fastest — no password to remember</span> : null}
           </span>
         </button>
 
-        <div className="my-6 flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.14em] text-[#86868b]">
-          <span className="h-px flex-1 bg-black/[0.08]" />
+        <div className="my-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153]">
+          <span className="h-px flex-1 bg-[#302821]/10" />
           or continue with email
-          <span className="h-px flex-1 bg-black/[0.08]" />
+          <span className="h-px flex-1 bg-[#302821]/10" />
         </div>
 
         {mode === "signup" ? (
           <label className="grid gap-2">
-            <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Full name</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153]">Full name</span>
             <input
               type="text"
               required
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
+              className="eventloom-app-field rounded-xl border px-4 py-3.5 text-[17px] outline-none transition-all"
               placeholder="Alex Morgan"
               autoComplete="name"
             />
@@ -275,34 +275,34 @@ export function AuthForm({
         ) : null}
 
         <label className={`grid gap-2 ${mode === "signup" ? "mt-5" : ""}`}>
-          <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Email</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153]">Email</span>
           <input
             type="email"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
+            className="eventloom-app-field rounded-xl border px-4 py-3.5 text-[17px] outline-none transition-all"
             placeholder="you@example.com"
             autoComplete="email"
           />
         </label>
 
         <label className="mt-5 grid gap-2">
-          <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Password</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153]">Password</span>
           <input
               type={showPassword ? "text" : "password"}
             required
             minLength={mode === "signup" ? 12 : 8}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
+            className="eventloom-app-field rounded-xl border px-4 py-3.5 text-[17px] outline-none transition-all"
               placeholder={mode === "signup" ? "At least 12 characters" : "Your password"}
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
             />
             <button
               type="button"
               onClick={() => setShowPassword((visible) => !visible)}
-              className="justify-self-start text-sm font-medium text-[#0071e3] hover:text-[#0077ed]"
+              className="justify-self-start text-sm font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4 hover:text-[#8a6153]"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? "Hide password" : "Show password"}
@@ -310,7 +310,7 @@ export function AuthForm({
           </label>
 
         {mode === "signup" ? (
-          <p className="mt-3 text-[13px] leading-relaxed text-[#6e6e73]">
+          <p className="mt-3 text-[13px] leading-relaxed text-[#74675d]">
             Use at least 12 characters. A unique passphrase is easiest to remember.
           </p>
         ) : null}
@@ -332,7 +332,7 @@ export function AuthForm({
             {showSignInHint ? (
               <p className="mt-2">
                 <Link
-                  className="font-medium text-[#0071e3] hover:text-[#0077ed]"
+                  className="font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4 hover:text-[#8a6153]"
                   href={`/login?next=${encodeURIComponent(nextPath)}&email=${encodeURIComponent(email)}`}
                 >
                   Go to sign in
@@ -343,7 +343,7 @@ export function AuthForm({
         ) : null}
 
         {message ? (
-          <p className="mt-5 rounded-xl bg-[#f0f7ff] px-4 py-3 text-[14px] text-[#0071e3]" role="status">
+          <p className="mt-5 rounded-xl bg-[#f3e7d9] px-4 py-3 text-[14px] text-[#604139]" role="status">
             {message}
           </p>
         ) : null}
@@ -351,7 +351,7 @@ export function AuthForm({
         <button
           type="submit"
           disabled={isSubmitting || (mode === "signup" && (!accepted || (Boolean(turnstileSiteKey) && !captchaToken)))}
-          className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+          className="eventloom-app-button-primary mt-6 w-full rounded-full py-3.5 text-[17px] font-medium transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSubmitting
             ? "Please wait…"
@@ -367,29 +367,29 @@ export function AuthForm({
             type="button"
             disabled={isSubmitting}
             onClick={resetPassword}
-            className="mt-3 w-full rounded-full border border-black/[0.08] bg-[#fbfbfd] py-3 text-[15px] font-medium text-[#1d1d1f] transition-colors hover:bg-[#f5f5f7] disabled:cursor-not-allowed disabled:opacity-40"
+            className="eventloom-app-button mt-3 w-full rounded-full py-3 text-[15px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
           >
             Forgot password?
           </button>
         ) : null}
       </form>
 
-      <p className="mt-5 text-center text-[12px] leading-relaxed text-[#86868b]">
+      <p className="mt-5 text-center text-[12px] leading-relaxed text-[#74675d]">
         Protected by secure authentication. Google sign-in is handled by Google; Eventloom never receives your Google password.
       </p>
 
-      <p className="mt-6 text-center text-[14px] text-[#6e6e73]">
+      <p className="mt-6 text-center text-[14px] text-[#6d6055]">
         {mode === "signup" ? (
           <>
             Already saved an event?{" "}
-            <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href={`/login?next=${encodeURIComponent(nextPath)}`}>
+            <Link className="font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4 hover:text-[#8a6153]" href={`/login?next=${encodeURIComponent(nextPath)}`}>
               Sign in
             </Link>
           </>
         ) : signupAvailable ? (
           <>
             First time here?{" "}
-            <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href={`/signup?next=${encodeURIComponent(nextPath)}`}>
+            <Link className="font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4 hover:text-[#8a6153]" href={`/signup?next=${encodeURIComponent(nextPath)}`}>
               Save your event
             </Link>
           </>

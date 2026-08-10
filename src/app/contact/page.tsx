@@ -13,22 +13,23 @@ export default function ContactPage() {
   const configured = !email.endsWith(".invalid");
 
   return (
-    <main className="min-h-screen bg-[#fbfbfd] px-6 py-16">
+    <main className="eventloom-app min-h-screen px-5 py-16 sm:px-8">
       <section className="mx-auto max-w-2xl">
-        <Link href="/" className="text-sm font-semibold">Eventloom</Link>
-        <h1 className="mt-10 text-4xl font-semibold tracking-tight sm:text-5xl">Contact and support</h1>
-        <p className="mt-5 text-lg leading-8 text-[#6e6e73]">
+        <Link href="/" className="font-[family-name:var(--font-playfair)] text-lg font-medium tracking-[-0.04em]">Eventloom</Link>
+        <p className="mt-14 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Here to help</p>
+        <h1 className="mt-4 font-[family-name:var(--font-playfair)] text-5xl font-medium leading-[0.92] tracking-[-0.055em] sm:text-6xl">Contact and support</h1>
+        <p className="mt-6 text-lg leading-8 text-[#6d6055]">
           Tell us what you need in plain language. Support messages go to Eventloom’s private feedback queue.
         </p>
 
-        <div className="mt-8 rounded-2xl border border-black/[0.08] bg-white p-6 shadow-[0_16px_50px_rgba(0,0,0,0.06)]">
-          <h2 className="text-xl font-semibold">How can we help?</h2>
-          <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
+        <div className="eventloom-app-card mt-10 rounded-[1.5rem] p-6 sm:p-8">
+          <h2 className="font-[family-name:var(--font-playfair)] text-3xl font-medium tracking-[-0.04em]">How can we help?</h2>
+          <p className="mt-3 text-sm leading-6 text-[#6d6055]">
             Include the page you were using and what you expected to happen. Please do not send guest names, addresses, card details, passwords, or security codes.
           </p>
           <div className="mt-5">
             {configured ? (
-              <a href={`mailto:${email}`} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#1d1d1f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-black">
+              <a href={`mailto:${email}`} className="eventloom-app-button-primary inline-flex min-h-11 items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition">
                 Email {email}
               </a>
             ) : (
@@ -38,9 +39,9 @@ export default function ContactPage() {
         </div>
 
         <div className="mt-10 grid gap-3 text-sm">
-          <Link className="font-medium text-violet-700 underline underline-offset-4" href="/privacy/request">Submit a privacy request</Link>
-          <Link className="font-medium text-violet-700 underline underline-offset-4" href="/legal/accessibility">Accessibility support</Link>
-          <Link className="font-medium text-violet-700 underline underline-offset-4" href="/ip">Intellectual-property complaint process</Link>
+          <Link className="font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4" href="/privacy/request">Submit a privacy request</Link>
+          <Link className="font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4" href="/legal/accessibility">Accessibility support</Link>
+          <Link className="font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4" href="/ip">Intellectual-property complaint process</Link>
         </div>
       </section>
     </main>

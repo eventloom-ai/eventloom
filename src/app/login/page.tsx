@@ -4,7 +4,7 @@ import { publicSignupEnabled } from "@/lib/env";
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#fbfbfd] px-6 py-16">
+    <main className="eventloom-app flex min-h-screen items-center justify-center px-5 py-16 sm:px-8">
       <Suspense>
         <AuthForm mode="signin" signupAvailable={publicSignupEnabled()} />
       </Suspense>

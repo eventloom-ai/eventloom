@@ -46,13 +46,13 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
   function submit(event: FormEvent) { event.preventDefault(); void start(prompt); }
   if (isStarting) {
     return (
-      <div className="mx-auto grid min-h-[26rem] max-w-3xl place-items-center rounded-[1.75rem] border border-black/[0.07] bg-white text-center shadow-[0_24px_70px_rgba(38,31,43,0.08)]">
+      <div className="eventloom-app-card mx-auto grid min-h-[26rem] max-w-3xl place-items-center rounded-[1.75rem] text-center">
         <div>
-          <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-violet-100 text-violet-700">
+          <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#f3e7d9] text-[#8a6153]">
             <Loader2 className="size-5 animate-spin" />
           </div>
-          <p className="mt-5 text-base font-semibold text-[#252329]">Opening your studio</p>
-          <p className="mt-2 text-sm text-[#77717a]">Your editable first version is taking shape.</p>
+          <p className="mt-5 font-[family-name:var(--font-playfair)] text-2xl font-medium tracking-[-0.04em]">Opening your studio</p>
+          <p className="mt-2 text-sm text-[#6d6055]">Your editable first version is taking shape.</p>
         </div>
       </div>
     );
@@ -61,20 +61,20 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
   return (
     <form
       onSubmit={submit}
-      className="mx-auto max-w-3xl rounded-[1.75rem] border border-black/[0.07] bg-white p-5 shadow-[0_24px_70px_rgba(38,31,43,0.08)] sm:p-8"
+      className="eventloom-app-card mx-auto max-w-3xl rounded-[1.75rem] p-5 sm:p-8"
     >
-      <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">
+      <div className="inline-flex items-center gap-2 rounded-full bg-[#f3e7d9] px-3 py-1.5 text-xs font-semibold text-[#8a6153]">
         <Sparkles className="size-3.5" />
         New event workspace
       </div>
-      <h1 className="mt-5 text-2xl font-semibold tracking-[-0.03em] text-[#252329] sm:text-3xl">
+      <h1 className="mt-5 font-[family-name:var(--font-playfair)] text-3xl font-medium tracking-[-0.045em] text-[#302821] sm:text-4xl">
         What are you celebrating?
       </h1>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6f6a72]">
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6d6055]">
         Describe the occasion, feeling, and details you already know. You can change everything in the studio.
       </p>
 
-      <label htmlFor="event-description" className="mt-7 block text-sm font-semibold text-[#37323a]">
+      <label htmlFor="event-description" className="mt-7 block text-sm font-semibold text-[#574239]">
         Event description
       </label>
       <textarea
@@ -88,14 +88,14 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
         rows={7}
         maxLength={8000}
         placeholder="A candlelit garden wedding for Maya and Adam in Toronto next September…"
-        className="mt-2 w-full resize-none rounded-2xl border border-black/10 bg-[#fbfaf8] px-4 py-3 text-sm leading-6 text-[#252329] outline-none transition placeholder:text-[#aaa5ad] focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
+        className="eventloom-app-field mt-2 w-full resize-none rounded-2xl border px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-[#9e9187]"
       />
 
-      <label htmlFor="event-slug" className="mt-5 block text-sm font-semibold text-[#37323a]">
+      <label htmlFor="event-slug" className="mt-5 block text-sm font-semibold text-[#574239]">
         Site address
       </label>
-      <div className="mt-2 flex min-w-0 items-center overflow-hidden rounded-xl border border-black/10 bg-[#fbfaf8] transition focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-100">
-        <span className="shrink-0 border-r border-black/[0.07] bg-black/[0.025] px-3 py-3 text-xs text-[#8a858d] sm:text-sm">
+      <div className="mt-2 flex min-w-0 items-center overflow-hidden rounded-xl border border-[#302821]/15 bg-[#fffaf3] transition focus-within:border-[#8a6153] focus-within:ring-4 focus-within:ring-[#c19a7d]/20">
+        <span className="shrink-0 border-r border-[#302821]/10 bg-[#f3e7d9] px-3 py-3 text-xs text-[#74675d] sm:text-sm">
           eventloom-beta.vercel.app/
         </span>
         <input
@@ -106,10 +106,10 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
             setSlug(normalizeSlugInput(event.target.value));
           }}
           aria-describedby="event-slug-help"
-          className="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm text-[#252329] outline-none"
+          className="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm text-[#302821] outline-none"
         />
       </div>
-      <p id="event-slug-help" className="mt-2 text-xs text-[#8a858d]">
+      <p id="event-slug-help" className="mt-2 text-xs text-[#74675d]">
         This becomes the link you’ll share with guests.
       </p>
 
@@ -122,7 +122,7 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
       <button
         type="submit"
         disabled={!prompt.trim() || slug.length < 3}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 disabled:cursor-not-allowed disabled:bg-violet-200 disabled:text-violet-500 disabled:shadow-none"
+        className="eventloom-app-button-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#c19a7d]/30 disabled:cursor-not-allowed disabled:bg-[#dacfc5] disabled:text-[#fffaf3] disabled:shadow-none"
       >
         Create editable site
         <ArrowRight className="size-4" />

@@ -40,13 +40,13 @@ export default async function AdminPage() {
   const stats = await loadStats();
 
   return (
-    <main className="min-h-screen bg-[#191713] px-6 py-8 text-white">
+    <main className="min-h-screen bg-[#302821] px-5 py-12 text-[#fff9f2] sm:px-8 sm:py-16">
       <section className="mx-auto max-w-6xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d7bd8d]">Eventloom admin</p>
-        <h1 className="mt-2 text-5xl font-semibold">Overview</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#dfb89f]">Eventloom admin</p>
+        <h1 className="mt-4 font-[family-name:var(--font-playfair)] text-5xl font-medium leading-[0.92] tracking-[-0.055em]">Overview</h1>
         <div className="mt-8 grid gap-4 sm:grid-cols-4">
           {Object.entries(stats).map(([label, value]) => (
-            <article key={label} className="rounded-[8px] border border-white/10 bg-white/8 p-5">
+            <article key={label} className="rounded-2xl border border-white/15 bg-white/[0.07] p-5">
               <p className="text-sm uppercase tracking-[0.18em] text-white/50">{label}</p>
               <p className="mt-4 text-4xl font-semibold">{value}</p>
             </article>

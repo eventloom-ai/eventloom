@@ -6,12 +6,12 @@ import Link from "next/link";
 
 export default function SignupPage() {
   if (!publicSignupEnabled()) {
-    return <main className="grid min-h-screen place-items-center bg-[#fbfbfd] px-6"><section className="max-w-lg text-center"><p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#6e6e73]">Invited beta</p><h1 className="mt-3 text-4xl font-semibold">New accounts are temporarily closed.</h1><p className="mt-4 text-[#6e6e73]">Existing creators can still sign in while we complete security and legal launch checks.</p><Link href="/login" className="mt-6 inline-block rounded-full bg-[#1d1d1f] px-6 py-3 text-white">Sign in</Link></section></main>;
+    return <main className="eventloom-app grid min-h-screen place-items-center px-5 sm:px-8"><section className="max-w-lg text-center"><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">Invited beta</p><h1 className="mt-4 font-[family-name:var(--font-playfair)] text-5xl font-medium leading-[0.94] tracking-[-0.05em]">New accounts are temporarily closed.</h1><p className="mt-5 leading-7 text-[#6d6055]">Existing creators can still sign in while we complete security and legal launch checks.</p><Link href="/login" className="eventloom-app-button-primary mt-8 inline-block rounded-full px-6 py-3 text-sm font-semibold">Sign in</Link></section></main>;
   }
   return (
     <main
       data-signup-ux={SIGNUP_UX_VERSION}
-      className="flex min-h-screen items-center justify-center bg-[#fbfbfd] px-6 py-16"
+      className="eventloom-app flex min-h-screen items-center justify-center px-5 py-16 sm:px-8"
     >
       <Suspense>
         <AuthForm mode="signup" turnstileSiteKey={env.turnstileSiteKey()} />

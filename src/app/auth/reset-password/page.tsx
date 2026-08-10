@@ -119,44 +119,44 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#fbfbfd] px-6 py-16">
+    <main className="eventloom-app flex min-h-screen items-center justify-center px-5 py-16 sm:px-8">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex justify-center text-[17px] font-semibold text-[#1d1d1f]">
+          <Link href="/" className="inline-flex justify-center text-[17px] font-semibold text-[#302821]">
             <EventloomLogo markClassName="size-7" />
           </Link>
-          <h1 className="mt-8 text-[32px] font-semibold tracking-[-0.02em]">Set a new password</h1>
-          <p className="mt-3 text-[15px] leading-relaxed text-[#6e6e73]">
+          <h1 className="mt-8 font-[family-name:var(--font-playfair)] text-[42px] font-medium tracking-[-0.05em]">Set a new password</h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-[#6d6055]">
             Choose a new password for your account, then continue to your events.
           </p>
         </div>
 
         <form
           onSubmit={submit}
-          className="rounded-2xl border border-black/[0.08] bg-white p-6 shadow-[0_2px_24px_rgba(0,0,0,0.04)] md:p-8"
+          className="eventloom-app-card rounded-[1.5rem] p-6 md:p-8"
         >
           <label className="grid gap-2">
-            <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">New password</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153]">New password</span>
             <input
               type="password"
               required
               minLength={8}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
+              className="eventloom-app-field rounded-xl border px-4 py-3.5 text-[17px] outline-none transition-all"
               autoComplete="new-password"
             />
           </label>
 
           <label className="mt-5 grid gap-2">
-            <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Confirm password</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153]">Confirm password</span>
             <input
               type="password"
               required
               minLength={8}
               value={confirm}
               onChange={(event) => setConfirm(event.target.value)}
-              className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
+              className="eventloom-app-field rounded-xl border px-4 py-3.5 text-[17px] outline-none transition-all"
               autoComplete="new-password"
             />
           </label>
@@ -168,7 +168,7 @@ export default function ResetPasswordPage() {
           ) : null}
 
           {message && !error ? (
-            <p className="mt-5 rounded-xl bg-[#f0f7ff] px-4 py-3 text-[14px] text-[#0071e3]" role="status">
+            <p className="mt-5 rounded-xl bg-[#f3e7d9] px-4 py-3 text-[14px] text-[#604139]" role="status">
               {message}
             </p>
           ) : null}
@@ -176,14 +176,14 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={isPreparing || isSubmitting || !canResetPassword}
-            className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+            className="eventloom-app-button-primary mt-6 w-full rounded-full py-3.5 text-[17px] font-medium transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isPreparing ? "Checking link…" : isSubmitting ? "Saving…" : "Update password"}
           </button>
 
           {error ? (
             <p className="mt-5 text-center text-[14px] text-[#6e6e73]">
-              <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href="/login">
+              <Link className="font-medium text-[#604139] underline decoration-[#c19a7d] underline-offset-4 hover:text-[#8a6153]" href="/login">
                 Back to sign in
               </Link>
             </p>

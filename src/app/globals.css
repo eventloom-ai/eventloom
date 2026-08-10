@@ -32,65 +32,81 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Shared creator-app system: the public coast palette, translated for dense work. */
+/* Shared creator-app system: the landing page's warm editorial palette, translated for dense work. */
 .eventloom-app {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse 75% 38% at 50% -18%, rgba(214, 234, 222, 0.9), transparent 72%),
+    radial-gradient(ellipse 72% 34% at 50% -16%, rgba(255, 250, 243, 0.9), transparent 72%),
+    radial-gradient(ellipse 44% 23% at 6% 32%, rgba(202, 220, 202, 0.34), transparent 78%),
     #e7ecdf;
   color: #302821;
 }
 
 .eventloom-app-card {
-  border: 1px solid rgba(21, 81, 102, 0.16);
+  border: 1px solid rgba(48, 40, 33, 0.12);
   background: rgba(255, 250, 243, 0.94);
-  box-shadow: 0 12px 32px rgba(21, 81, 102, 0.07);
+  box-shadow: 0 18px 52px rgba(65, 43, 28, 0.08);
 }
 
 .eventloom-app-button {
-  border: 1px solid rgba(21, 81, 102, 0.18);
+  border: 1px solid rgba(48, 40, 33, 0.15);
   background: rgba(255, 250, 243, 0.82);
-  color: #155166;
+  color: #302821;
 }
 
 .eventloom-app-button:hover {
   background: #fffaf3;
-  border-color: rgba(21, 81, 102, 0.34);
+  border-color: rgba(48, 40, 33, 0.32);
 }
 
 .eventloom-app-button-primary {
-  background: #155166;
+  background: #302821;
   color: #fffaf3;
-  box-shadow: 0 8px 20px rgba(9, 58, 73, 0.18);
+  box-shadow: 0 10px 22px rgba(48, 40, 33, 0.18);
 }
 
 .eventloom-app-button-primary:hover {
-  background: #0b3e4e;
+  background: #4a2d2a;
 }
 
 .eventloom-app :is(input, textarea, select).eventloom-app-field {
-  border-color: rgba(21, 81, 102, 0.2);
+  border-color: rgba(48, 40, 33, 0.16);
   background: #fffaf3;
   color: #302821;
 }
 
 .eventloom-app :is(input, textarea, select).eventloom-app-field:focus {
-  border-color: rgba(21, 81, 102, 0.58);
-  box-shadow: 0 0 0 4px rgba(75, 147, 153, 0.17);
+  border-color: rgba(138, 97, 83, 0.68);
+  box-shadow: 0 0 0 4px rgba(193, 154, 125, 0.22);
 }
 
 /* Legacy controls that live inside the app shell inherit the shared system. */
-.eventloom-app [class*="bg-white"] { background-color: #fffaf3; }
-.eventloom-app [class*="bg-[#fbfbfd]"],
-.eventloom-app [class*="bg-[#f5f5f7]"] { background-color: #eff2e9; }
-.eventloom-app [class*="border-black"] { border-color: rgba(21, 81, 102, 0.17); }
-.eventloom-app [class*="divide-black"] { --tw-divide-opacity: 1; border-color: rgba(21, 81, 102, 0.14); }
+.eventloom-app [class~="bg-white"] { background-color: #fffaf3; }
+.eventloom-app [class~="bg-[#fbfbfd]"],
+.eventloom-app [class~="bg-[#f5f5f7]"] { background-color: #eff2e9; }
+.eventloom-app [class*="border-black"] { border-color: rgba(48, 40, 33, 0.15); }
+.eventloom-app [class*="divide-black"] { --tw-divide-opacity: 1; border-color: rgba(48, 40, 33, 0.12); }
 .eventloom-app [class*="text-[#6e6e73]"],
 .eventloom-app [class*="text-[#86868b]"],
-.eventloom-app [class*="text-[#aeaeb2]"] { color: #66736c; }
-.eventloom-app [class*="bg-[#0071e3]"] { background-color: #155166; }
-.eventloom-app [class*="hover:bg-[#0077ed]"]:hover { background-color: #0b3e4e; }
-.eventloom-app [class*="focus:border-[#0071e3]"]:focus { border-color: #155166; }
+.eventloom-app [class*="text-[#aeaeb2]"] { color: #74675d; }
+.eventloom-app [class*="bg-[#0071e3]"] { background-color: #302821; }
+.eventloom-app [class*="hover:bg-[#0077ed]"]:hover { background-color: #4a2d2a; }
+.eventloom-app [class*="focus:border-[#0071e3]"]:focus { border-color: #8a6153; }
+
+.eventloom-app input:not([type="checkbox"]):not([type="radio"]),
+.eventloom-app textarea,
+.eventloom-app select {
+  border-color: rgba(48, 40, 33, 0.16);
+  background-color: #fffaf3;
+  color: #302821;
+}
+
+.eventloom-app input:not([type="checkbox"]):not([type="radio"]):focus,
+.eventloom-app textarea:focus,
+.eventloom-app select:focus {
+  border-color: rgba(138, 97, 83, 0.68);
+  box-shadow: 0 0 0 4px rgba(193, 154, 125, 0.22);
+}
 
 /* Studio remains a focused, low-light workspace while belonging to the same palette. */
 .eventloom-studio {
