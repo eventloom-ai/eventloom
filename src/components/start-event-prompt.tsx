@@ -1,17 +1,17 @@
 "use client";
 
-import { ArrowUp, ChevronDown } from "lucide-react";
-import { FormEvent, useRef, useState } from "react";
+import { ArrowUp, ChevronDown, Plus } from "lucide-react";
+import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { eventDraftEntryPath } from "@/lib/event-entry";
 
 const eventTypes = [
-  { value: "wedding", label: "Wedding", starter: "An elegant wedding celebration with a thoughtful RSVP for our guests." },
-  { value: "engagement", label: "Engagement", starter: "A beautiful engagement celebration with event details and guest replies." },
-  { value: "birthday", label: "Birthday", starter: "A memorable birthday celebration with a personal event site and RSVP." },
-  { value: "celebration", label: "Celebration", starter: "A special celebration with a custom website and simple guest RSVP." },
-  { value: "corporate", label: "Corporate event", starter: "A polished corporate event page with the schedule, venue details, and attendee replies." },
-  { value: "other", label: "Something else", starter: "" },
+  { value: "wedding", label: "Wedding", starter: "An elegant wedding celebration with a thoughtful RSVP for our guests.", placeholder: "Ask Eventloom to create a wedding site…" },
+  { value: "engagement", label: "Engagement", starter: "A beautiful engagement celebration with event details and guest replies.", placeholder: "Ask Eventloom to create an engagement party site…" },
+  { value: "birthday", label: "Birthday", starter: "A memorable birthday celebration with a personal event site and RSVP.", placeholder: "Ask Eventloom to create a birthday invitation…" },
+  { value: "celebration", label: "Celebration", starter: "A special celebration with a custom website and simple guest RSVP.", placeholder: "Ask Eventloom to create a celebration site…" },
+  { value: "corporate", label: "Corporate event", starter: "A polished corporate event page with the schedule, venue details, and attendee replies.", placeholder: "Ask Eventloom to create a corporate event page…" },
+  { value: "other", label: "Something else", starter: "", placeholder: "Ask Eventloom to create an event site…" },
 ] as const;
 
 type EventType = (typeof eventTypes)[number]["value"];
@@ -36,6 +36,8 @@ export function StartEventPrompt({
   const [eventType, setEventType] = useState<EventType>(() => initialEventType(initialTemplate));
   const [brief, setBrief] = useState("");
   const selectedEventType = eventTypes.find((type) => type.value === eventType) ?? eventTypes[0];
+  const ctaLabel = authConfigured && !authenticated && !signupEnabled ? "Sign in" : "Start building";
+  const canSubmit = Boolean(brief.trim());
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,42 +55,79 @@ export function StartEventPrompt({
     }));
   }
 
-  const ctaLabel = authConfigured && !authenticated && !signupEnabled ? "Sign in" : "Start building";
+  function onBriefKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  }
+
+  function insertStarter() {
+    if (!brief.trim() && selectedEventType.starter) {
+      setBrief(selectedEventType.starter);
+    }
+    textareaRef.current?.focus();
+  }
 
   return (
-    <form onSubmit={submit} className="overflow-hidden rounded-[1.15rem] border border-white/10 bg-[#1d1a21]/85 text-left shadow-[0_24px_70px_rgba(5,2,11,0.35)] backdrop-blur-xl">
+    <form
+      onSubmit={submit}
+      className="overflow-hidden rounded-[1.85rem] bg-white text-left shadow-[0_18px_50px_rgba(12,45,58,0.16)]"
+    >
       <label htmlFor="event-brief" className="sr-only">Describe your event</label>
       <textarea
         ref={textareaRef}
         id="event-brief"
         value={brief}
         onChange={(event) => setBrief(event.target.value)}
+        onKeyDown={onBriefKeyDown}
         maxLength={2000}
-        rows={2}
+        rows={3}
         aria-label="Describe your event"
-        placeholder="Describe the event you want to bring to life…"
-        className="block w-full resize-none bg-transparent px-5 py-4 text-[15px] leading-6 text-white outline-none placeholder:text-white/40"
+        placeholder={selectedEventType.placeholder}
+        className="block w-full resize-none bg-transparent px-5 pb-2 pt-5 text-[15px] leading-6 text-[#302821] outline-none placeholder:text-neutral-400"
       />
-      <div className="flex items-center justify-between gap-3 border-t border-white/10 px-3 py-3">
-        <div className="relative min-w-0">
-          <select
-            value={eventType}
-            onChange={(event) => {
-              const nextEventType = event.target.value as EventType;
-              setEventType(nextEventType);
-              if (!brief.trim()) setBrief(eventTypes.find((type) => type.value === nextEventType)?.starter ?? "");
-            }}
-            aria-label="Event type"
-            className="min-w-0 appearance-none bg-transparent py-2 pl-2 pr-7 text-sm font-medium text-white/70 outline-none transition hover:text-white focus:text-white"
-          >
-            {eventTypes.map((type) => <option key={type.value} value={type.value} className="bg-[#1d1a21] text-white">{type.label}</option>)}
-          </select>
-          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-1 top-1/2 size-3.5 -translate-y-1/2 text-white/45" />
-        </div>
-        <button type="submit" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#221b29] transition hover:bg-[#f9e7df] active:scale-[0.98]">
-          {ctaLabel}
-          <ArrowUp className="size-4" aria-hidden="true" />
+      <div className="flex items-center justify-between gap-3 px-3 pb-3">
+        <button
+          type="button"
+          onClick={insertStarter}
+          aria-label="Use a starting idea"
+          className="flex size-8 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-600"
+        >
+          <Plus className="size-4" strokeWidth={1.75} aria-hidden="true" />
         </button>
+        <div className="flex items-center gap-1.5">
+          <div className="relative">
+            <select
+              value={eventType}
+              onChange={(event) => {
+                const nextEventType = event.target.value as EventType;
+                setEventType(nextEventType);
+                if (!brief.trim()) setBrief(eventTypes.find((type) => type.value === nextEventType)?.starter ?? "");
+              }}
+              aria-label="Event type"
+              className="min-w-0 cursor-pointer appearance-none bg-transparent py-2 pl-2 pr-6 text-sm font-medium text-neutral-400 outline-none transition hover:text-neutral-600"
+            >
+              {eventTypes.map((type) => (
+                <option key={type.value} value={type.value} className="bg-white text-[#302821]">
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+          </div>
+          <button
+            type="submit"
+            aria-label={ctaLabel}
+            className={`flex size-8 items-center justify-center rounded-full transition active:scale-[0.98] ${
+              canSubmit
+                ? "bg-[#302821] text-white hover:bg-[#4a2d2a]"
+                : "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600"
+            }`}
+          >
+            <ArrowUp className="size-4" aria-hidden="true" />
+            <span className="sr-only">{ctaLabel}</span>
+          </button>
+        </div>
       </div>
     </form>
   );
