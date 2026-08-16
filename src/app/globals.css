@@ -114,6 +114,15 @@ html {
   background: linear-gradient(180deg, #0c2d3a 0%, #155166 48%, #4b9399 70%, #b7d0bd 88%, #e7ecdf 100%);
 }
 
+.eventloom-prompt-placeholder {
+  animation: eventloom-prompt-in 420ms ease both;
+}
+
+@keyframes eventloom-prompt-in {
+  from { opacity: 0; transform: translateY(calc(-50% + 5px)); }
+  to { opacity: 1; transform: translateY(-50%); }
+}
+
 .eventloom-water-reflection {
   position: absolute;
   inset: 0;
@@ -175,6 +184,10 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   .eventloom-water-reflection span {
+    animation: none;
+  }
+
+  .eventloom-prompt-placeholder {
     animation: none;
   }
 }

@@ -57,12 +57,12 @@ export function LandingPage({ initialTemplate, authenticated = false, authConfig
         </div>
       </header>
 
-      <section className="eventloom-hero relative isolate -mt-[4.25rem] min-h-svh overflow-hidden px-5 pb-20 pt-32 text-white sm:px-8 sm:pb-28 sm:pt-40">
+      <section className="eventloom-hero relative isolate -mt-[4.25rem] flex min-h-svh items-center overflow-hidden px-5 py-20 text-white sm:px-8 sm:py-24">
         <div aria-hidden="true" className="eventloom-water-reflection"><span /><span /><span /></div>
-        <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/60">Event websites and RSVPs, made personal</p>
-          <h1 className="mx-auto mt-4 text-[clamp(2.1rem,5.4vw,3.85rem)] font-bold leading-[1.12] tracking-[-0.045em]"><span className="block">Make the invitation</span><span className="block">everyone remembers.</span></h1>
-          <div id="create" className="mx-auto mt-8 w-full max-w-[46rem] scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
+        <div className="eventloom-hero-content relative mx-auto flex w-full max-w-4xl -translate-y-[2vh] flex-col items-center text-center">
+          <h1 className="mx-auto mt-4 text-[48px] font-semibold leading-[1.1] tracking-[-0.045em]"><span className="block">Make the invitation</span><span className="block">everyone remembers.</span></h1>
+          <p className="mt-4 text-[13px] font-medium uppercase tracking-[0.18em] text-white/60">Event websites and RSVPs, made personal</p>
+          <div id="create" className="mx-auto mt-8 w-full max-w-[38rem] scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
           <p className="mt-5 text-[13px] leading-6 text-white/55">Start privately · Publish when ready · Guest data stays private</p>
         </div>
       </section>
