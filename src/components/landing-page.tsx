@@ -49,21 +49,21 @@ export function LandingPage({ initialTemplate, authenticated = false, authConfig
 
   return (
     <main id="top" className="overflow-hidden bg-[#e7ecdf] text-[#302821]">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#16121c]/80 text-white backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="text-base font-semibold text-white" aria-label="Eventloom home"><EventloomLogo markClassName="size-7" /></Link>
-          <nav aria-label="Main navigation" className="hidden items-center gap-7 text-sm text-white/65 md:flex"><Link href="#product" className="transition hover:text-white">Product</Link><Link href="#how-it-works" className="transition hover:text-white">How it works</Link><Link href="#pricing" className="transition hover:text-white">Pricing</Link><Link href="#questions" className="transition hover:text-white">Questions</Link><Link href="/contact" className="transition hover:text-white">Contact</Link></nav>
-          <div className="flex items-center gap-2"><Link href={accountHref} className="rounded-full px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white sm:px-4">{accountLabel}</Link><Link href="#top" className="hidden rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#211927] transition hover:bg-[#f9e7df] sm:inline-flex">{createLabel}</Link><LandingMobileNavigation /></div>
+      <header className="sticky top-0 z-50 text-white">
+        <div className="mx-auto grid h-[4.25rem] max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-5 sm:px-8">
+          <Link href="/" className="justify-self-start text-[15px] font-semibold text-white" aria-label="Eventloom home"><EventloomLogo markClassName="size-7" /></Link>
+          <nav aria-label="Main navigation" className="hidden items-center gap-6 text-[13px] text-white/70 md:flex"><Link href="#product" className="transition hover:text-white">Product</Link><Link href="#how-it-works" className="transition hover:text-white">How it works</Link><Link href="#pricing" className="transition hover:text-white">Pricing</Link><Link href="#questions" className="transition hover:text-white">Questions</Link><Link href="/contact" className="transition hover:text-white">Contact</Link></nav>
+          <div className="flex items-center justify-end gap-1"><Link href={accountHref} className="rounded-md px-3 py-1.5 text-[13px] font-medium text-white/75 transition hover:text-white">{accountLabel}</Link><Link href="#top" className="hidden rounded-md bg-white px-3.5 py-1.5 text-[13px] font-semibold text-neutral-900 transition hover:bg-white/90 sm:inline-flex">{createLabel}</Link><LandingMobileNavigation /></div>
         </div>
       </header>
 
-      <section className="eventloom-hero relative isolate min-h-[calc(100svh-4rem)] overflow-hidden px-5 pb-20 pt-24 text-white sm:px-8 sm:pb-28 sm:pt-32">
+      <section className="eventloom-hero relative isolate -mt-[4.25rem] min-h-svh overflow-hidden px-5 pb-20 pt-32 text-white sm:px-8 sm:pb-28 sm:pt-40">
         <div aria-hidden="true" className="eventloom-water-reflection"><span /><span /><span /></div>
-        <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Event websites and RSVPs, made personal</p>
-          <h1 className="mx-auto mt-5 font-[family-name:var(--font-playfair)] text-[clamp(1.7rem,4.2vw,2.85rem)] font-bold leading-[1.08] tracking-[-0.04em]"><span className="block whitespace-nowrap">Make the invitation</span><span className="block whitespace-nowrap">everyone remembers.</span></h1>
-          <div id="create" className="mx-auto mt-8 w-full max-w-[34rem] scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
-          <p className="mt-4 text-[12px] leading-6 text-white/55">Start privately · Publish when ready · Guest data stays private</p>
+        <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/60">Event websites and RSVPs, made personal</p>
+          <h1 className="mx-auto mt-4 text-[clamp(2.1rem,5.4vw,3.85rem)] font-bold leading-[1.12] tracking-[-0.045em]"><span className="block">Make the invitation</span><span className="block">everyone remembers.</span></h1>
+          <div id="create" className="mx-auto mt-8 w-full max-w-[46rem] scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
+          <p className="mt-5 text-[13px] leading-6 text-white/55">Start privately · Publish when ready · Guest data stays private</p>
         </div>
       </section>
 

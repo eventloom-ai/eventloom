@@ -21,7 +21,7 @@ export function LandingMobileNavigation() {
         aria-expanded={open}
         aria-controls="landing-mobile-navigation"
         onClick={() => setOpen((current) => !current)}
-        className="flex h-10 items-center rounded-full border border-white/15 px-4 text-sm font-medium text-white/85 transition hover:border-white/30 hover:bg-white/10"
+        className="flex h-9 items-center rounded-md px-3 text-[13px] font-medium text-white/85 transition hover:bg-white/10"
       >
         Menu
       </button>
