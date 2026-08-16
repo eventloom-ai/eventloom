@@ -104,6 +104,25 @@ export function monitoringConfigured() {
   return Boolean(read("SENTRY_DSN") && read("SENTRY_ORG") && read("SENTRY_PROJECT"));
 }
 
+export const AI_REASONING_EFFORTS = ["none", "low", "medium", "high", "xhigh", "max"] as const;
+export type AiReasoningEffort = (typeof AI_REASONING_EFFORTS)[number];
+
+function aiModel() {
+  return read("OPENAI_MODEL") || read("AI_MODEL") || "gpt-5.6-luna";
+}
+
+function aiReasoningEffort(): AiReasoningEffort {
+  const value = (read("OPENAI_REASONING_EFFORT") || read("AI_REASONING_EFFORT") || "high").toLowerCase();
+  return (AI_REASONING_EFFORTS as readonly string[]).includes(value) ? (value as AiReasoningEffort) : "high";
+}
+
+export function openaiResponsesOptions() {
+  return {
+    model: aiModel(),
+    reasoning: { effort: aiReasoningEffort() },
+  };
+}
+
 export const env = {
   appUrl,
   rootDomain,
@@ -133,5 +152,6 @@ export const env = {
   aiGatewayUrl: () => read("AI_GATEWAY_URL"),
   aiApiKey: () => read("AI_API_KEY"),
   openaiApiKey: () => read("OPENAI_API_KEY"),
-  aiModel: () => read("OPENAI_MODEL") || read("AI_MODEL") || "gpt-5.5",
+  aiModel,
+  aiReasoningEffort,
 };

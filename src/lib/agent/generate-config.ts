@@ -1,5 +1,5 @@
 import { defaultEventConfig } from "@/lib/ai/generator";
-import { env } from "@/lib/env";
+import { env, openaiResponsesOptions } from "@/lib/env";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
@@ -79,7 +79,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: env.aiModel(),
+      ...openaiResponsesOptions(),
       input: [
         {
           role: "system",

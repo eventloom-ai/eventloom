@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env, openaiResponsesOptions } from "@/lib/env";
 import type { EventConfig, PageArtifact } from "@/lib/types";
 import { validateGeneratedArtifact } from "@/lib/validation";
 
@@ -52,7 +52,7 @@ export async function generatePageArtifact(config: EventConfig, prompt: string, 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: env.aiModel(),
+        ...openaiResponsesOptions(),
         messages: [
           {
             role: "system",
@@ -115,7 +115,7 @@ async function generateWithOpenAI(openaiKey: string, config: EventConfig, prompt
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: env.aiModel(),
+      ...openaiResponsesOptions(),
       input: [
         {
           role: "system",

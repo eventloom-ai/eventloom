@@ -1,6 +1,6 @@
 import "server-only";
 
-import { env } from "@/lib/env";
+import { env, openaiResponsesOptions } from "@/lib/env";
 import { refundBuildCredit } from "@/lib/payments/billing";
 import { applyEventDetailsPatch, applySiteOperations, type SiteOperation } from "@/lib/site-document-operations";
 import { findSiteNode, type SiteDocument } from "@/lib/site-document";
@@ -134,7 +134,7 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: env.aiModel(),
+      ...openaiResponsesOptions(),
       input: [
         { role: "system", content: "You are Eventloom's visual editing agent. Make the smallest safe set of changes that satisfies the request. Preserve all unrelated nodes and event facts. Never invent names, dates, times, venues, addresses, or URLs. Use only node IDs that exist. Prefer updating the selected nodes when selection is present. Return concise user-facing copy." },
         { role: "user", content: JSON.stringify({ request: prompt, selectedNodeIds, event: config, document, recentConversation: messages.slice(-8).map((message) => ({ role: message.role, content: message.content })) }) },

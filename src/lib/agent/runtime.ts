@@ -1,4 +1,4 @@
-import { appUrl, env, isAiConfigured, isDomainPurchasingConfigured, isOpenSrsConfigured, isStripeConfigured, isSupabaseConfigured, isVercelConfigured, rootDomain } from "@/lib/env";
+import { appUrl, env, isAiConfigured, isDomainPurchasingConfigured, isOpenSrsConfigured, isStripeConfigured, isSupabaseConfigured, isVercelConfigured, rootDomain, type AiReasoningEffort } from "@/lib/env";
 import { verifyOpenSrsRegistrarAccess } from "@/lib/domains/provider";
 
 export type AgentCapability =
@@ -14,6 +14,7 @@ export type AgentRuntime = {
   rootDomain: string;
   capabilities: Record<AgentCapability, boolean>;
   model: string;
+  reasoningEffort: AiReasoningEffort;
   ready: boolean;
   missing: string[];
 };
@@ -50,6 +51,7 @@ export function getAgentRuntime(): AgentRuntime {
     rootDomain: rootDomain(),
     capabilities,
     model: env.aiModel(),
+    reasoningEffort: env.aiReasoningEffort(),
     ready: capabilities.persist_events && capabilities.generate_with_ai,
     missing: [...new Set(missing)],
   };
