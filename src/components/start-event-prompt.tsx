@@ -71,7 +71,7 @@ export function StartEventPrompt({
   return (
     <form
       onSubmit={submit}
-      className="overflow-hidden rounded-[1.85rem] bg-white text-left shadow-[0_18px_50px_rgba(12,45,58,0.16)]"
+      className="overflow-hidden rounded-[1.5rem] bg-white text-left shadow-[0_8px_28px_rgba(12,45,58,0.12),0_1px_2px_rgba(12,45,58,0.06)] ring-1 ring-black/[0.04]"
     >
       <label htmlFor="event-brief" className="sr-only">Describe your event</label>
       <textarea
@@ -81,22 +81,26 @@ export function StartEventPrompt({
         onChange={(event) => setBrief(event.target.value)}
         onKeyDown={onBriefKeyDown}
         maxLength={2000}
-        rows={3}
+        rows={2}
         aria-label="Describe your event"
         placeholder={selectedEventType.placeholder}
-        className="block w-full resize-none bg-transparent px-5 pb-2 pt-5 text-[15px] leading-6 text-[#302821] outline-none placeholder:text-neutral-400"
+        className="block w-full resize-none bg-transparent px-4 pb-1.5 pt-4 text-[14px] leading-6 text-[#302821] outline-none placeholder:text-neutral-400"
       />
       <div className="flex items-center justify-between gap-3 px-3 pb-3">
         <button
           type="button"
           onClick={insertStarter}
           aria-label="Use a starting idea"
-          className="flex size-8 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-600"
+          className="flex size-7 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-600"
         >
-          <Plus className="size-4" strokeWidth={1.75} aria-hidden="true" />
+          <Plus className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
         </button>
-        <div className="flex items-center gap-1.5">
-          <div className="relative">
+        <div className="flex items-center gap-2">
+          <div className="relative inline-flex items-center">
+            <span className="pointer-events-none inline-flex items-center gap-0.5 py-1 text-[13px] font-medium text-neutral-400">
+              {selectedEventType.label}
+              <ChevronDown className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
+            </span>
             <select
               value={eventType}
               onChange={(event) => {
@@ -105,26 +109,25 @@ export function StartEventPrompt({
                 if (!brief.trim()) setBrief(eventTypes.find((type) => type.value === nextEventType)?.starter ?? "");
               }}
               aria-label="Event type"
-              className="min-w-0 cursor-pointer appearance-none bg-transparent py-2 pl-2 pr-6 text-sm font-medium text-neutral-400 outline-none transition hover:text-neutral-600"
+              className="absolute inset-0 cursor-pointer opacity-0"
             >
               {eventTypes.map((type) => (
-                <option key={type.value} value={type.value} className="bg-white text-[#302821]">
+                <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
               ))}
             </select>
-            <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
           </div>
           <button
             type="submit"
             aria-label={ctaLabel}
-            className={`flex size-8 items-center justify-center rounded-full transition active:scale-[0.98] ${
+            className={`flex size-7 items-center justify-center rounded-full transition active:scale-[0.98] ${
               canSubmit
                 ? "bg-[#302821] text-white hover:bg-[#4a2d2a]"
                 : "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600"
             }`}
           >
-            <ArrowUp className="size-4" aria-hidden="true" />
+            <ArrowUp className="size-3.5" aria-hidden="true" />
             <span className="sr-only">{ctaLabel}</span>
           </button>
         </div>

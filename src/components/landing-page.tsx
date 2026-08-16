@@ -59,11 +59,11 @@ export function LandingPage({ initialTemplate, authenticated = false, authConfig
 
       <section className="eventloom-hero relative isolate min-h-[calc(100svh-4rem)] overflow-hidden px-5 pb-20 pt-24 text-white sm:px-8 sm:pb-28 sm:pt-32">
         <div aria-hidden="true" className="eventloom-water-reflection"><span /><span /><span /></div>
-        <div className="relative mx-auto flex max-w-4xl flex-col items-center text-center">
+        <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/65">Event websites and RSVPs, made personal</p>
-          <h1 className="mx-auto mt-6 font-[family-name:var(--font-playfair)] text-[clamp(2rem,8.5vw,6.8rem)] leading-[0.9] tracking-[-0.065em]"><span className="block whitespace-nowrap">Make the invitation</span><span className="block whitespace-nowrap">everyone remembers.</span></h1>
-          <div id="create" className="mx-auto mt-10 w-full max-w-2xl scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
-          <p className="mt-5 text-[12px] leading-6 text-white/55">Start privately · Publish when ready · Guest data stays private</p>
+          <h1 className="mx-auto mt-5 font-[family-name:var(--font-playfair)] text-[clamp(1.7rem,4.2vw,2.85rem)] font-bold leading-[1.08] tracking-[-0.04em]"><span className="block whitespace-nowrap">Make the invitation</span><span className="block whitespace-nowrap">everyone remembers.</span></h1>
+          <div id="create" className="mx-auto mt-8 w-full max-w-[34rem] scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
+          <p className="mt-4 text-[12px] leading-6 text-white/55">Start privately · Publish when ready · Guest data stays private</p>
         </div>
       </section>
 
