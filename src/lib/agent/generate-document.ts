@@ -213,7 +213,7 @@ function hex(value: unknown, fallback: string) {
 function assembleDocument(raw: Record<string, unknown>, config: EventConfig, prompt: string): SiteDocument {
   const theme = (raw.theme as Record<string, unknown>) ?? {};
   const sections = Array.isArray(raw.sections) ? raw.sections : [];
-  const nodes = sections.flatMap((section) => {
+  const nodes: SiteLayoutNode[] = sections.flatMap((section) => {
     if (!section || typeof section !== "object") return [];
     const entry = section as Record<string, unknown>;
     const type = ["section", "stack", "grid", "overlay"].includes(String(entry.type)) ? String(entry.type) as SiteLayoutNode["type"] : "section";
