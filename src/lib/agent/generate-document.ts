@@ -13,6 +13,7 @@ import {
   type SiteStyle,
   type SiteTextBinding,
 } from "@/lib/site-document";
+import { ensureSiteContrast } from "@/lib/site-contrast";
 import type { EventConfig } from "@/lib/types";
 
 export type GeneratedOriginalSite = {
@@ -158,13 +159,13 @@ const originalSiteSchema = {
 const ART_DIRECTOR = `You are Eventloom's generative art director. Design a complete event website from a blank canvas — never from a template, preset section order, or generic invitation layout.
 
 Quality bar:
-- The page should feel commissioned: magazine-grade composition, tension, and material. Think editorial print, not a website builder.
-- Invent a unique composition for THIS brief. Full-bleed color fields, split columns, overlayed type, extreme crop, quiet endings, and unexpected alignment are expected. Do not stack a hero, a details band, and an RSVP in the same order every time.
-- Typography is the primary craft. Use huge display type, italic serif, tight tracking on names, wide tracking on eyebrows, and leftover space as a design element. Split names onto multiple lines when there are two people.
-- Palette and texture must come from the occasion. Use paper, grain, linen, or wash. Background may be a CSS gradient string.
-- Atmosphere copy is allowed. Invented facts are not. Never invent names, dates, times, venues, addresses, or URLs. Bind known facts to event.title, event.subtitle, event.date, event.venueName, or event.venueAddress. Use "to be announced" language when a fact is missing.
+- The page must be readable first. Every text color needs a contrasting field behind it: dark type on ivory/paper, or ivory type on charcoal, ink, sage, or wine. Never place light type on a light field. If a section uses light type, that section MUST set a dark background hex.
+- Paper, grain, linen, and wash are overlays only. They do not replace the section background. Always set a solid hex background on full-bleed sections.
+- Typography is the primary craft, but names must stay legible in a studio preview. Use large display type, not faint watermark type. Do not set opacity to faint on headings or names. Do not use wide/widest tracking on hero names.
+- Split couple names onto two lines when helpful. Keep them upright, high-contrast, and on a real color field.
+- Atmosphere copy is allowed. Invented facts are not. Never invent names, dates, times, venues, addresses, or URLs. Bind known facts to event.title, event.subtitle, event.date, event.venueName, or event.venueAddress. If a fact is missing, say so in the bound value — do not add WHEN/WHERE/ADDRESS labels with empty values.
 - Always include exactly one RSVP block, visually belonging to the design rather than looking like a form dropped at the end.
-- Forbidden: generic centered-card heroes, "The celebration", "Meet us there", "Will you join us?" as default copy, repeating three-band cream/white/green pages, stock wedding layouts.
+- Forbidden: generic centered-card heroes, "The celebration", "Meet us there", "Will you join us?" as default copy, repeating three-band cream/white/green pages, stock wedding layouts, ghost type, vertical stacked single-letter names, low-contrast overlays.
 
 Return a short user-facing message about the design you made.`;
 
@@ -262,7 +263,7 @@ function assembleDocument(raw: Record<string, unknown>, config: EventConfig, pro
     nodes,
   });
 
-  return parsed.success ? parsed.data : composeSiteDocument(config, prompt);
+  return parsed.success ? ensureSiteContrast(parsed.data) : composeSiteDocument(config, prompt);
 }
 
 function configFromGeneratedEvent(base: EventConfig, raw: Record<string, unknown> | undefined, prompt: string): EventConfig {
@@ -289,7 +290,7 @@ function configFromGeneratedEvent(base: EventConfig, raw: Record<string, unknown
 
 export async function generateOriginalSite(prompt: string, config: EventConfig): Promise<GeneratedOriginalSite> {
   const fallback = {
-    document: composeSiteDocument(config, prompt),
+    document: ensureSiteContrast(composeSiteDocument(config, prompt)),
     config: groundConfigInPrompt(config, prompt),
     message: "I designed a first version from your description. Tell me what to change.",
     summary: "Designed the first original version",

@@ -1,7 +1,8 @@
 import Image from "next/image";
 import type { CSSProperties, FocusEvent, MouseEvent } from "react";
 import { RsvpForm } from "@/components/rsvp-form";
-import type { SiteDocument, SiteNode, SiteStyle, SiteTextBinding, SiteTexture } from "@/lib/site-document";
+import { backgroundLayers, ensureSiteContrast } from "@/lib/site-contrast";
+import type { SiteDocument, SiteNode, SiteStyle, SiteTextBinding } from "@/lib/site-document";
 import type { EventConfig, EventStatus } from "@/lib/types";
 
 type SiteDocumentRendererProps = {
@@ -24,25 +25,18 @@ const gap = { none: "0", small: "0.85rem", medium: "1.75rem", large: "3.5rem" } 
 const radius = { none: "0", small: "0.35rem", medium: "1rem", large: "2.25rem", pill: "999px" } as const;
 const maxWidth = { full: "none", wide: "88rem", content: "68rem", narrow: "38rem" } as const;
 const minHeight = { auto: undefined, screen: "100svh", threeQuarter: "78svh", half: "52svh" } as const;
-const fontSize = { xs: "0.72rem", sm: "0.9rem", md: "1.05rem", lg: "clamp(1.15rem,2.1vw,1.55rem)", xl: "clamp(2.8rem,7vw,6.4rem)", hero: "clamp(4.2rem,12vw,9.5rem)" } as const;
+const fontSize = { xs: "0.72rem", sm: "0.9rem", md: "1.05rem", lg: "clamp(1.15rem,2.1vw,1.55rem)", xl: "clamp(2.4rem,6vw,5.2rem)", hero: "clamp(3.1rem,8.5vw,7rem)" } as const;
 const fontWeight = { regular: 400, medium: 500, semibold: 600, bold: 700 } as const;
 const letterSpacing = { tight: "-0.055em", normal: "-0.02em", wide: "0.12em", widest: "0.28em" } as const;
-const opacity = { full: 1, muted: 0.72, faint: 0.48 } as const;
-
-function textureImage(texture: SiteTexture | undefined, accent: string, surface: string) {
-  if (texture === "paper") return `radial-gradient(ellipse at 18% 0%, color-mix(in srgb, ${accent} 22%, transparent), transparent 54%), repeating-linear-gradient(180deg, rgba(255,255,255,.04) 0 1px, transparent 1px 8px)`;
-  if (texture === "grain") return `repeating-linear-gradient(90deg, color-mix(in srgb, ${accent} 12%, transparent) 0 1px, transparent 1px 11px), repeating-linear-gradient(0deg, rgba(0,0,0,.04) 0 1px, transparent 1px 9px)`;
-  if (texture === "linen") return `repeating-linear-gradient(90deg, color-mix(in srgb, ${accent} 10%, transparent) 0 2px, transparent 2px 14px)`;
-  if (texture === "wash") return `radial-gradient(ellipse at 80% 110%, color-mix(in srgb, ${accent} 28%, transparent), transparent 58%), radial-gradient(ellipse at 10% 0%, color-mix(in srgb, ${surface} 35%, transparent), transparent 46%)`;
-  return undefined;
-}
+const opacity = { full: 1, muted: 0.78, faint: 0.64 } as const;
 
 function styleFor(style: SiteStyle | undefined, document: SiteDocument): CSSProperties {
   if (!style) return {};
   const horizontal = style.width === "full" && style.padding === "none" ? "0" : "clamp(1.35rem,5.5vw,6rem)";
+  const layout = Boolean(style.background || style.minHeight || style.columns);
+  const surface = backgroundLayers(style.background, style.texture, style.accent ?? document.theme.colors.accent, document.theme.colors.surface);
   return {
-    background: style.background,
-    backgroundImage: textureImage(style.texture, style.accent ?? document.theme.colors.accent, document.theme.colors.surface),
+    ...surface,
     color: style.color,
     textAlign: style.align,
     maxWidth: style.width ? maxWidth[style.width] : undefined,
@@ -56,7 +50,7 @@ function styleFor(style: SiteStyle | undefined, document: SiteDocument): CSSProp
     fontWeight: style.weight ? fontWeight[style.weight] : undefined,
     fontStyle: style.italic ? "italic" : undefined,
     letterSpacing: style.letterSpacing ? letterSpacing[style.letterSpacing] : undefined,
-    opacity: style.opacity ? opacity[style.opacity] : undefined,
+    opacity: style.opacity && !layout ? opacity[style.opacity] : undefined,
     border: style.border === "hairline" ? "1px solid color-mix(in srgb, currentColor 18%, transparent)" : style.border === "thick" ? "2px solid currentColor" : undefined,
     justifyContent: style.justify === "center" ? "center" : style.justify === "end" ? "flex-end" : style.justify === "start" ? "flex-start" : undefined,
     display: style.hidden ? "none" : undefined,
@@ -105,7 +99,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
     } : undefined;
     const editable = { contentEditable: interactive, suppressContentEditableWarning: true, onBlur: commit, title: interactive ? "Click to select, then type to edit" : undefined };
     const textStyle: CSSProperties = { margin: 0, whiteSpace: "pre-line", ...common.style };
-    if (node.variant === "heading") return <h2 {...common} {...editable} style={{ ...textStyle, lineHeight: 0.86, letterSpacing: node.style?.letterSpacing ? letterSpacing[node.style.letterSpacing] : "-0.05em", ...(node.style?.size === "hero" ? { maxWidth: "11ch", marginInline: node.style?.align === "center" ? "auto" : undefined, textWrap: "balance" } : {}) }}>{value}</h2>;
+    if (node.variant === "heading") return <h2 {...common} {...editable} style={{ ...textStyle, lineHeight: 0.92, letterSpacing: node.style?.letterSpacing ? letterSpacing[node.style.letterSpacing] : "-0.05em", ...(node.style?.size === "hero" ? { maxWidth: "18ch", marginInline: node.style?.align === "center" ? "auto" : undefined, textWrap: "balance" } : {}) }}>{value}</h2>;
     if (node.variant === "subheading") return <p {...common} {...editable} style={{ ...textStyle, lineHeight: 1.55, maxWidth: "36rem" }}>{value}</p>;
     if (node.variant === "eyebrow") return <p {...common} {...editable} style={{ ...textStyle, textTransform: "uppercase", letterSpacing: node.style?.letterSpacing ? letterSpacing[node.style.letterSpacing] : "0.26em" }}>{value}</p>;
     if (node.variant === "caption") return <small {...common} {...editable} style={{ ...textStyle, display: "block", lineHeight: 1.5, letterSpacing: node.style?.letterSpacing ? letterSpacing[node.style.letterSpacing] : "0.08em", textTransform: "uppercase" }}>{value}</small>;
@@ -131,9 +125,11 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
 }
 
 export function SiteDocumentRenderer(props: SiteDocumentRendererProps) {
-  const { document } = props;
+  const document = ensureSiteContrast(props.document);
+  const context = { ...props, document };
   const display = document.theme.typography.display === "modern" ? "var(--font-outfit)" : document.theme.typography.display === "playful" ? "var(--font-fraunces)" : "var(--font-playfair)";
   const body = document.theme.typography.body === "geometric" ? "var(--font-outfit)" : "var(--font-inter)";
+  const surface = backgroundLayers(document.theme.colors.surface, document.theme.texture, document.theme.colors.accent, document.theme.colors.surface);
   return (
     <main
       className="eventloom-site-document"
@@ -141,14 +137,13 @@ export function SiteDocumentRenderer(props: SiteDocumentRendererProps) {
       style={{
         "--event-display": display,
         "--event-body": body,
-        background: document.theme.colors.surface,
-        backgroundImage: textureImage(document.theme.texture, document.theme.colors.accent, document.theme.colors.surface),
+        ...surface,
         color: document.theme.colors.text,
         minHeight: "100svh",
         fontFamily: body,
       } as CSSProperties}
     >
-      {document.nodes.map((node) => <NodeView key={node.id} node={node} context={props} />)}
+      {document.nodes.map((node) => <NodeView key={node.id} node={node} context={context} />)}
     </main>
   );
 }

@@ -77,4 +77,48 @@ describe("original site generation", () => {
     expect(generated.document.theme.texture).toBe("paper");
     expect(walkSiteNodes(generated.document).some((node) => node.type === "rsvp")).toBe(true);
   });
+
+  it("repairs unreadable light type when the model omits a dark field", async () => {
+    process.env.OPENAI_API_KEY = "sk-test";
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        output_text: JSON.stringify({
+          message: "A print-led wedding page.",
+          summary: "Created an original wedding page",
+          concept: "Ivory type on paper.",
+          locale: "en",
+          direction: "auto",
+          theme: { text: "#241814", surface: "#f6efe6", accent: "#9a6a4a", muted: "#6d5a4c", display: "romantic", body: "humanist", radius: "soft", motion: "subtle", texture: "paper" },
+          event: { title: "Osama & Nour", subtitle: "The wedding of Osama & Nour", eventType: "wedding", date: "Date to be announced", venueName: "Venue to be announced", venueAddress: "", rsvpDeadline: "", schedule: [{ title: "Event details", time: "Time to be announced", location: "", description: "Details to be announced." }] },
+          sections: [
+            {
+              type: "section",
+              label: "Invitation",
+              style: { ...emptyStyle, color: "#f6efe6", padding: "hero", minHeight: "screen", texture: "paper", opacity: "faint" },
+              rows: [
+                {
+                  type: "overlay",
+                  label: "Names",
+                  style: { ...emptyStyle },
+                  blocks: [
+                    { type: "text", content: "Osama\n&\nNour", binding: null, variant: "heading", url: null, alt: null, href: null, buttonLabel: null, buttonVariant: null, showMap: null, heading: null, description: null, style: { ...emptyStyle, size: "hero", opacity: "faint", letterSpacing: "widest", color: "#f6efe6" } },
+                    { type: "rsvp", content: null, binding: null, variant: null, url: null, alt: null, href: null, buttonLabel: null, buttonVariant: null, showMap: null, heading: "Save a place", description: "Please reply.", style: { ...emptyStyle, align: "left" } },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    }) as unknown as typeof fetch;
+
+    const generated = await generateOriginalSite("Wedding event. osama and nour", defaultEventConfig("Wedding event. osama and nour"));
+    const opening = generated.document.nodes[0];
+    expect(opening?.style?.background).toBe("#241814");
+    expect(opening?.style?.opacity).toBeUndefined();
+    const heading = walkSiteNodes(generated.document).find((node) => node.type === "text" && node.variant === "heading");
+    expect(heading?.style?.opacity).toBeUndefined();
+    expect(heading?.style?.letterSpacing).toBe("tight");
+  });
 });
