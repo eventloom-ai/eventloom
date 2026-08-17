@@ -35,18 +35,18 @@ export async function Dashboard({ filter = "all" }: { filter?: "all" | "publishe
 
   return (
     <AppShell
-      title={publishedOnly ? "Published sites" : "My events"}
-      description={publishedOnly ? "The live event sites you own and have published." : "Create, preview, and manage your event pages in one place."}
+      title={publishedOnly ? "Published events" : "My events"}
+      description={publishedOnly ? "The live events you have published and can share with guests." : "Create, preview, and manage your events in one place."}
       action={
         <div className="flex flex-wrap gap-2">
           <Link
-            className="eventloom-app-button inline-flex shrink-0 items-center justify-center rounded-full px-5 py-2.5 text-[15px] font-medium transition-colors"
+            className="eventloom-app-button inline-flex shrink-0 items-center justify-center rounded-lg px-4 py-2 text-[13px] font-medium transition-colors"
             href={publishedOnly ? "/app" : "/app?status=published"}
           >
-            {publishedOnly ? "All events" : "Published sites"}
+            {publishedOnly ? "All events" : "Published events"}
           </Link>
           <Link
-            className="eventloom-app-button-primary inline-flex shrink-0 items-center justify-center rounded-full px-5 py-2.5 text-[15px] font-medium transition-all active:scale-[0.98]"
+            className="eventloom-app-button-primary inline-flex shrink-0 items-center justify-center rounded-lg px-4 py-2 text-[13px] font-medium transition-all active:scale-[0.98]"
             href="/app/events/new"
           >
             New event
@@ -56,16 +56,16 @@ export async function Dashboard({ filter = "all" }: { filter?: "all" | "publishe
     >
       {events.length === 0 ? (
         <FadeIn>
-          <div className="eventloom-app-card rounded-2xl border border-dashed px-8 py-16 text-center">
-            <p className="text-[21px] font-semibold tracking-tight">{publishedOnly ? "No published sites yet" : "No events yet"}</p>
-            <p className="mx-auto mt-3 max-w-sm text-[15px] leading-relaxed text-[#66736c]">
+          <div className="mx-auto max-w-md rounded-2xl bg-[#fffaf3] px-8 py-10 text-center shadow-[0_10px_40px_rgba(12,45,58,0.08)] ring-1 ring-black/[0.04]">
+            <p className="text-lg font-semibold tracking-tight">{publishedOnly ? "No published events yet" : "No events yet"}</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#66736c]">
               {publishedOnly ? "Publish an event when it is ready and it will appear here." : "Describe your first celebration and Eventloom will draft a page for you."}
             </p>
             <Link
-              className="eventloom-app-button-primary mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 text-[15px] font-medium transition-all"
+              className="eventloom-app-button-primary mt-6 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium transition-all"
               href={publishedOnly ? "/app" : "/app/events/new"}
             >
-              {publishedOnly ? "View all events" : "Create your first site"}
+              {publishedOnly ? "View all events" : "Create your first event"}
             </Link>
           </div>
         </FadeIn>

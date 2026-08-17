@@ -179,9 +179,9 @@ export function EventsList({ events, activeJobs: initialJobs, currentUserId }: {
         );
       })}
       {eventRows.length === 0 ? (
-        <div className="eventloom-app-card rounded-2xl border border-dashed px-8 py-14 text-center">
-          <p className="text-[18px] font-semibold">No events yet</p>
-          <Link href="/app/events/new" className="eventloom-app-button-primary mt-5 inline-flex rounded-full px-5 py-2.5 text-sm font-medium">Create an event</Link>
+        <div className="mx-auto max-w-md rounded-2xl bg-[#fffaf3] px-8 py-10 text-center shadow-[0_10px_40px_rgba(12,45,58,0.08)] ring-1 ring-black/[0.04]">
+          <p className="text-lg font-semibold">No events yet</p>
+          <Link href="/app/events/new" className="eventloom-app-button-primary mt-5 inline-flex rounded-lg px-5 py-2.5 text-sm font-medium">Create an event</Link>
         </div>
       ) : null}
       {deleteTarget ? (

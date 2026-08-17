@@ -82,7 +82,7 @@ html {
 }
 
 /* Legacy controls that live inside the app shell inherit the shared system. */
-.eventloom-app [class*="bg-white"] { background-color: #fffaf3; }
+.eventloom-app [class*="bg-white"]:not([class*="bg-white/"]) { background-color: #fffaf3; }
 .eventloom-app [class*="bg-[#fbfbfd]"],
 .eventloom-app [class*="bg-[#f5f5f7]"] { background-color: #eff2e9; }
 .eventloom-app [class*="border-black"] { border-color: rgba(21, 81, 102, 0.17); }

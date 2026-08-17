@@ -26,25 +26,27 @@ export function AppShell({
   const maxWidth = width === "narrow" ? "max-w-2xl" : width === "wide" ? "max-w-6xl" : "max-w-5xl";
 
   return (
-    <div className="eventloom-app min-h-screen text-[#302821]">
+    <div className="min-h-screen text-[#302821]">
       <AppHeader active={active} />
-      <main className={`mx-auto ${maxWidth} px-6 py-10 md:py-14`}>
-        {backHref ? (
-          <Link className="text-[14px] font-medium text-[#155166] transition-colors hover:text-[#0b2d39]" href={backHref}>
-            ← {backLabel}
-          </Link>
-        ) : null}
+      <div className="eventloom-app">
+        <main className={`mx-auto ${maxWidth} px-6 py-8 md:py-10`}>
+          {backHref ? (
+            <Link className="text-[13px] font-medium text-[#155166] transition-colors hover:text-[#0b2d39]" href={backHref}>
+              ← {backLabel}
+            </Link>
+          ) : null}
 
-        <header className={`flex flex-col justify-between gap-5 ${backHref ? "mt-6" : ""} sm:flex-row sm:items-end`}>
-          <div>
-            <h1 className="font-[family-name:var(--font-playfair)] text-[34px] font-medium tracking-[-0.035em] md:text-[42px]">{title}</h1>
-            {description ? <p className="mt-3 max-w-2xl text-[17px] leading-relaxed text-[#66736c]">{description}</p> : null}
-          </div>
-          {action}
-        </header>
+          <header className={`flex flex-col gap-4 ${backHref ? "mt-5" : ""} sm:flex-row sm:items-center sm:justify-between`}>
+            <div>
+              <h1 className="font-[family-name:var(--font-playfair)] text-[28px] font-semibold tracking-[-0.03em] md:text-[32px]">{title}</h1>
+              {description ? <p className="mt-1.5 max-w-xl text-[15px] leading-6 text-[#66736c]">{description}</p> : null}
+            </div>
+            {action}
+          </header>
 
-        <div className="mt-10">{children}</div>
-      </main>
+          <div className="mt-8">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
