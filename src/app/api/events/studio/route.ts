@@ -1,11 +1,10 @@
-import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { defaultEventConfig } from "@/lib/ai/generator";
+import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { createEventRecord } from "@/lib/agent/tools";
 import { reserveBuildCredit } from "@/lib/payments/billing";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
-import { executeStudioRun } from "@/lib/studio-agent";
-import { createBuilderMessage, createStudioRun, loadStudioState, updateStudioRun } from "@/lib/studio-store";
+import { createBuilderMessage, seedInitialRevision } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
 
@@ -21,18 +20,21 @@ export async function POST(req: NextRequest) {
   if (!prompt || prompt.length > 8000) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const baseSlug = normalizeSlugInput(body?.slug || suggestSlug(prompt) || "my-event");
   const slug = baseSlug.length >= 3 ? baseSlug : `event-${Date.now().toString(36)}`;
-  const created = await createEventRecord({ slug, config: defaultEventConfig(prompt), ownerId: user.id });
+  const planConfig = defaultEventConfig(prompt);
+  const created = await createEventRecord({ slug, config: planConfig, ownerId: user.id });
   if (!created.event) return NextResponse.json({ error: created.error?.includes("duplicate") ? "slug_taken" : created.error ?? "create_event_failed" }, { status: created.error?.includes("duplicate") ? 409 : 500 });
-  const state = await loadStudioState(created.event.id, user.id);
-  if (!state) return NextResponse.json({ error: "studio_create_failed" }, { status: 500 });
-  const runId = await createStudioRun({ eventId: created.event.id, ownerId: user.id, baseVersionId: state.revision.id, prompt, selectedNodeIds: [], kind: "initial" });
-  if (!runId) return NextResponse.json({ eventId: created.event.id, runId: null, slug }, { status: 201 });
   const credit = await reserveBuildCredit(user.id, created.event.id);
-  if (!credit.ok) {
-    await updateStudioRun(runId, { status: "failed", error: credit.error, completed_at: new Date().toISOString() });
-    return NextResponse.json({ eventId: created.event.id, runId: null, slug, warning: credit.error }, { status: 201 });
-  }
-  await createBuilderMessage({ eventId: created.event.id, runId, role: "user", content: prompt, versionId: state.revision.id, ownerId: user.id });
-  after(async () => executeStudioRun({ jobId: runId, eventId: created.event!.id, ownerId: user.id, prompt, selectedNodeIds: [] }));
-  return NextResponse.json({ eventId: created.event.id, runId, slug }, { status: 202 });
+  const original = credit.ok ? await generateOriginalSite(prompt, planConfig) : null;
+  const revision = await seedInitialRevision(created.event, user.id, original
+    ? { document: original.document, config: original.config, prompt, summary: original.summary }
+    : { config: planConfig, prompt, summary: "Created the first original version" });
+  await createBuilderMessage({ eventId: created.event.id, role: "user", content: prompt, versionId: revision.id, ownerId: user.id });
+  await createBuilderMessage({
+    eventId: created.event.id,
+    role: "assistant",
+    content: original?.message ?? "I created a first version from your description. Tell me what to change.",
+    versionId: revision.id,
+    ownerId: user.id,
+  });
+  return NextResponse.json({ eventId: created.event.id, slug, ...(credit.ok ? {} : { warning: credit.error }) }, { status: 201 });
 }

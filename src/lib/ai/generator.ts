@@ -8,12 +8,24 @@ export type ImageInput = {
   dataUrl: string;
 };
 
+function namesFromPrompt(prompt: string) {
+  const skip = new Set(["my", "our", "the", "and", "for", "with", "brother", "sister", "son", "daughter", "friend", "men", "mens", "women", "womens", "male", "female", "hall", "guest", "guests"]);
+  const match = prompt.match(/(?:of|for)\s+(?:(?:my|our)\s+)?(?:brother|sister|son|daughter|friend)?\s*([\p{L}][\p{L}'’-]{1,24})\s+(?:and|&)\s+([\p{L}][\p{L}'’-]{1,24})/iu);
+  const first = match?.[1]?.trim() ?? "";
+  const second = match?.[2]?.trim() ?? "";
+  const key = (value: string) => value.toLowerCase().replace(/['’]s$/u, "").replace(/['’-]/g, "");
+  if (!first || !second || skip.has(key(first)) || skip.has(key(second))) return null;
+  const title = (value: string) => value.slice(0, 1).toUpperCase() + value.slice(1);
+  return `${title(first)} & ${title(second)}`;
+}
+
 export function defaultEventConfig(prompt: string): EventConfig {
   const isWedding = /\bwedding\b/i.test(prompt);
   const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
+  const names = namesFromPrompt(prompt);
   return {
-    title: isWedding ? "Wedding celebration" : "Your event",
-    subtitle: "A custom event page that helps guests reply in one simple place.",
+    title: names ? (isWedding ? `${names}` : names) : isWedding ? "Wedding celebration" : "Your event",
+    subtitle: names ? (isWedding ? `The wedding of ${names}.` : `An event for ${names}.`) : "Details to be announced.",
     eventType: isWedding ? "wedding" : "event",
     date: "Date to be announced",
     venueName: "Venue to be announced",

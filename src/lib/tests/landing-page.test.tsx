@@ -36,5 +36,7 @@ describe("landing page", () => {
     expect(html).toContain('aria-label="Event type"');
     expect(html).toContain("Do I need to know how to build a website?");
     expect(html).not.toContain("A site with a point of view.");
+    expect(html).not.toContain("An elegant wedding celebration");
+    expect(html).not.toContain("Try an idea");
   });
 });

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { env, openaiResponsesOptions } from "@/lib/env";
 import { refundBuildCredit } from "@/lib/payments/billing";
 import { applyEventDetailsPatch, applySiteOperations, type SiteOperation } from "@/lib/site-document-operations";
@@ -60,8 +61,11 @@ const editSchema = {
               radius: { type: ["string", "null"], enum: ["none", "small", "medium", "large", "pill", null] }, columns: { type: ["integer", "null"], enum: [1, 2, 3, 4, null] },
               minHeight: { type: ["string", "null"], enum: ["auto", "screen", "threeQuarter", "half", null] }, font: { type: ["string", "null"], enum: ["display", "body", "mono", null] },
               size: { type: ["string", "null"], enum: ["xs", "sm", "md", "lg", "xl", "hero", null] }, weight: { type: ["string", "null"], enum: ["regular", "medium", "semibold", "bold", null] }, hidden: { type: ["boolean", "null"] },
+              texture: { type: ["string", "null"], enum: ["none", "paper", "grain", "linen", "wash", null] }, letterSpacing: { type: ["string", "null"], enum: ["tight", "normal", "wide", "widest", null] },
+              italic: { type: ["boolean", "null"] }, opacity: { type: ["string", "null"], enum: ["full", "muted", "faint", null] }, border: { type: ["string", "null"], enum: ["none", "hairline", "thick", null] },
+              justify: { type: ["string", "null"], enum: ["start", "center", "end", null] },
             },
-            required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden"],
+            required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden", "texture", "letterSpacing", "italic", "opacity", "border", "justify"],
           },
           theme: {
             type: ["object", "null"], additionalProperties: false,
@@ -157,7 +161,22 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
   try {
     const state = await loadStudioState(input.eventId, input.ownerId);
     if (!state) throw new Error("event_not_found");
-    await appendRunEvent(input.jobId, input.eventId, "status", { stage: "analyzing", message: "Understanding your request…" });
+    const run = await getStudioRun(input.jobId);
+    await appendRunEvent(input.jobId, input.eventId, "status", { stage: "analyzing", message: run?.kind === "initial" ? "Designing your site from the brief…" : "Understanding your request…" });
+    if (run?.kind === "initial") {
+      const original = await generateOriginalSite(input.prompt, state.revision.config);
+      const beforeCommit = await getStudioRun(input.jobId);
+      if (beforeCommit?.cancel_requested) throw new Error("run_cancelled");
+      await appendRunEvent(input.jobId, input.eventId, "status", { stage: "saving", message: original.summary });
+      await appendRunEvent(input.jobId, input.eventId, "patch", { document: original.document, config: original.config, changedNodeIds: [], summary: original.summary });
+      const committed = await commitStudioRevision({ eventId: input.eventId, ownerId: input.ownerId, baseVersionId: state.revision.id, document: original.document, config: original.config, source: "ai", summary: original.summary, prompt: input.prompt });
+      if (!committed.ok) throw new Error(committed.error);
+      const assistant = await createBuilderMessage({ eventId: input.eventId, runId: input.jobId, role: "assistant", content: original.message, versionId: committed.revision.id, ownerId: input.ownerId });
+      await updateStudioRun(input.jobId, { status: "succeeded", result_version_id: committed.revision.id, progress_step: "done", progress_percent: 100, progress_message: original.summary, completed_at: new Date().toISOString() });
+      await appendRunEvent(input.jobId, input.eventId, "committed", { revision: committed.revision, message: assistant, changedNodeIds: [], summary: original.summary });
+      return;
+    }
+
     const generated = await requestAgentEdit(input.prompt, state.revision.document, state.revision.config, state.messages, input.selectedNodeIds);
     const edit = "edit" in generated ? generated.edit : generated;
     const responseId = "responseId" in generated ? generated.responseId : null;

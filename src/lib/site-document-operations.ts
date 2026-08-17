@@ -17,6 +17,12 @@ const stylePatchSchema = z.object({
   size: z.enum(["xs", "sm", "md", "lg", "xl", "hero"]).nullable().optional(),
   weight: z.enum(["regular", "medium", "semibold", "bold"]).nullable().optional(),
   hidden: z.boolean().nullable().optional(),
+  texture: z.enum(["none", "paper", "grain", "linen", "wash"]).nullable().optional(),
+  letterSpacing: z.enum(["tight", "normal", "wide", "widest"]).nullable().optional(),
+  italic: z.boolean().nullable().optional(),
+  opacity: z.enum(["full", "muted", "faint"]).nullable().optional(),
+  border: z.enum(["none", "hairline", "thick"]).nullable().optional(),
+  justify: z.enum(["start", "center", "end"]).nullable().optional(),
 }).strict();
 
 export const siteOperationSchema = z.discriminatedUnion("op", [

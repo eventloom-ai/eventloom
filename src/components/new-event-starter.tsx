@@ -51,8 +51,8 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
           <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-violet-100 text-violet-700">
             <Loader2 className="size-5 animate-spin" />
           </div>
-          <p className="mt-5 text-base font-semibold text-[#252329]">Opening your studio</p>
-          <p className="mt-2 text-sm text-[#77717a]">Your editable first version is taking shape.</p>
+          <p className="mt-5 text-base font-semibold text-[#252329]">Designing your site</p>
+          <p className="mt-2 text-sm text-[#77717a]">The first version is being composed from your description.</p>
         </div>
       </div>
     );

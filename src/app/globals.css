@@ -6,10 +6,12 @@
   --muted: #66736c;
   --border: rgba(21, 81, 102, 0.18);
   --accent: #155166;
-  --font-geist-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-geist-sans: var(--font-outfit-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --font-inter: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-playfair: Georgia, "Times New Roman", serif;
+  --font-inter: var(--font-inter-face), Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-playfair: var(--font-playfair-face), Georgia, "Times New Roman", serif;
+  --font-outfit: var(--font-outfit-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-fraunces: var(--font-fraunces-face), Georgia, "Times New Roman", serif;
   color-scheme: light;
 }
 

@@ -3,7 +3,7 @@ import { loginUrlForProtectedRequest, safeRedirectPath } from "@/lib/auth/redire
 
 describe("safeRedirectPath", () => {
   it("keeps valid internal destinations", () => {
-    expect(safeRedirectPath("/app/events/new?template=wedding")).toBe("/app/events/new?template=wedding");
+    expect(safeRedirectPath("/app/events/new?brief=garden-wedding")).toBe("/app/events/new?brief=garden-wedding");
   });
 
   it("rejects external and protocol-relative destinations", () => {

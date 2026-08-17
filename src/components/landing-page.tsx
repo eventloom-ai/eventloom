@@ -42,7 +42,7 @@ function EventloomShowcase() {
   );
 }
 
-export function LandingPage({ initialTemplate, authenticated = false, authConfigured = true, signupEnabled = false }: { initialTemplate?: string; authenticated?: boolean; authConfigured?: boolean; signupEnabled?: boolean }) {
+export function LandingPage({ authenticated = false, authConfigured = true, signupEnabled = false }: { authenticated?: boolean; authConfigured?: boolean; signupEnabled?: boolean }) {
   const accountHref = authenticated || !authConfigured ? "/app" : "/login?next=/app";
   const accountLabel = authenticated ? "My events" : authConfigured ? "Sign in" : "Open local demo";
   const createLabel = authenticated ? "New event" : "Create an event";
@@ -62,7 +62,7 @@ export function LandingPage({ initialTemplate, authenticated = false, authConfig
         <div className="eventloom-hero-content relative mx-auto flex w-full max-w-4xl -translate-y-[2vh] flex-col items-center text-center">
           <h1 className="mx-auto mt-4 text-[48px] font-semibold leading-[1.1] tracking-[-0.045em]"><span className="block">Make the invitation</span><span className="block">everyone remembers.</span></h1>
           <p className="mt-4 text-[13px] font-medium uppercase tracking-[0.18em] text-white/60">Event websites and RSVPs, made personal</p>
-          <div id="create" className="mx-auto mt-8 w-full max-w-[38rem] scroll-mt-28"><StartEventPrompt initialTemplate={initialTemplate} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
+          <div id="create" className="mx-auto mt-8 w-full max-w-[38rem] scroll-mt-28"><StartEventPrompt authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} /></div>
           <p className="mt-5 text-[13px] leading-6 text-white/55">Start privately · Publish when ready · Guest data stays private</p>
         </div>
       </section>
