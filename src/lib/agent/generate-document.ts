@@ -13,7 +13,7 @@ import {
   type SiteStyle,
   type SiteTextBinding,
 } from "@/lib/site-document";
-import { ensureSiteContrast } from "@/lib/site-contrast";
+import { prepareSiteDocument } from "@/lib/site-contrast";
 import type { EventConfig } from "@/lib/types";
 
 export type GeneratedOriginalSite = {
@@ -162,7 +162,7 @@ Quality bar:
 - The page must be readable first. Every text color needs a contrasting field behind it: dark type on ivory/paper, or ivory type on charcoal, ink, sage, or wine. Never place light type on a light field. If a section uses light type, that section MUST set a dark background hex.
 - Paper, grain, linen, and wash are overlays only. They do not replace the section background. Always set a solid hex background on full-bleed sections.
 - Typography is the primary craft, but names must stay legible in a studio preview. Use large display type, not faint watermark type. Do not set opacity to faint on headings or names. Do not use wide/widest tracking on hero names.
-- Split couple names onto two lines when helpful. Keep them upright, high-contrast, and on a real color field.
+- Split couple names onto two lines when helpful. Keep them upright, high-contrast, and on a real color field. Opening sections must be width full. Do not put hero names inside a two-column grid. Do not emit image blocks without a real URL.
 - Atmosphere copy is allowed. Invented facts are not. Never invent names, dates, times, venues, addresses, or URLs. Bind known facts to event.title, event.subtitle, event.date, event.venueName, or event.venueAddress. If a fact is missing, say so in the bound value — do not add WHEN/WHERE/ADDRESS labels with empty values.
 - Always include exactly one RSVP block, visually belonging to the design rather than looking like a form dropped at the end.
 - Forbidden: generic centered-card heroes, "The celebration", "Meet us there", "Will you join us?" as default copy, repeating three-band cream/white/green pages, stock wedding layouts, ghost type, vertical stacked single-letter names, low-contrast overlays.
@@ -186,7 +186,10 @@ function asBlock(raw: Record<string, unknown>): SiteNode | null {
     if (!binding && !content) return null;
     return { id, type, content, binding, variant, style };
   }
-  if (type === "image") return { id, type, url: typeof raw.url === "string" ? raw.url : undefined, alt: typeof raw.alt === "string" && raw.alt.trim() ? raw.alt : "Event image", style };
+  if (type === "image") {
+    if (typeof raw.url !== "string" || !raw.url.trim()) return null;
+    return { id, type, url: raw.url, alt: typeof raw.alt === "string" && raw.alt.trim() ? raw.alt : "Event image", style };
+  }
   if (type === "button" && typeof raw.buttonLabel === "string" && typeof raw.href === "string") {
     return { id, type, label: raw.buttonLabel, href: raw.href, variant: typeof raw.buttonVariant === "string" ? raw.buttonVariant as "primary" : undefined, style };
   }
@@ -263,7 +266,7 @@ function assembleDocument(raw: Record<string, unknown>, config: EventConfig, pro
     nodes,
   });
 
-  return parsed.success ? ensureSiteContrast(parsed.data) : composeSiteDocument(config, prompt);
+  return parsed.success ? prepareSiteDocument(parsed.data) : composeSiteDocument(config, prompt);
 }
 
 function configFromGeneratedEvent(base: EventConfig, raw: Record<string, unknown> | undefined, prompt: string): EventConfig {
@@ -290,7 +293,7 @@ function configFromGeneratedEvent(base: EventConfig, raw: Record<string, unknown
 
 export async function generateOriginalSite(prompt: string, config: EventConfig): Promise<GeneratedOriginalSite> {
   const fallback = {
-    document: ensureSiteContrast(composeSiteDocument(config, prompt)),
+    document: prepareSiteDocument(composeSiteDocument(config, prompt)),
     config: groundConfigInPrompt(config, prompt),
     message: "I designed a first version from your description. Tell me what to change.",
     summary: "Designed the first original version",

@@ -82,9 +82,33 @@ function contrastNode(node: SiteNode, inheritedBackground: string, theme: SiteDo
   return next;
 }
 
+export function ensureSiteLayout(document: SiteDocument): SiteDocument {
+  const visit = (nodes: SiteNode[], depth: number): SiteNode[] => nodes.flatMap((node, index) => {
+    if (node.type === "image" && !node.url) return [];
+    const style: SiteStyle = { ...node.style };
+    if (depth === 0 && index === 0) {
+      style.width = "full";
+      if (style.minHeight === "screen" || style.minHeight === "threeQuarter") delete style.columns;
+    }
+    if (node.type === "text") {
+      delete style.width;
+      delete style.columns;
+    }
+    const next = { ...node, style };
+    if ("children" in next) return [{ ...next, children: visit(next.children, depth + 1) }];
+    return [next];
+  });
+
+  return { ...document, nodes: visit(document.nodes, 0) };
+}
+
 export function ensureSiteContrast(document: SiteDocument): SiteDocument {
   return {
     ...document,
     nodes: document.nodes.map((node) => contrastNode(node, document.theme.colors.surface, document.theme)),
   };
+}
+
+export function prepareSiteDocument(document: SiteDocument) {
+  return ensureSiteContrast(ensureSiteLayout(document));
 }

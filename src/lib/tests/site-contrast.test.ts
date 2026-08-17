@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backgroundLayers, contrastRatio, ensureSiteContrast, readableOn } from "@/lib/site-contrast";
+import { backgroundLayers, contrastRatio, ensureSiteContrast, ensureSiteLayout, readableOn } from "@/lib/site-contrast";
 import type { SiteDocument } from "@/lib/site-document";
 
 const creamDocument: SiteDocument = {
@@ -52,6 +52,31 @@ describe("site contrast", () => {
       const heading = section.children[0];
       expect(heading?.style?.opacity).toBeUndefined();
       expect(heading?.style?.letterSpacing).toBe("tight");
+    }
+  });
+
+  it("opens the first section full-bleed and drops empty image blocks", () => {
+    const document = ensureSiteLayout({
+      ...creamDocument,
+      nodes: [
+        {
+          id: "sec_opening",
+          type: "section",
+          style: { width: "narrow", minHeight: "screen", columns: 2 },
+          children: [
+            { id: "img_empty", type: "image", alt: "Event image" },
+            { id: "txt_names", type: "text", binding: "event.title", variant: "heading", style: { size: "hero", width: "narrow" } },
+          ],
+        },
+      ],
+    });
+    const section = document.nodes[0];
+    expect(section?.style?.width).toBe("full");
+    expect(section?.style?.columns).toBeUndefined();
+    if (section && "children" in section) {
+      expect(section.children.some((node) => node.type === "image")).toBe(false);
+      expect(section.children[0]?.type).toBe("text");
+      expect(section.children[0]?.style?.width).toBeUndefined();
     }
   });
 });
