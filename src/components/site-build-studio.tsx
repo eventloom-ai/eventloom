@@ -20,6 +20,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { EventloomMark } from "@/components/logo";
 import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
 import { enrichBriefWithIntake, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
@@ -27,23 +28,21 @@ import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { useBuildJob } from "@/hooks/use-build-job";
 
-const examples = [
-  { label: "Wedding", prompt: "A luxury bilingual wedding site with guest replies, separate men's and women's hall details, and a soft blush design.", mood: "blush" },
-  { label: "Birthday", prompt: "A modern birthday party page with a photo gallery, guest replies, dress code, and a bold colorful look.", mood: "sunset" },
-  { label: "Engagement", prompt: "An elegant engagement site with family wording, Arabic and English text, schedule, location details, and guest replies.", mood: "gold" },
-] as const;
-
 const moods = ["blush", "navy", "gold", "lavender", "forest", "sunset"] as const;
 const steps: { id: BuildProgressStep; label: string; detail: string }[] = [
   { id: "started", label: "Brief received", detail: "Your direction is saved" },
   { id: "planning", label: "Planning the experience", detail: "Structure, tone, and flow" },
-  { id: "planned", label: "Choosing a visual direction", detail: "Template and palette" },
+  { id: "planned", label: "Choosing a visual direction", detail: "Palette and composition" },
   { id: "generating", label: "Making your site", detail: "Writing and styling" },
   { id: "saving", label: "Saving your version", detail: "Assets and RSVP details" },
   { id: "done", label: "Ready to review", detail: "Your draft is live" },
 ];
 
-type SiteBuildStudioProps = { initialPrompt?: string; initialTemplate?: string; variant?: "home" | "app" | "studio" };
+type SiteBuildStudioProps = {
+  initialPrompt?: string;
+  variant?: "home" | "app" | "studio";
+  fullBleed?: boolean;
+};
 
 function stepState(step: BuildProgressStep, current: BuildProgressStep) {
   const currentIndex = steps.findIndex((item) => item.id === current);
@@ -52,15 +51,14 @@ function stepState(step: BuildProgressStep, current: BuildProgressStep) {
   return index < currentIndex ? "done" : index === currentIndex ? "active" : "pending";
 }
 
-export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app" }: SiteBuildStudioProps) {
+export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = false }: SiteBuildStudioProps) {
   const router = useRouter();
   const { state: build, startBuild, resumeStoredJob } = useBuildJob();
-  const seed = examples.find((example) => example.label.toLowerCase() === initialTemplate)?.prompt ?? "";
-  const [prompt, setPrompt] = useState(initialPrompt ?? seed);
+  const [prompt, setPrompt] = useState(initialPrompt ?? "");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const [mood, setMood] = useState<string | null>(examples.find((example) => example.label.toLowerCase() === initialTemplate)?.mood ?? null);
+  const [mood, setMood] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [showIntake, setShowIntake] = useState(Boolean(initialPrompt));
   const [intakeAnswers, setIntakeAnswers] = useState<IntakeAnswers>({});
@@ -90,15 +88,6 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
     if (showIntake) intakeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [intakeStep, showIntake]);
 
-  function chooseExample(example: (typeof examples)[number]) {
-    setPrompt(example.prompt);
-    setMood(example.mood);
-    setSlugEdited(false);
-    setShowIntake(false);
-    setIntakeAnswers({});
-    setIntakeStep(0);
-  }
-
   function selectFiles(event: ChangeEvent<HTMLInputElement>) {
     const images = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith("image/"));
     setFiles((current) => [...current, ...images].slice(0, 4));
@@ -120,7 +109,6 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
     form.set("prompt", enrichBriefWithIntake(prompt, intakeAnswers));
     form.set("slug", activeSlug.trim());
     if (mood) form.set("mood", mood);
-    if (initialTemplate === "wedding") form.set("template", "wedding");
     if (build.completedEventId) form.set("event_id", build.completedEventId);
     files.forEach((file) => form.append("images", file));
     await startBuild(form);
@@ -130,10 +118,10 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
   const previewSlug = build.slug || activeSlug || "your-event";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#151515] text-[#f5f5f5] shadow-[0_28px_100px_rgba(0,0,0,0.26)]">
+    <div className={`eventloom-studio overflow-hidden bg-[#151515] text-[#f5f5f5] ${fullBleed ? "min-h-[100svh] rounded-none border-0 shadow-none lg:h-[100svh]" : "rounded-2xl border border-white/10 shadow-[0_28px_100px_rgba(0,0,0,0.26)]"}`}>
       <header className="flex min-h-12 flex-col gap-3 border-b border-white/10 bg-[#1a1a1a] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="grid size-7 place-items-center rounded-lg bg-[#8b5cf6] text-white shadow-lg shadow-violet-950/30"><Sparkles className="size-3.5" /></div>
+          <EventloomMark className="size-7" />
           <div>
             <p className="text-[13px] font-semibold tracking-tight">Eventloom Studio</p>
             <p className="text-[11px] text-[#9c9ca2]">{build.isBuilding ? "Agent is building your experience" : build.completedEventId ? "Draft ready to review" : "New event workspace"}</p>
@@ -148,7 +136,7 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
         </div>
       </header>
 
-      <div className="grid min-h-[760px] lg:h-[calc(100vh-76px)] lg:min-h-0 lg:grid-cols-[minmax(330px,0.72fr)_minmax(0,1.5fr)]">
+      <div className={`grid min-h-[760px] lg:min-h-0 lg:grid-cols-[minmax(330px,0.72fr)_minmax(0,1.5fr)] ${fullBleed ? "lg:h-[calc(100svh-49px)]" : "lg:h-[calc(100vh-76px)]"}`}>
         <form onSubmit={submit} className="flex min-h-[760px] flex-col border-b border-white/10 bg-[#191919] p-4 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a9a9ae]">Agent conversation</p>
@@ -239,17 +227,6 @@ export function SiteBuildStudio({ initialPrompt, initialTemplate, variant = "app
                   </div>
                 </div>
           ) : null}
-
-          <div className="mt-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a9a9ae]">Try an idea</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {examples.map((example) => (
-                <button key={example.label} type="button" disabled={build.isBuilding} onClick={() => chooseExample(example)} className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-[#c5c5ca] transition hover:border-white/20 hover:bg-white/[0.08] disabled:opacity-50">
-                  {example.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="mt-5 grid gap-4 rounded-xl border border-white/10 bg-[#202020] p-3">
             <div className="flex items-center gap-2"><Palette className="size-4 text-violet-300" /><p className="text-[12px] font-semibold">Visual direction</p></div>

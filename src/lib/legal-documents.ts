@@ -16,11 +16,6 @@ export const legalDocuments: LegalDocument[] = [
     { heading: "Location and retention", body: "The current database and several subprocessors operate in the United States, so information may be processed outside Canada. RSVP personal data is scheduled for deletion 90 days after the event unless a documented legal hold applies. Abuse data is kept 30 days, security logs 12 months, backups 30 days, and legally required payment records may be retained seven years." },
     { heading: "Rights and contact", body: "Creators and guests may request access, correction, deletion, or information about processing. Identity is verified before disclosure. Eventloom targets a response within 30 days, subject to lawful extensions and exceptions." },
   ]},
-  { slug: "refunds", title: "Refund and Cancellation Policy", summary: "How service and domain charges are treated.", sections: [
-    { heading: "Service fee", body: "The one-year Eventloom service portion is refundable within 14 days of purchase, subject to mandatory consumer rights and any disclosed exceptions reviewed by counsel." },
-    { heading: "Domain fee", body: "A domain registration that has been successfully submitted and registered is non-refundable except where law requires otherwise. If permanent provisioning fails after payment, Eventloom will refund the domain line item and keep the site safely available on an Eventloom subdomain." },
-    { heading: "Requesting a refund", body: "Contact support with the order reference. Approved refunds return to the original payment method. Processing time depends on Stripe and the card issuer." },
-  ]},
   { slug: "domains", title: "Domain Registration, Renewal, and Transfer Policy", summary: "Ownership and lifecycle rules for domains purchased through Eventloom.", sections: [
     { heading: "Registrant ownership", body: "The customer is registered as the registrant and beneficial owner. Accurate registrant data and verification are required. Eventloom does not claim ownership of customer domains." },
     { heading: "Renewal and expiry", body: "Automatic renewal is off initially. Renewal prices are shown separately and reminders are planned for 60, 30, 14, and 7 days before expiry. Failure to renew can cause service interruption or loss of the domain." },

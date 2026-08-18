@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeHost, slugFromHost } from "@/lib/tenancy";
+import { normalizeHost, resolveEventBySlug, slugFromHost } from "@/lib/tenancy";
 
 describe("tenant host resolution", () => {
   it("extracts tenant subdomains from the root domain", () => {
@@ -22,5 +22,9 @@ describe("tenant host resolution", () => {
 
   it("normalizes host ports", () => {
     expect(normalizeHost("Mira-Adam.Eventloom.AI:443")).toBe("mira-adam.eventloom.ai");
+  });
+
+  it("does not expose a built-in event when the database is unavailable", async () => {
+    await expect(resolveEventBySlug("demo-wedding")).resolves.toBeNull();
   });
 });

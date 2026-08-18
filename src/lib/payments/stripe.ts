@@ -34,7 +34,7 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
   if (!event.draft_version_id) return { ok: false as const, error: "site_version_missing" };
 
   if (!input.acceptance) return { ok: false as const, error: "legal_acceptance_required" };
-  const requiredDocuments = input.domain ? ["terms", "privacy", "refunds", "domains"] : ["terms", "privacy", "refunds"];
+  const requiredDocuments = input.domain ? ["terms", "privacy", "domains"] : ["terms", "privacy"];
   const { data: legalDocuments } = await client.from("legal_documents").select("id, document_key, version").eq("status", "active").eq("version", input.acceptance.version).in("document_key", requiredDocuments);
   if (!legalDocuments || legalDocuments.length !== requiredDocuments.length) return { ok: false as const, error: "legal_documents_not_ready" };
 
@@ -132,7 +132,7 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
     },
     payment_intent_data: { metadata: { event_id: input.eventId, order_id: order.id, version_id: event.draft_version_id, product: "eventloom_launch", ...(domainQuote ? { domain: domainQuote.domain } : {}) } },
     consent_collection: { terms_of_service: "required" },
-    custom_text: { submit: { message: domainQuote ? "The $20 Eventloom service is refundable within 14 days. A successfully registered domain is non-refundable except where required by law. Domain auto-renewal is off." : "The $20 Eventloom service is refundable within 14 days, subject to the displayed terms." } },
+    custom_text: { submit: { message: domainQuote ? "The total includes one year of Eventloom service and the displayed one-year domain registration. Domain auto-renewal is off." : "The total includes one year of Eventloom hosted site service." } },
     });
   } catch {
     await deleteRegistrantPayload(order.id);

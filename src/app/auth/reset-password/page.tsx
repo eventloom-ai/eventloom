@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { EventloomLogo } from "@/components/logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
@@ -121,8 +122,8 @@ export default function ResetPasswordPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#fbfbfd] px-6 py-16">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link href="/" className="text-[17px] font-semibold tracking-tight text-[#1d1d1f]">
-            Eventloom
+          <Link href="/" className="inline-flex justify-center text-[17px] font-semibold text-[#1d1d1f]">
+            <EventloomLogo markClassName="size-7" />
           </Link>
           <h1 className="mt-8 text-[32px] font-semibold tracking-[-0.02em]">Set a new password</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-[#6e6e73]">

@@ -3,49 +3,13 @@
 import { ImagePlus, X } from "lucide-react";
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
 
-export const examplePrompts = [
-  {
-    id: "wedding",
-    label: "Wedding",
-    prompt:
-      "A luxury bilingual wedding site with guest replies, separate men's and women's hall details, and a soft blush design.",
-  },
-  {
-    id: "birthday",
-    label: "Birthday",
-    prompt: "A modern birthday party page with a photo gallery, guest replies, dress code, and a bold colorful look.",
-  },
-  {
-    id: "engagement",
-    label: "Engagement",
-    prompt:
-      "An elegant engagement site with family wording, Arabic and English text, schedule, location details, and guest replies.",
-  },
-] as const;
-
-function templateDefaults(template?: string) {
-  const example = examplePrompts.find((item) => item.id === template);
-  return {
-    prompt: example?.prompt ?? "",
-    activeExample: example?.label ?? null,
-  };
-}
-
-export function LandingBuilder({ initialTemplate }: { initialTemplate?: string }) {
-  const defaults = useMemo(() => templateDefaults(initialTemplate), [initialTemplate]);
-  const [prompt, setPrompt] = useState(defaults.prompt);
-  const [activeExample, setActiveExample] = useState<string | null>(defaults.activeExample);
+export function LandingBuilder() {
+  const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const slug = useMemo(() => makeSlug(prompt), [prompt]);
-
-  function selectExample(example: (typeof examplePrompts)[number]) {
-    setPrompt(example.prompt);
-    setActiveExample(example.label);
-    setError("");
-  }
 
   function selectFiles(event: ChangeEvent<HTMLInputElement>) {
     const nextFiles = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith("image/"));
@@ -67,9 +31,6 @@ export function LandingBuilder({ initialTemplate }: { initialTemplate?: string }
     const body = new FormData();
     body.set("prompt", prompt);
     body.set("slug", slug);
-    if (initialTemplate === "wedding") {
-      body.set("template", "wedding");
-    }
     files.forEach((file) => body.append("images", file));
 
     const response = await fetch("/api/events", {
@@ -111,7 +72,6 @@ export function LandingBuilder({ initialTemplate }: { initialTemplate?: string }
           value={prompt}
           onChange={(event) => {
             setPrompt(event.target.value);
-            setActiveExample(null);
             setError("");
           }}
           className="resize-none rounded-xl border border-black/[0.08] bg-white px-4 py-3.5 text-[17px] leading-relaxed text-[#1d1d1f] outline-none transition-all placeholder:text-[#6e6e73]/60 focus:border-[#0071e3]/50 focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
@@ -125,26 +85,6 @@ export function LandingBuilder({ initialTemplate }: { initialTemplate?: string }
           <span className="font-medium text-[#1d1d1f]">eventloom-beta.vercel.app/{slug}</span>
         </p>
       ) : null}
-
-      <div className="mt-5">
-        <p className="text-[13px] font-medium text-[#6e6e73]">Quick start</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {examplePrompts.map((example) => (
-            <button
-              key={example.label}
-              type="button"
-              onClick={() => selectExample(example)}
-              className={`rounded-full px-4 py-2 text-[14px] font-medium transition-all active:scale-[0.98] ${
-                activeExample === example.label
-                  ? "bg-[#1d1d1f] text-white"
-                  : "bg-white text-[#1d1d1f] ring-1 ring-black/[0.08] hover:bg-[#f5f5f7]"
-              }`}
-            >
-              {example.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="mt-6 rounded-xl border border-dashed border-black/[0.12] bg-white p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

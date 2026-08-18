@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { BuildJobStatus } from "@/lib/agent/progress";
+import { hasRunningBuildJobs } from "@/lib/build-job-polling";
 import { clearStoredBuildJob, readStoredBuildJob } from "@/lib/build-job-store";
 
 type BuildJobContextValue = {
@@ -48,14 +49,16 @@ export function BuildJobProvider({ children }: { children: ReactNode }) {
     const initialTimer = window.setTimeout(() => {
       void refreshActiveJob();
     }, 0);
-    const timer = window.setInterval(() => {
-      void refreshActiveJob();
-    }, 2500);
-    return () => {
-      window.clearTimeout(initialTimer);
-      window.clearInterval(timer);
-    };
+    return () => window.clearTimeout(initialTimer);
   }, [refreshActiveJob]);
+
+  useEffect(() => {
+    if (!hasRunningBuildJobs(activeJob ? [activeJob] : [])) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshActiveJob();
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [activeJob, refreshActiveJob]);
 
   const value = useMemo(() => ({ activeJob, refreshActiveJob }), [activeJob, refreshActiveJob]);
 

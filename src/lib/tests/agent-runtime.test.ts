@@ -73,3 +73,17 @@ describe("agent domain-selling capability", () => {
     });
   });
 });
+
+describe("agent model defaults", () => {
+  it("defaults to gpt-5.6-luna at high reasoning effort", () => {
+    delete process.env.OPENAI_MODEL;
+    delete process.env.AI_MODEL;
+    delete process.env.OPENAI_REASONING_EFFORT;
+    delete process.env.AI_REASONING_EFFORT;
+
+    expect(getAgentRuntime()).toMatchObject({
+      model: "gpt-5.6-luna",
+      reasoningEffort: "high",
+    });
+  });
+});

@@ -19,6 +19,7 @@ export const siteNodeTypes = [
 
 export type SiteNodeType = (typeof siteNodeTypes)[number];
 export type SiteTextBinding = "event.title" | "event.subtitle" | "event.date" | "event.venueName" | "event.venueAddress";
+export type SiteTexture = "none" | "paper" | "grain" | "linen" | "wash";
 export type SiteStyle = {
   background?: string;
   color?: string;
@@ -34,6 +35,12 @@ export type SiteStyle = {
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "hero";
   weight?: "regular" | "medium" | "semibold" | "bold";
   hidden?: boolean;
+  texture?: SiteTexture;
+  letterSpacing?: "tight" | "normal" | "wide" | "widest";
+  italic?: boolean;
+  opacity?: "full" | "muted" | "faint";
+  border?: "none" | "hairline" | "thick";
+  justify?: "start" | "center" | "end";
 };
 
 type SiteNodeBase = { id: string; type: SiteNodeType; label?: string; style?: SiteStyle };
@@ -73,13 +80,14 @@ export type SiteDocument = {
     typography: { display: "editorial" | "romantic" | "modern" | "playful"; body: "clean" | "humanist" | "geometric" };
     radius: "sharp" | "soft" | "round";
     motion: "none" | "subtle" | "expressive";
+    texture?: SiteTexture;
   };
   nodes: SiteNode[];
 };
 
 const colorSchema = z.string().regex(/^#[0-9a-f]{6}$/i);
 const styleSchema = z.object({
-  background: z.string().max(120).optional(),
+  background: z.string().max(280).optional(),
   color: z.string().max(120).optional(),
   accent: z.string().max(120).optional(),
   align: z.enum(["left", "center", "right"]).optional(),
@@ -93,6 +101,12 @@ const styleSchema = z.object({
   size: z.enum(["xs", "sm", "md", "lg", "xl", "hero"]).optional(),
   weight: z.enum(["regular", "medium", "semibold", "bold"]).optional(),
   hidden: z.boolean().optional(),
+  texture: z.enum(["none", "paper", "grain", "linen", "wash"]).optional(),
+  letterSpacing: z.enum(["tight", "normal", "wide", "widest"]).optional(),
+  italic: z.boolean().optional(),
+  opacity: z.enum(["full", "muted", "faint"]).optional(),
+  border: z.enum(["none", "hairline", "thick"]).optional(),
+  justify: z.enum(["start", "center", "end"]).optional(),
 }).strict();
 const baseNode = { id: z.string().regex(/^[a-z][a-z0-9_-]{2,63}$/), label: z.string().max(80).optional(), style: styleSchema.optional() };
 
@@ -118,6 +132,7 @@ export const siteDocumentSchema: z.ZodType<SiteDocument> = z.object({
     typography: z.object({ display: z.enum(["editorial", "romantic", "modern", "playful"]), body: z.enum(["clean", "humanist", "geometric"]) }).strict(),
     radius: z.enum(["sharp", "soft", "round"]),
     motion: z.enum(["none", "subtle", "expressive"]),
+    texture: z.enum(["none", "paper", "grain", "linen", "wash"]).optional(),
   }).strict(),
   nodes: z.array(nodeSchema).min(1).max(30),
 }).strict().superRefine((document, context) => {
@@ -146,45 +161,121 @@ export const siteDocumentSchema: z.ZodType<SiteDocument> = z.object({
   if (!hasRsvp) context.addIssue({ code: "custom", message: "Site document must contain one RSVP block." });
 });
 
-function id(prefix: string) {
+export function newSiteNodeId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replaceAll("-", "").slice(0, 10)}`;
 }
 
-export function createDefaultSiteDocument(config: EventConfig, makeId: (prefix: string) => string = id): SiteDocument {
+function fingerprint(value: string) {
+  let hash = 0;
+  for (const char of value) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return hash;
+}
+
+function themeFromConfig(config: EventConfig, prompt: string) {
   const colors = config.theme.colors.length >= 4 ? config.theme.colors : ["#1f1a17", "#fbf7f1", "#9a5d55", "#747d6c"];
-  const heroImage = config.heroImageUrl;
-  return siteDocumentSchema.parse({
-    schemaVersion: 2,
-    locale: "en",
-    direction: "auto",
-    theme: {
-      colors: { text: colors[0], surface: colors[1], accent: colors[2], muted: colors[3] },
-      typography: { display: /romantic|wedding|elegant/i.test(config.theme.mood) ? "romantic" : "editorial", body: "clean" },
-      radius: "soft",
-      motion: "subtle",
+  const source = `${config.theme.mood} ${config.eventType} ${prompt}`;
+  return {
+    colors: { text: colors[0], surface: colors[1], accent: colors[2], muted: colors[3] },
+    typography: {
+      display: /playful|birthday|party/i.test(source) ? "playful" as const : /romantic|wedding|elegant/i.test(source) ? "romantic" as const : /modern|corporate|launch/i.test(source) ? "modern" as const : "editorial" as const,
+      body: /humanist|warm|garden/i.test(source) ? "humanist" as const : /geometric|graphic|bold/i.test(source) ? "geometric" as const : "clean" as const,
     },
-    nodes: [
-      {
-        id: makeId("hero"), type: "section", label: "Hero", style: { padding: "large", minHeight: "auto", align: "center", width: "wide", gap: "medium" }, children: [
-          { id: makeId("eyebrow"), type: "text", content: config.eventType, variant: "eyebrow", style: { font: "body", size: "xs", weight: "semibold" } },
-          { id: makeId("title"), type: "text", binding: "event.title", variant: "heading", style: { font: "display", size: "hero", weight: "semibold" } },
-          { id: makeId("subtitle"), type: "text", binding: "event.subtitle", variant: "subheading", style: { font: "body", size: "lg" } },
-          ...(heroImage ? [{ id: makeId("image"), type: "image" as const, url: heroImage, alt: `${config.title} event`, fit: "cover" as const, style: { radius: "large" as const, width: "wide" as const } }] : []),
-          { id: makeId("date"), type: "text", binding: "event.date", variant: "body", style: { size: "md", weight: "medium" } },
-        ],
-      },
-      { id: makeId("schedule"), type: "section", label: "Schedule", style: { padding: "large", width: "wide" }, children: [
-        { id: makeId("schedule_heading"), type: "text", content: "The celebration", variant: "heading", style: { font: "display", size: "xl" } },
-        { id: makeId("schedule_list"), type: "schedule" },
+    radius: /sharp|modern|corporate/i.test(source) ? "sharp" as const : /round|playful/i.test(source) ? "round" as const : "soft" as const,
+    motion: /still|none|quiet/i.test(source) ? "none" as const : /expressive|bold|party/i.test(source) ? "expressive" as const : "subtle" as const,
+    texture: /garden|paper|linen|wedding|elegant/i.test(source) ? "paper" as const : /party|bold|graphic/i.test(source) ? "grain" as const : "wash" as const,
+  };
+}
+
+function rsvpCopy(config: EventConfig) {
+  if (/wedding/i.test(config.eventType)) return { heading: "Will you celebrate with us?", description: "Please reply so we can plan for you." };
+  if (/birthday|party/i.test(config.eventType)) return { heading: "Can you make it?", description: "Tell us if you’ll be there." };
+  return { heading: "Will you join us?", description: "Reply with the details we need." };
+}
+
+export function composeSiteDocument(config: EventConfig, prompt = "", makeId: (prefix: string) => string = newSiteNodeId): SiteDocument {
+  const theme = themeFromConfig(config, prompt);
+  const colors = [theme.colors.text, theme.colors.surface, theme.colors.accent, theme.colors.muted];
+  const heroImage = config.heroImageUrl;
+  const rsvp = rsvpCopy(config);
+  const composition = fingerprint(`${prompt}|${config.title}|${config.eventType}|${config.theme.mood}`) % 4;
+  const titleLines = config.title.split(/\s*&\s*|\s+and\s+/i);
+  const openingCopy: SiteNode[] = [
+    { id: makeId("eyebrow"), type: "text", content: config.eventType, variant: "eyebrow", style: { font: "body", size: "xs", weight: "semibold", letterSpacing: "widest", opacity: "muted" } },
+    titleLines.length === 2
+      ? { id: makeId("title"), type: "text", content: `${titleLines[0].trim()}\n&\n${titleLines[1].trim()}`, variant: "heading", style: { font: "display", size: "hero", weight: "regular", letterSpacing: "tight", italic: theme.typography.display === "romantic" } }
+      : { id: makeId("title"), type: "text", binding: "event.title", variant: "heading", style: { font: "display", size: "hero", weight: "regular", letterSpacing: "tight" } },
+    { id: makeId("subtitle"), type: "text", binding: "event.subtitle", variant: "subheading", style: { font: "body", size: "lg", opacity: "muted" } },
+    { id: makeId("date"), type: "text", binding: "event.date", variant: "caption", style: { size: "sm", weight: "medium", letterSpacing: "wide" } },
+  ];
+  if (heroImage) openingCopy.splice(2, 0, { id: makeId("image"), type: "image", url: heroImage, alt: `${config.title} event`, fit: "cover", style: { radius: "large", width: "wide", minHeight: "half" } });
+
+  const details: SiteNode = {
+    id: makeId("details"),
+    type: "grid",
+    label: "Details",
+    style: { columns: 2, gap: "large", width: "wide", padding: "hero" },
+    children: [
+      { id: makeId("when"), type: "stack", style: { gap: "small" }, children: [
+        { id: makeId("when_label"), type: "text", content: "When", variant: "caption", style: { size: "xs", weight: "semibold", letterSpacing: "widest" } },
+        { id: makeId("when_value"), type: "text", binding: "event.date", variant: "heading", style: { font: "display", size: "xl", italic: true } },
       ] },
-      { id: makeId("venue"), type: "section", label: "Venue", style: { padding: "large", background: colors[3], color: colors[1] }, children: [
-        { id: makeId("venue_heading"), type: "text", content: "Meet us there", variant: "heading", style: { font: "display", size: "xl" } },
-        { id: makeId("venue_details"), type: "venue", showMap: true },
-      ] },
-      { id: makeId("rsvp_section"), type: "section", label: "RSVP", style: { padding: "large", align: "center", width: "wide" }, children: [
-        { id: makeId("rsvp"), type: "rsvp", heading: "Will you join us?", description: "Please reply using the form below." },
+      { id: makeId("where"), type: "stack", style: { gap: "small" }, children: [
+        { id: makeId("where_label"), type: "text", content: "Where", variant: "caption", style: { size: "xs", weight: "semibold", letterSpacing: "widest" } },
+        { id: makeId("where_value"), type: "venue", showMap: true },
       ] },
     ],
+  };
+
+  const scheduleSection: SiteNode | null = config.schedule.some((item) => item.title && item.title !== "Event details")
+    ? { id: makeId("schedule"), type: "section", label: "Plan", style: { padding: "large", width: "narrow", gap: "medium", align: "left" }, children: [
+        { id: makeId("schedule_heading"), type: "text", content: "The hours", variant: "heading", style: { font: "display", size: "xl", italic: true } },
+        { id: makeId("schedule_list"), type: "schedule" },
+      ] }
+    : null;
+
+  const rsvpSection: SiteNode = {
+    id: makeId("rsvp_section"), type: "section", label: "Reply", style: { padding: "hero", align: "left", width: "narrow", background: colors[0], color: colors[1], texture: "wash" }, children: [
+      { id: makeId("rsvp"), type: "rsvp", heading: rsvp.heading, description: rsvp.description, style: { align: "left" } },
+    ],
+  };
+
+  const nodes: SiteNode[] = composition === 1
+    ? [
+        { id: makeId("opening"), type: "section", label: "Opening", style: { minHeight: "screen", padding: "hero", align: "center", width: "full", gap: "medium", background: colors[0], color: colors[1], texture: "paper", justify: "center" }, children: openingCopy },
+        details,
+        rsvpSection,
+      ]
+    : composition === 2
+      ? [
+          { id: makeId("opening"), type: "grid", label: "Opening", style: { padding: "hero", columns: 2, gap: "large", width: "full", minHeight: "screen", background: colors[1], color: colors[0], texture: "linen" }, children: [
+            { id: makeId("opening_copy"), type: "stack", style: { gap: "medium", align: "left", justify: "end", padding: "large" }, children: openingCopy.filter((node) => node.type !== "image") },
+            { id: makeId("opening_panel"), type: "stack", style: { gap: "large", padding: "large", background: colors[0], color: colors[1], justify: "center" }, children: [
+              { id: makeId("date_block"), type: "text", binding: "event.date", variant: "heading", style: { font: "display", size: "xl", italic: true } },
+              { id: makeId("venue_block"), type: "venue", showMap: true },
+            ] },
+          ] },
+          ...(scheduleSection ? [scheduleSection] : []),
+          rsvpSection,
+        ]
+      : composition === 3
+        ? [
+            { id: makeId("opening"), type: "section", label: "Opening", style: { padding: "hero", align: "left", width: "narrow", gap: "medium", minHeight: "threeQuarter", justify: "end" }, children: openingCopy },
+            { id: makeId("band"), type: "section", label: "Place", style: { padding: "large", background: colors[3], color: colors[1], width: "full", texture: "grain" }, children: [{ id: makeId("place_venue"), type: "venue", showMap: true }] },
+            rsvpSection,
+          ]
+        : [
+            { id: makeId("opening"), type: "section", label: "Opening", style: { minHeight: "screen", padding: "hero", align: "left", width: "full", gap: "medium", background: `linear-gradient(165deg, ${colors[0]} 0%, ${colors[3]} 100%)`, color: colors[1], texture: "paper", justify: "end" }, children: openingCopy },
+            details,
+            ...(scheduleSection ? [scheduleSection] : []),
+            rsvpSection,
+          ];
+
+  return siteDocumentSchema.parse({
+    schemaVersion: 2,
+    locale: /arabic|\bar\b|عربي/i.test(prompt) ? "ar" : "en",
+    direction: "auto",
+    theme,
+    nodes,
   });
 }
 

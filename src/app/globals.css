@@ -1,11 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbfbfd;
-  --foreground: #1d1d1f;
-  --muted: #6e6e73;
-  --border: rgba(0, 0, 0, 0.08);
-  --accent: #0071e3;
+  --background: #e7ecdf;
+  --foreground: #302821;
+  --muted: #66736c;
+  --border: rgba(21, 81, 102, 0.18);
+  --accent: #155166;
+  --font-geist-sans: var(--font-outfit-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-inter: var(--font-inter-face), Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-playfair: var(--font-playfair-face), Georgia, "Times New Roman", serif;
+  --font-outfit: var(--font-outfit-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-fraunces: var(--font-fraunces-face), Georgia, "Times New Roman", serif;
   color-scheme: light;
 }
 
@@ -26,6 +32,166 @@ body {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Shared creator-app system: the public coast palette, translated for dense work. */
+.eventloom-app {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 75% 38% at 50% -18%, rgba(214, 234, 222, 0.9), transparent 72%),
+    #e7ecdf;
+  color: #302821;
+}
+
+.eventloom-app-card {
+  border: 1px solid rgba(21, 81, 102, 0.16);
+  background: rgba(255, 250, 243, 0.94);
+  box-shadow: 0 12px 32px rgba(21, 81, 102, 0.07);
+}
+
+.eventloom-app-button {
+  border: 1px solid rgba(21, 81, 102, 0.18);
+  background: rgba(255, 250, 243, 0.82);
+  color: #155166;
+}
+
+.eventloom-app-button:hover {
+  background: #fffaf3;
+  border-color: rgba(21, 81, 102, 0.34);
+}
+
+.eventloom-app-button-primary {
+  background: #155166;
+  color: #fffaf3;
+  box-shadow: 0 8px 20px rgba(9, 58, 73, 0.18);
+}
+
+.eventloom-app-button-primary:hover {
+  background: #0b3e4e;
+}
+
+.eventloom-app :is(input, textarea, select).eventloom-app-field {
+  border-color: rgba(21, 81, 102, 0.2);
+  background: #fffaf3;
+  color: #302821;
+}
+
+.eventloom-app :is(input, textarea, select).eventloom-app-field:focus {
+  border-color: rgba(21, 81, 102, 0.58);
+  box-shadow: 0 0 0 4px rgba(75, 147, 153, 0.17);
+}
+
+/* Legacy controls that live inside the app shell inherit the shared system. */
+.eventloom-app [class*="bg-white"]:not([class*="bg-white/"]) { background-color: #fffaf3; }
+.eventloom-app [class*="bg-[#fbfbfd]"],
+.eventloom-app [class*="bg-[#f5f5f7]"] { background-color: #eff2e9; }
+.eventloom-app [class*="border-black"] { border-color: rgba(21, 81, 102, 0.17); }
+.eventloom-app [class*="divide-black"] { --tw-divide-opacity: 1; border-color: rgba(21, 81, 102, 0.14); }
+.eventloom-app [class*="text-[#6e6e73]"],
+.eventloom-app [class*="text-[#86868b]"],
+.eventloom-app [class*="text-[#aeaeb2]"] { color: #66736c; }
+.eventloom-app [class*="bg-[#0071e3]"] { background-color: #155166; }
+.eventloom-app [class*="hover:bg-[#0077ed]"]:hover { background-color: #0b3e4e; }
+.eventloom-app [class*="focus:border-[#0071e3]"]:focus { border-color: #155166; }
+
+/* Studio remains a focused, low-light workspace while belonging to the same palette. */
+.eventloom-studio {
+  background: #071f29;
+  color: #f5f4eb;
+}
+
+.eventloom-studio [class*="bg-[#151515]"],
+.eventloom-studio [class*="bg-[#171717]"],
+.eventloom-studio [class*="bg-[#191919]"],
+.eventloom-studio [class*="bg-[#1a1a1a]"],
+.eventloom-studio [class*="bg-[#1b1b1b]"] { background-color: #0b2c38; }
+.eventloom-studio [class*="bg-[#222]"] { background-color: #103845; }
+.eventloom-studio [class*="border-violet"],
+.eventloom-studio [class*="focus:border-violet"] { border-color: rgba(103, 205, 196, 0.5); }
+.eventloom-studio [class*="bg-violet"] { background-color: #197f88; }
+.eventloom-studio [class*="text-violet"] { color: #9ce1d5; }
+.eventloom-studio [class*="ring-violet"] { --tw-ring-color: rgba(103, 205, 196, 0.26); }
+
+.eventloom-hero {
+  background: linear-gradient(180deg, #0c2d3a 0%, #155166 48%, #4b9399 70%, #b7d0bd 88%, #e7ecdf 100%);
+}
+
+.eventloom-prompt-placeholder {
+  animation: eventloom-prompt-in 420ms ease both;
+}
+
+@keyframes eventloom-prompt-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.eventloom-water-reflection {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse 88% 38% at 50% 100%, rgba(231, 236, 223, 0.68), transparent 74%);
+}
+
+.eventloom-water-reflection span {
+  position: absolute;
+  inset: -26% -18%;
+  opacity: 0.34;
+  background: repeating-radial-gradient(
+    ellipse 96% 16% at 50% 100%,
+    transparent 0 25px,
+    rgba(238, 247, 241, 0.5) 30px 33px,
+    transparent 39px 67px
+  );
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+.eventloom-water-reflection span:nth-child(1) {
+  animation: eventloom-water-swell-one 11s ease-in-out infinite alternate;
+}
+
+.eventloom-water-reflection span:nth-child(2) {
+  inset: -38% -24%;
+  opacity: 0.22;
+  background-size: 112% 82%;
+  filter: blur(5px);
+  animation: eventloom-water-swell-two 15s ease-in-out infinite alternate;
+}
+
+.eventloom-water-reflection span:nth-child(3) {
+  inset: auto -25% -24%;
+  height: 52%;
+  opacity: 0.4;
+  background: radial-gradient(ellipse 62% 74% at 50% 100%, rgba(236, 246, 237, 0.52), transparent 72%);
+  filter: blur(22px);
+  animation: eventloom-water-swell-three 12s ease-in-out infinite alternate;
+}
+
+@keyframes eventloom-water-swell-one {
+  from { transform: translate3d(-3%, 2%, 0) scale(1.01, 0.98); }
+  to { transform: translate3d(4%, -2%, 0) scale(1.08, 1.04); }
+}
+
+@keyframes eventloom-water-swell-two {
+  from { transform: translate3d(4%, -2%, 0) scale(1.1, 1.03); }
+  to { transform: translate3d(-4%, 3%, 0) scale(1.02, 1.1); }
+}
+
+@keyframes eventloom-water-swell-three {
+  from { transform: translate3d(-5%, 4%, 0) scaleX(1.03); }
+  to { transform: translate3d(5%, -4%, 0) scaleX(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventloom-water-reflection span {
+    animation: none;
+  }
+
+  .eventloom-prompt-placeholder {
+    animation: none;
+  }
 }
 
 button,

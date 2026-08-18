@@ -54,13 +54,13 @@ export function MfaSettings({ nextPath = "/app" }: { nextPath?: string }) {
   }
 
   const verified = factors.some((factor) => factor.status === "verified");
-  return <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
+  return <section className="eventloom-app-card rounded-2xl p-6">
     <h2 className="text-xl font-semibold">Authenticator app</h2>
-    <p className="mt-2 text-sm leading-relaxed text-[#6e6e73]">Two-step verification is required before publishing, billing, RSVP exports, or domain changes.</p>
+    <p className="mt-2 text-sm leading-relaxed text-[#66736c]">Two-step verification is required before publishing, billing, RSVP exports, or domain changes.</p>
     {verified && !qrCode ? <p className="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-800">An authenticator is enrolled. Enter a fresh code to raise this session to MFA.</p> : null}
-    {!verified && !qrCode ? <button type="button" disabled={busy} onClick={enroll} className="mt-5 rounded-full bg-[#1d1d1f] px-5 py-3 text-white disabled:opacity-50">Set up authenticator</button> : null}
+    {!verified && !qrCode ? <button type="button" disabled={busy} onClick={enroll} className="eventloom-app-button-primary mt-5 rounded-full px-5 py-3 disabled:opacity-50">Set up authenticator</button> : null}
     {qrCode ? <div className="mt-5"><p className="text-sm">Scan this QR code with your authenticator app.</p><Image unoptimized width={224} height={224} src={qrCode} alt="Authenticator enrollment QR code" className="mt-3 size-56" /></div> : null}
-    {(verified || qrCode) ? <div className="mt-5 flex flex-wrap gap-3"><label className="grid gap-2 text-sm font-medium">Six-digit code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} className="rounded-xl border border-black/10 px-4 py-3" /></label><button type="button" disabled={busy || code.length !== 6} onClick={verify} className="self-end rounded-full bg-[#0071e3] px-5 py-3 text-white disabled:opacity-50">Verify session</button></div> : null}
+    {(verified || qrCode) ? <div className="mt-5 flex flex-wrap gap-3"><label className="grid gap-2 text-sm font-medium">Six-digit code<input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} className="eventloom-app-field rounded-xl border px-4 py-3" /></label><button type="button" disabled={busy || code.length !== 6} onClick={verify} className="eventloom-app-button-primary self-end rounded-full px-5 py-3 disabled:opacity-50">Verify session</button></div> : null}
     {error ? <p role="alert" className="mt-4 text-sm text-red-700">{error}</p> : null}
   </section>;
 }

@@ -1,29 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { applySiteOperations } from "@/lib/site-document-operations";
-import { assertEventAssetOwnership, createDefaultSiteDocument, findSiteNode, siteDocumentSchema, walkSiteNodes } from "@/lib/site-document";
+import { assertEventAssetOwnership, composeSiteDocument, findSiteNode, siteDocumentSchema, walkSiteNodes } from "@/lib/site-document";
+
+function documentFor(prompt: string) {
+  return composeSiteDocument(defaultEventConfig(prompt), prompt);
+}
 
 describe("structured event site documents", () => {
   it("creates a valid editable document with stable event bindings and RSVP", () => {
-    const config = defaultEventConfig("An editorial wedding celebration in navy and gold");
-    const document = createDefaultSiteDocument(config);
+    const document = documentFor("An editorial wedding celebration in navy and gold");
     expect(siteDocumentSchema.safeParse(document).success).toBe(true);
     expect(walkSiteNodes(document).some((node) => node.type === "rsvp")).toBe(true);
     expect(walkSiteNodes(document).some((node) => node.type === "text" && node.binding === "event.title")).toBe(true);
   });
 
-  it("starts an image-less hero at a readable size without reserving a viewport-sized gap", () => {
-    const document = createDefaultSiteDocument(defaultEventConfig("A birthday dinner"));
-    const hero = document.nodes[0];
-    expect(hero).toMatchObject({
-      type: "section",
-      label: "Hero",
-      style: { padding: "large", minHeight: "auto", width: "wide", gap: "medium" },
-    });
+  it("does not seed a canned wedding layout", () => {
+    const document = documentFor("i have a wedding of my brother osama and nour");
+    const copy = walkSiteNodes(document).flatMap((node) => node.type === "text" && node.content ? [node.content] : []);
+    expect(copy).not.toContain("The celebration");
+    expect(copy).not.toContain("Meet us there");
+    expect(document.nodes[0]?.label).not.toBe("Hero");
+  });
+
+  it("composes different opening structures for different briefs", () => {
+    const wedding = documentFor("A candlelit garden wedding for Maya and Adam");
+    const launch = documentFor("A product launch night for a design studio");
+    expect(wedding.theme.typography.display).toBe("romantic");
+    expect(launch.theme.typography.display).toBe("modern");
   });
 
   it("applies a targeted text edit without changing unrelated nodes", () => {
-    const document = createDefaultSiteDocument(defaultEventConfig("A birthday party"));
+    const document = documentFor("A birthday party");
     const text = walkSiteNodes(document).find((node) => node.type === "text" && node.variant === "eyebrow");
     expect(text?.type).toBe("text");
     const beforeTitle = walkSiteNodes(document).find((node) => node.type === "text" && node.binding === "event.title");
@@ -34,7 +42,7 @@ describe("structured event site documents", () => {
   });
 
   it("rejects unsafe links and removal of the managed RSVP block", () => {
-    const document = createDefaultSiteDocument(defaultEventConfig("A garden party"));
+    const document = documentFor("A garden party");
     const rsvp = walkSiteNodes(document).find((node) => node.type === "rsvp");
     expect(() => applySiteOperations(document, [{ op: "remove_node", nodeId: rsvp!.id }])).toThrow(/RSVP/i);
     const unsafe = structuredClone(document);
@@ -45,14 +53,14 @@ describe("structured event site documents", () => {
   });
 
   it("rejects duplicate node IDs", () => {
-    const document = createDefaultSiteDocument(defaultEventConfig("A simple dinner"));
+    const document = documentFor("A simple dinner");
     const duplicate = structuredClone(document.nodes[0]);
     if (duplicate) document.nodes.push(duplicate);
     expect(siteDocumentSchema.safeParse(document).success).toBe(false);
   });
 
   it("rejects an asset stored under another event", () => {
-    const document = createDefaultSiteDocument(defaultEventConfig("A photo party"));
+    const document = documentFor("A photo party");
     const firstSection = document.nodes[0];
     if (firstSection && "children" in firstSection) firstSection.children.push({
       id: "owned_image",

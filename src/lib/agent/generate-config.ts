@@ -1,5 +1,5 @@
 import { defaultEventConfig } from "@/lib/ai/generator";
-import { env } from "@/lib/env";
+import { env, openaiResponsesOptions } from "@/lib/env";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
@@ -79,7 +79,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: env.aiModel(),
+      ...openaiResponsesOptions(),
       input: [
         {
           role: "system",
@@ -131,24 +131,34 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
     );
     return {
       template: "custom",
-      config: preventInventedEventFacts(config, prompt),
+      config: groundConfigInPrompt(config, prompt),
     };
   } catch {
     return fallback;
   }
 }
 
-function preventInventedEventFacts(config: EventConfig, prompt: string): EventConfig {
+const GENERIC_TITLE_WORDS = new Set(["the", "and", "for", "with", "event", "wedding", "party", "celebration", "your"]);
+
+function promptSupportsFact(value: string | undefined, prompt: string) {
+  if (!value?.trim()) return false;
+  const haystack = prompt.toLowerCase();
+  return value
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((token) => token.length > 2 && !GENERIC_TITLE_WORDS.has(token))
+    .some((token) => haystack.includes(token));
+}
+
+export function groundConfigInPrompt(config: EventConfig, prompt: string): EventConfig {
   const hasDate = /\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{4})?\b|\b\d{4}-\d{2}-\d{2}\b|\b(?:today|tomorrow|next\s+\w+)\b/i.test(prompt);
   const hasTime = /\b(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:a\.??m\.??|p\.??m\.??)\b|\b(?:noon|midnight)\b/i.test(prompt);
-  const hasVenue = /\b(?:at|venue|location)\s+[^,.\n]+/i.test(prompt);
-  const hasNames = /\b(?:for|celebrating|celebrate|wedding of)\s+[A-Z][\p{L}'’-]+(?:\s*(?:&|and)\s*[A-Z][\p{L}'’-]+)+/u.test(prompt);
-
+  const hasVenue = /\b(?:at|venue|location)\s+[^,.\n]+/i.test(prompt) || promptSupportsFact(config.venueName, prompt);
   const isWedding = /\bwedding\b/i.test(prompt);
   const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
   const schedule = config.schedule.map((item) => ({
     ...item,
-    time: hasTime ? item.time : "Time to be announced",
+    time: hasTime || promptSupportsFact(item.time, prompt) ? item.time : "Time to be announced",
   }));
 
   if (hasSeparateHalls && !schedule.some((item) => /men'?s|women'?s/i.test(`${item.title} ${item.location ?? ""}`))) {
@@ -158,10 +168,13 @@ function preventInventedEventFacts(config: EventConfig, prompt: string): EventCo
     );
   }
 
+  const titleFromPrompt = promptSupportsFact(config.title, prompt);
+  const genericSubtitle = /custom event page that helps guests reply/i.test(config.subtitle);
   return {
     ...config,
-    title: hasNames ? config.title : isWedding ? "Wedding celebration" : "Your event",
-    date: hasDate ? config.date : "Date to be announced",
+    title: titleFromPrompt ? config.title : isWedding ? "Wedding celebration" : config.eventType ? `${config.eventType[0]?.toUpperCase()}${config.eventType.slice(1)}` : "Your event",
+    subtitle: genericSubtitle ? "Details to be announced." : config.subtitle,
+    date: hasDate || promptSupportsFact(config.date, prompt) ? config.date : "Date to be announced",
     venueName: hasVenue ? config.venueName : "Venue to be announced",
     venueAddress: hasVenue ? config.venueAddress : undefined,
     hallInfo: hasSeparateHalls ? "Separate men's and women's hall details will be shared with guests." : config.hallInfo,
@@ -180,7 +193,7 @@ function fallbackSitePlan(prompt: string, themeOverrides?: ThemeOverrides): Gene
     description: item.description ?? "",
   }));
 
-  const config = preventInventedEventFacts(normalizeGeneratedConfig(
+  const config = groundConfigInPrompt(normalizeGeneratedConfig(
     {
       ...base,
       template,

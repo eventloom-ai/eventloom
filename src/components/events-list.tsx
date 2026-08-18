@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { ExternalLink, Loader2, Trash2, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/ui/fade-in";
 import type { BuildJobStatus } from "@/lib/agent/progress";
+import { hasRunningBuildJobs } from "@/lib/build-job-polling";
 import { publicSiteHost } from "@/lib/public-url";
 import type { EventRecord } from "@/lib/types";
 
@@ -16,17 +17,22 @@ function statusLabel(status: EventRecord["status"], isBuilding: boolean) {
 }
 
 function statusStyles(status: EventRecord["status"], isBuilding: boolean) {
-  if (isBuilding) return "bg-[#e3f2fd] text-[#1565c0]";
-  if (status === "published") return "bg-[#e8f5e9] text-[#1b5e20]";
-  if (status === "archived") return "bg-[#f5f5f7] text-[#6e6e73]";
-  return "bg-[#fff8e1] text-[#8d6e00]";
+  if (isBuilding) return "bg-[#d8eff0] text-[#155166]";
+  if (status === "published") return "bg-[#dcebd8] text-[#285b47]";
+  if (status === "archived") return "bg-[#e7ecdf] text-[#66736c]";
+  return "bg-[#f2e2bd] text-[#755531]";
 }
 
-export function EventsList({ events, activeJobs: initialJobs }: { events: EventRecord[]; activeJobs: BuildJobStatus[] }) {
+export function EventsList({ events, activeJobs: initialJobs, currentUserId }: { events: EventRecord[]; activeJobs: BuildJobStatus[]; currentUserId: string | null }) {
   const previewHost = publicSiteHost();
+  const [eventRows, setEventRows] = useState(events);
   const [activeJobs, setActiveJobs] = useState(initialJobs);
+  const [deleteTarget, setDeleteTarget] = useState<EventRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!hasRunningBuildJobs(activeJobs)) return;
     let cancelled = false;
 
     const refresh = async () => {
@@ -38,33 +44,52 @@ export function EventsList({ events, activeJobs: initialJobs }: { events: EventR
       }
     };
 
-    const initialTimer = window.setTimeout(() => {
-      void refresh();
-    }, 0);
     const timer = window.setInterval(() => {
-      void refresh();
+      if (document.visibilityState === "visible") void refresh();
     }, 2000);
 
     return () => {
       cancelled = true;
-      window.clearTimeout(initialTimer);
       window.clearInterval(timer);
     };
-  }, []);
+  }, [activeJobs]);
 
   const jobByEventId = new Map(activeJobs.filter((job) => job.eventId).map((job) => [job.eventId as string, job]));
 
+  async function deleteEvent() {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const response = await fetch(`/api/events/${deleteTarget.id}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) {
+        setDeleteError(payload?.error === "active_domain_transfer_required"
+          ? "Transfer or remove the active custom domain before deleting this event."
+          : "The event could not be deleted. Please try again.");
+        return;
+      }
+      setEventRows((current) => current.filter((event) => event.id !== deleteTarget.id));
+      setActiveJobs((current) => current.filter((job) => job.eventId !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch {
+      setDeleteError("The event could not be deleted. Check your connection and try again.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="grid gap-4">
-      {events.map((event, index) => {
+      {eventRows.map((event, index) => {
         const job = jobByEventId.get(event.id);
         const isBuilding = job?.status === "running";
 
         return (
           <FadeIn key={event.id} delay={index * 60}>
             <article
-              className={`rounded-2xl border bg-white p-6 transition-shadow md:p-7 ${
-                isBuilding ? "border-[#0071e3]/20 shadow-[0_8px_30px_rgba(0,113,227,0.08)]" : "border-black/[0.06] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
+              className={`rounded-2xl border bg-[#fffaf3] p-6 transition-shadow md:p-7 ${
+                isBuilding ? "border-[#4b9399]/40 shadow-[0_8px_30px_rgba(21,81,102,0.12)]" : "border-[#155166]/15 hover:shadow-[0_8px_30px_rgba(21,81,102,0.1)]"
               }`}
             >
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -75,22 +100,22 @@ export function EventsList({ events, activeJobs: initialJobs }: { events: EventR
                       {statusLabel(event.status, isBuilding)}
                     </span>
                   </div>
-                  <p className="mt-2 text-[14px] text-[#6e6e73]">
+                  <p className="mt-2 text-[14px] text-[#66736c]">
                     {previewHost}/{event.slug}
                   </p>
 
                   {isBuilding && job ? (
                     <div className="mt-4">
-                      <div className="flex items-center justify-between gap-3 text-[12px] text-[#6e6e73]">
+                      <div className="flex items-center justify-between gap-3 text-[12px] text-[#66736c]">
                         <span className="inline-flex items-center gap-2">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0071e3]" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#155166]" />
                           {job.progressMessage ?? "Building your site…"}
                         </span>
                         <span className="tabular-nums">{job.progressPercent}%</span>
                       </div>
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#155166]/10">
                         <div
-                          className="h-full rounded-full bg-[#0071e3] transition-all duration-500"
+                          className="h-full rounded-full bg-[#155166] transition-all duration-500"
                           style={{ width: `${job.progressPercent}%` }}
                         />
                       </div>
@@ -100,32 +125,88 @@ export function EventsList({ events, activeJobs: initialJobs }: { events: EventR
 
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    className="inline-flex items-center justify-center rounded-full border border-black/10 px-4 py-2.5 text-[14px] font-medium transition-colors hover:bg-[#f5f5f7]"
-                    href={`/${event.slug}`}
+                    className="eventloom-app-button inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
+                    href={`/app/events/${event.id}/rsvps`}
+                  >
+                    <Users className="size-3.5" /> RSVPs
+                  </Link>
+                  <Link
+                    className="eventloom-app-button inline-flex items-center justify-center rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
+                    href={`/app/events/${event.id}/preview`}
                   >
                     Preview
                   </Link>
+                  {event.status === "published" ? (
+                    <Link
+                      className="eventloom-app-button inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
+                      href={`/${event.slug}`}
+                      target="_blank"
+                    >
+                      View site <ExternalLink className="size-3.5" />
+                    </Link>
+                  ) : null}
                   {isBuilding ? (
                     <Link
-                      className="inline-flex items-center justify-center rounded-full bg-[#0071e3] px-4 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-[#0077ed]"
+                      className="eventloom-app-button-primary inline-flex items-center justify-center rounded-full px-4 py-2.5 text-[14px] font-medium transition-colors"
                       href={job?.eventId ? `/app/events/${job.eventId}/studio` : "/app/events/new"}
                     >
                       Open build
                     </Link>
                   ) : (
                     <Link
-                      className="inline-flex items-center justify-center rounded-full bg-[#1d1d1f] px-4 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90"
+                      className="inline-flex items-center justify-center rounded-full bg-[#0b2d39] px-4 py-2.5 text-[14px] font-medium text-[#fffaf3] transition hover:bg-[#155166]"
                       href={`/app/events/${event.id}/studio`}
                     >
                       Open studio
                     </Link>
                   )}
+                  {event.owner_id === currentUserId ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError(null);
+                        setDeleteTarget(event);
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium text-red-700 transition-colors hover:bg-red-50"
+                    >
+                      <Trash2 className="size-3.5" /> Delete
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </article>
           </FadeIn>
         );
       })}
+      {eventRows.length === 0 ? (
+        <div className="mx-auto max-w-md rounded-2xl bg-[#fffaf3] px-8 py-10 text-center shadow-[0_10px_40px_rgba(12,45,58,0.08)] ring-1 ring-black/[0.04]">
+          <p className="text-lg font-semibold">No events yet</p>
+          <Link href="/app/events/new" className="eventloom-app-button-primary mt-5 inline-flex rounded-lg px-5 py-2.5 text-sm font-medium">Create an event</Link>
+        </div>
+      ) : null}
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-labelledby="delete-event-title">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="delete-event-title" className="text-xl font-semibold">Delete this event?</h2>
+                <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
+                  “{deleteTarget.config.title}” and its site, drafts, images, and RSVP data will be permanently deleted.
+                </p>
+              </div>
+              <button type="button" aria-label="Close delete confirmation" disabled={deleting} onClick={() => setDeleteTarget(null)} className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-black/5"><X className="size-4" /></button>
+            </div>
+            {deleteError ? <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{deleteError}</p> : null}
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" disabled={deleting} onClick={() => setDeleteTarget(null)} className="rounded-full border border-black/10 px-5 py-2.5 text-sm font-medium hover:bg-[#f5f5f7]">Cancel</button>
+              <button type="button" disabled={deleting} onClick={() => void deleteEvent()} className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60">
+                {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                {deleting ? "Deleting…" : "Delete event"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

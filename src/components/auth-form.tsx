@@ -2,14 +2,25 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
+import { SIGNUP_UX_VERSION } from "@/lib/auth/signup-ux";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { EventloomLogo } from "@/components/logo";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 type AuthMode = "signin" | "signup";
 
-export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turnstileSiteKey?: string }) {
+export function AuthForm({
+  mode,
+  turnstileSiteKey = "",
+  signupAvailable = true,
+}: {
+  mode: AuthMode;
+  turnstileSiteKey?: string;
+  signupAvailable?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = safeRedirectPath(searchParams.get("next"));
@@ -23,14 +34,27 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
   const [showPassword, setShowPassword] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const acceptanceRef = useRef<HTMLInputElement>(null);
 
-  const title = mode === "signup" ? "Save your event" : "Open your events";
+  const continuingDraft = nextPath.startsWith("/app/events/new");
+  const title = mode === "signup"
+    ? continuingDraft
+      ? "Save your free draft"
+      : "Create your account"
+    : continuingDraft
+      ? "Continue your event"
+      : "Open your events";
   const subtitle = useMemo(
     () =>
       mode === "signup"
-        ? "Add your email and password so your site does not get lost."
-        : "Sign in to keep working on your event sites.",
-    [mode],
+        ? continuingDraft
+          ? "Choose Google or email. We’ll keep your event description and continue building after sign-in."
+          : "Choose Google or email to create and manage your event sites."
+        : continuingDraft
+          ? "Sign in and we’ll keep your description ready for an editable first draft."
+          : "Sign in to keep working on your event sites.",
+    [continuingDraft, mode],
   );
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -72,6 +96,8 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
       setIsSubmitting(false);
 
       if (signUpError) {
+        setCaptchaToken("");
+        setCaptchaResetKey((value) => value + 1);
         if (/already registered/i.test(signUpError.message)) {
           setShowSignInHint(true);
           setError("This email already has an account. Sign in with your existing password, or reset it below.");
@@ -87,7 +113,11 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
         return;
       }
 
-      setMessage("Check your email to confirm your account, then sign in.");
+      setMessage(
+        continuingDraft
+          ? "Check your email and select the confirmation link. We’ll sign you in and continue your draft automatically."
+          : "Check your email and select the confirmation link. We’ll sign you in automatically.",
+      );
       return;
     }
 
@@ -106,13 +136,15 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
   async function signInWithGoogle() {
     setError("");
     setMessage("");
+    if (mode === "signup" && !accepted) {
+      setError("Confirm that you are 18 or older and accept the legal terms before continuing.");
+      acceptanceRef.current?.focus();
+      return;
+    }
+
     const supabase = createSupabaseBrowserClient();
     if (!supabase) {
       setError("Authentication is not configured yet.");
-      return;
-    }
-    if (mode === "signup" && !accepted) {
-      setError("Confirm that you are 18 or older and accept the legal terms before continuing.");
       return;
     }
 
@@ -163,8 +195,8 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
   return (
     <div className="mx-auto w-full max-w-md">
       <div className="mb-8 text-center">
-        <Link href="/" className="text-[17px] font-semibold tracking-tight text-[#1d1d1f]">
-          Eventloom
+        <Link href="/" className="inline-flex justify-center text-[17px] font-semibold text-[#1d1d1f]">
+          <EventloomLogo markClassName="size-7" />
         </Link>
         <h1 className="mt-8 text-[32px] font-semibold tracking-[-0.02em]">{title}</h1>
         <p className="mt-3 text-[15px] leading-relaxed text-[#6e6e73]">{subtitle}</p>
@@ -172,8 +204,37 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
 
       <form
         onSubmit={submit}
+        data-signup-ux={mode === "signup" ? SIGNUP_UX_VERSION : undefined}
         className="rounded-2xl border border-black/[0.08] bg-white p-6 shadow-[0_2px_24px_rgba(0,0,0,0.04)] md:p-8"
       >
+        {mode === "signup" ? (
+          <fieldset className="mb-6 rounded-2xl border border-[#0071e3]/15 bg-[#f5f9ff] p-4">
+            <legend className="px-1 text-[13px] font-semibold text-[#1d1d1f]">Before you continue</legend>
+            <label className="flex cursor-pointer items-start gap-3 text-[13px] leading-5 text-[#424245]">
+              <input
+                ref={acceptanceRef}
+                type="checkbox"
+                checked={accepted}
+                onChange={(event) => {
+                  setAccepted(event.target.checked);
+                  if (event.target.checked) setError("");
+                }}
+                className="mt-0.5 size-4 shrink-0 accent-[#0071e3]"
+                required
+              />
+              <span>
+                I am 18 or older and accept the{" "}
+                <Link className="font-medium underline underline-offset-2" href="/legal/terms" target="_blank">Terms</Link>,{" "}
+                <Link className="font-medium underline underline-offset-2" href="/legal/privacy" target="_blank">Privacy Policy</Link>, and{" "}
+                <Link className="font-medium underline underline-offset-2" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link>.
+              </span>
+            </label>
+            <p className="mt-2 pl-7 text-[12px] leading-5 text-[#6e6e73]">
+              Required once to save your event with Google or email.
+            </p>
+          </fieldset>
+        ) : null}
+
         <button
           type="button"
           disabled={isSubmitting}
@@ -186,7 +247,10 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
             <path fill="#FBBC05" d="M6.42 13.91A6 6 0 0 1 6.1 12c0-.66.11-1.3.32-1.91V7.5H3.08A10 10 0 0 0 2 12c0 1.61.39 3.13 1.08 4.5l3.34-2.59Z" />
             <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.51l2.87-2.87C16.96 2.99 14.7 2 12 2a10 10 0 0 0-8.92 5.5l3.34 2.59C7.2 7.73 9.4 5.97 12 5.97Z" />
           </svg>
-          Continue with Google
+          <span className="text-left">
+            <span className="block">Continue with Google</span>
+            {mode === "signup" ? <span className="mt-0.5 block text-[12px] font-normal text-[#6e6e73]">Fastest — no password to remember</span> : null}
+          </span>
         </button>
 
         <div className="my-6 flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.14em] text-[#86868b]">
@@ -210,8 +274,6 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
           </label>
         ) : null}
 
-        {mode === "signup" ? <div className="mt-5 grid gap-4"><label className="flex items-start gap-3 text-sm leading-6 text-[#424245]"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1" required /><span>I am 18 or older and accept the <Link className="underline" href="/legal/terms" target="_blank">Terms</Link>, <Link className="underline" href="/legal/privacy" target="_blank">Privacy Policy</Link>, and <Link className="underline" href="/legal/acceptable-use" target="_blank">Acceptable Use Policy</Link> version 2026-07-22-beta.</span></label><TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptchaToken} />{!turnstileSiteKey ? <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Public signup remains disabled in production until Turnstile is configured.</p> : null}</div> : null}
-
         <label className={`grid gap-2 ${mode === "signup" ? "mt-5" : ""}`}>
           <span className="text-[13px] font-medium uppercase tracking-wide text-[#6e6e73]">Email</span>
           <input
@@ -230,7 +292,7 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
           <input
               type={showPassword ? "text" : "password"}
             required
-            minLength={8}
+            minLength={mode === "signup" ? 12 : 8}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-4 py-3.5 text-[17px] outline-none transition-all focus:border-[#0071e3]/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(0,113,227,0.12)]"
@@ -249,8 +311,19 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
 
         {mode === "signup" ? (
           <p className="mt-3 text-[13px] leading-relaxed text-[#6e6e73]">
-            Use 12+ characters with a mix of uppercase, lowercase, numbers, and symbols.
+            Use at least 12 characters. A unique passphrase is easiest to remember.
           </p>
+        ) : null}
+
+        {mode === "signup" ? (
+          <div className="mt-5 grid gap-4">
+            <TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.creatorSignup} onToken={setCaptchaToken} resetKey={captchaResetKey} />
+            {!turnstileSiteKey ? (
+              <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+                Public signup remains disabled in production until Turnstile is configured.
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         {error ? (
@@ -280,7 +353,13 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
           disabled={isSubmitting || (mode === "signup" && (!accepted || (Boolean(turnstileSiteKey) && !captchaToken)))}
           className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isSubmitting ? "Please wait…" : mode === "signup" ? "Save and continue" : "Open my events"}
+          {isSubmitting
+            ? "Please wait…"
+            : mode === "signup"
+              ? "Save and continue"
+              : continuingDraft
+                ? "Continue to my draft"
+                : "Open my events"}
         </button>
 
         {mode === "signin" ? (
@@ -307,13 +386,15 @@ export function AuthForm({ mode, turnstileSiteKey = "" }: { mode: AuthMode; turn
               Sign in
             </Link>
           </>
-        ) : (
+        ) : signupAvailable ? (
           <>
             First time here?{" "}
             <Link className="font-medium text-[#0071e3] hover:text-[#0077ed]" href={`/signup?next=${encodeURIComponent(nextPath)}`}>
               Save your event
             </Link>
           </>
+        ) : (
+          <>Eventloom is currently open to invited creators. New accounts will open after launch checks are complete.</>
         )}
       </p>
     </div>

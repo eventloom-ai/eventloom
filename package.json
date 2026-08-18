@@ -38,10 +38,11 @@
     "vitest": "^4.1.8"
   },
   "overrides": {
-    "brace-expansion": "1.1.16",
-    "js-yaml": "4.3.0",
+    "brace-expansion": "5.0.9",
+    "js-yaml": "4.3.1",
+    "minimatch": "10.2.5",
+    "postcss": "8.5.23",
     "next": {
-      "postcss": "8.5.10",
       "sharp": "0.35.3"
     }
   }

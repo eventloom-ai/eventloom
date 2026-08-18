@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loginUrlForProtectedRequest } from "@/lib/auth/redirect";
 import { isSupabaseConfigured, rootDomain } from "@/lib/env";
 import { refreshSupabaseSession } from "@/lib/supabase/middleware";
 import { normalizeHost, slugFromHost } from "@/lib/tenancy";
@@ -29,9 +30,7 @@ export async function proxy(req: NextRequest) {
     if (isSupabaseConfigured()) {
       const { response, user } = await refreshSupabaseSession(req, requestHeaders);
       if ((pathname.startsWith("/app") || pathname.startsWith("/admin")) && !user) {
-        const url = req.nextUrl.clone();
-        url.pathname = "/login";
-        url.searchParams.set("next", pathname);
+        const url = loginUrlForProtectedRequest(req.nextUrl);
         return secureResponse(NextResponse.redirect(url), csp);
       }
       if ((pathname === "/login" || pathname === "/signup") && user) return secureResponse(NextResponse.redirect(new URL("/app", req.url)), csp);

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { assertEventAssetOwnership, createDefaultSiteDocument, siteDocumentSchema, type SiteDocument } from "@/lib/site-document";
+import { assertEventAssetOwnership, composeSiteDocument, siteDocumentSchema, type SiteDocument } from "@/lib/site-document";
 import { demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { BuilderMessage, BuilderRunEvent, EventConfig, EventRecord, SiteRevision } from "@/lib/types";
@@ -33,10 +33,10 @@ function demoRevision(event: EventRecord): SiteRevision {
     event_id: event.id,
     parent_version_id: null,
     source: "initial",
-    summary: "Editable starter site",
-    prompt: "Demo starter",
+    summary: "First original version",
+    prompt: event.config.title,
     config: event.config,
-    document: createDefaultSiteDocument(event.config, (prefix) => `${prefix}_${eventKey}`),
+    document: composeSiteDocument(event.config, event.config.title, (prefix) => `${prefix}_${eventKey}`),
     created_at: new Date(0).toISOString(),
   };
 }
@@ -73,22 +73,29 @@ function revisionFromRow(row: Record<string, unknown>): SiteRevision | null {
   };
 }
 
-async function insertInitialRevision(event: EventRecord, ownerId: string | null) {
+export async function seedInitialRevision(event: EventRecord, ownerId: string | null, seed?: {
+  document?: SiteDocument;
+  config?: EventConfig;
+  prompt?: string;
+  summary?: string;
+}) {
   const client = serviceSupabase();
-  if (!client) return demoRevision(event);
-  const document = createDefaultSiteDocument(event.config);
+  const config = seed?.config ?? event.config;
+  const prompt = seed?.prompt ?? event.config.title;
+  const document = seed?.document ?? composeSiteDocument(config, prompt);
+  if (!client) return { ...demoRevision({ ...event, config }), document, config, prompt, summary: seed?.summary ?? "First original version" };
   const { data, error } = await client.from("event_versions").insert({
     event_id: event.id,
-    prompt: "Created editable site document",
-    config: event.config,
+    prompt,
+    config,
     document,
     source: "initial",
-    summary: "Created the first editable version",
+    summary: seed?.summary ?? "Created the first original version",
     created_by: ownerId,
   }).select("id, event_id, parent_version_id, source, summary, prompt, config, document, created_at").single();
-  if (error || !data) return demoRevision(event);
-  const { data: claimed } = await client.from("events").update({ draft_version_id: data.id }).eq("id", event.id).is("draft_version_id", null).select("id").maybeSingle();
-  if (claimed) return revisionFromRow(data as Record<string, unknown>) ?? demoRevision(event);
+  if (error || !data) return demoRevision({ ...event, config });
+  const { data: claimed } = await client.from("events").update({ config, draft_version_id: data.id }).eq("id", event.id).is("draft_version_id", null).select("id").maybeSingle();
+  if (claimed) return revisionFromRow(data as Record<string, unknown>) ?? demoRevision({ ...event, config });
 
   // Another request initialized the draft first. Remove this orphan and use the winner.
   await client.from("event_versions").delete().eq("id", data.id);
@@ -98,7 +105,7 @@ async function insertInitialRevision(event: EventRecord, ownerId: string | null)
     const revision = winner ? revisionFromRow(winner as Record<string, unknown>) : null;
     if (revision) return revision;
   }
-  return demoRevision(event);
+  return demoRevision({ ...event, config });
 }
 
 export async function loadStudioState(eventId: string, ownerId: string | null): Promise<StudioState | null> {
@@ -124,7 +131,7 @@ export async function loadStudioState(eventId: string, ownerId: string | null): 
     const { data } = await client.from("event_versions").select("id, event_id, parent_version_id, source, summary, prompt, config, document, created_at").eq("id", event.draft_version_id).maybeSingle();
     revision = data ? revisionFromRow(data as Record<string, unknown>) : null;
   }
-  revision ??= await insertInitialRevision(event, ownerId);
+  revision ??= await seedInitialRevision(event, ownerId);
 
   const [versionsResult, messagesResult, runResult] = await Promise.all([
     client.from("event_versions").select("id, event_id, parent_version_id, source, summary, prompt, config, document, created_at").eq("event_id", eventId).not("document", "is", null).order("created_at", { ascending: false }).limit(50),
