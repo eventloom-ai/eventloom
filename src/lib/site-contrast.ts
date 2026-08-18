@@ -83,7 +83,7 @@ function contrastNode(node: SiteNode, inheritedBackground: string, theme: SiteDo
 }
 
 export function ensureSiteLayout(document: SiteDocument): SiteDocument {
-  const visit = (nodes: SiteNode[], depth: number): SiteNode[] => nodes.flatMap((node, index) => {
+  const visit = (nodes: SiteNode[], depth: number): SiteNode[] => nodes.flatMap((node, index): SiteNode[] => {
     if (node.type === "image" && !node.url) return [];
     const style: SiteStyle = { ...node.style };
     if (depth === 0 && index === 0) {
