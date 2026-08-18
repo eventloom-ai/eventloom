@@ -77,7 +77,10 @@ export type SiteDocument = {
   direction: "ltr" | "rtl" | "auto";
   theme: {
     colors: { text: string; surface: string; accent: string; muted: string };
-    typography: { display: "editorial" | "romantic" | "modern" | "playful"; body: "clean" | "humanist" | "geometric" };
+    typography: {
+      display: "editorial" | "romantic" | "modern" | "playful" | "bold" | "vintage" | "elegant" | "condensed";
+      body: "clean" | "humanist" | "geometric" | "serif" | "warm";
+    };
     radius: "sharp" | "soft" | "round";
     motion: "none" | "subtle" | "expressive";
     texture?: SiteTexture;
@@ -129,7 +132,10 @@ export const siteDocumentSchema: z.ZodType<SiteDocument> = z.object({
   direction: z.enum(["ltr", "rtl", "auto"]),
   theme: z.object({
     colors: z.object({ text: colorSchema, surface: colorSchema, accent: colorSchema, muted: colorSchema }).strict(),
-    typography: z.object({ display: z.enum(["editorial", "romantic", "modern", "playful"]), body: z.enum(["clean", "humanist", "geometric"]) }).strict(),
+    typography: z.object({
+      display: z.enum(["editorial", "romantic", "modern", "playful", "bold", "vintage", "elegant", "condensed"]),
+      body: z.enum(["clean", "humanist", "geometric", "serif", "warm"]),
+    }).strict(),
     radius: z.enum(["sharp", "soft", "round"]),
     motion: z.enum(["none", "subtle", "expressive"]),
     texture: z.enum(["none", "paper", "grain", "linen", "wash"]).optional(),
@@ -177,8 +183,19 @@ function themeFromConfig(config: EventConfig, prompt: string) {
   return {
     colors: { text: colors[0], surface: colors[1], accent: colors[2], muted: colors[3] },
     typography: {
-      display: /playful|birthday|party/i.test(source) ? "playful" as const : /romantic|wedding|elegant/i.test(source) ? "romantic" as const : /modern|corporate|launch/i.test(source) ? "modern" as const : "editorial" as const,
-      body: /humanist|warm|garden/i.test(source) ? "humanist" as const : /geometric|graphic|bold/i.test(source) ? "geometric" as const : "clean" as const,
+      display: /playful|birthday|kids|children/i.test(source) ? "playful" as const
+        : /romantic|wedding|intimate|garden/i.test(source) ? "romantic" as const
+        : /startup|tech|\blaunch\b/i.test(source) ? "modern" as const
+        : /corporate|conference|gala|professional/i.test(source) ? "bold" as const
+        : /vintage|retro|old[- ]?world/i.test(source) ? "vintage" as const
+        : /luxury|fashion|black[- ]?tie|formal/i.test(source) ? "elegant" as const
+        : /sport|festival|street|loud/i.test(source) ? "condensed" as const
+        : "editorial" as const,
+      body: /geometric|graphic|bold/i.test(source) ? "geometric" as const
+        : /humanist|friendly|garden/i.test(source) ? "humanist" as const
+        : /editorial|literary|magazine/i.test(source) ? "serif" as const
+        : /casual|cozy|relaxed/i.test(source) ? "warm" as const
+        : "clean" as const,
     },
     radius: /sharp|modern|corporate/i.test(source) ? "sharp" as const : /round|playful/i.test(source) ? "round" as const : "soft" as const,
     motion: /still|none|quiet/i.test(source) ? "none" as const : /expressive|bold|party/i.test(source) ? "expressive" as const : "subtle" as const,

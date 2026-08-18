@@ -71,7 +71,7 @@ const editSchema = {
             type: ["object", "null"], additionalProperties: false,
             properties: {
               text: { type: ["string", "null"] }, surface: { type: ["string", "null"] }, accent: { type: ["string", "null"] }, muted: { type: ["string", "null"] },
-              display: { type: ["string", "null"], enum: ["editorial", "romantic", "modern", "playful", null] }, body: { type: ["string", "null"], enum: ["clean", "humanist", "geometric", null] },
+              display: { type: ["string", "null"], enum: ["editorial", "romantic", "modern", "playful", "bold", "vintage", "elegant", "condensed", null] }, body: { type: ["string", "null"], enum: ["clean", "humanist", "geometric", "serif", "warm", null] },
               radius: { type: ["string", "null"], enum: ["sharp", "soft", "round", null] }, motion: { type: ["string", "null"], enum: ["none", "subtle", "expressive", null] },
             },
             required: ["text", "surface", "accent", "muted", "display", "body", "radius", "motion"],

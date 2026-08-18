@@ -29,6 +29,23 @@ const fontSize = { xs: "0.72rem", sm: "0.9rem", md: "1.05rem", lg: "clamp(1.05re
 const fontWeight = { regular: 400, medium: 500, semibold: 600, bold: 700 } as const;
 const letterSpacing = { tight: "-0.055em", normal: "-0.02em", wide: "0.12em", widest: "0.28em" } as const;
 const opacity = { full: 1, muted: 0.78, faint: 0.64 } as const;
+const displayFontVar = {
+  editorial: "var(--font-playfair)",
+  romantic: "var(--font-instrument-serif)",
+  modern: "var(--font-space-grotesk)",
+  playful: "var(--font-fraunces)",
+  bold: "var(--font-bricolage-grotesque)",
+  vintage: "var(--font-bodoni-moda)",
+  elegant: "var(--font-italiana)",
+  condensed: "var(--font-big-shoulders-display)",
+} as const;
+const bodyFontVar = {
+  clean: "var(--font-inter)",
+  humanist: "var(--font-work-sans)",
+  geometric: "var(--font-outfit)",
+  serif: "var(--font-newsreader)",
+  warm: "var(--font-ibm-plex-sans)",
+} as const;
 
 function styleFor(style: SiteStyle | undefined, document: SiteDocument): CSSProperties {
   if (!style) return {};
@@ -152,8 +169,8 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
 export function SiteDocumentRenderer(props: SiteDocumentRendererProps) {
   const document = prepareSiteDocument(props.document);
   const context = { ...props, document };
-  const display = document.theme.typography.display === "modern" ? "var(--font-outfit)" : document.theme.typography.display === "playful" ? "var(--font-fraunces)" : "var(--font-playfair)";
-  const body = document.theme.typography.body === "geometric" ? "var(--font-outfit)" : "var(--font-inter)";
+  const display = displayFontVar[document.theme.typography.display];
+  const body = bodyFontVar[document.theme.typography.body];
   const surface = backgroundLayers(document.theme.colors.surface, document.theme.texture, document.theme.colors.accent, document.theme.colors.surface);
   return (
     <main

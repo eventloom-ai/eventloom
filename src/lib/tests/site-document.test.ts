@@ -30,6 +30,13 @@ describe("structured event site documents", () => {
     expect(launch.theme.typography.display).toBe("modern");
   });
 
+  it("routes corporate and vintage briefs to their own typography buckets", () => {
+    const corporate = documentFor("A formal corporate gala for a law firm");
+    const vintage = documentFor("A vintage retro cocktail party");
+    expect(corporate.theme.typography.display).toBe("bold");
+    expect(vintage.theme.typography.display).toBe("vintage");
+  });
+
   it("applies a targeted text edit without changing unrelated nodes", () => {
     const document = documentFor("A birthday party");
     const text = walkSiteNodes(document).find((node) => node.type === "text" && node.variant === "eyebrow");

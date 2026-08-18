@@ -28,7 +28,7 @@ const stylePatchSchema = z.object({
 export const siteOperationSchema = z.discriminatedUnion("op", [
   z.object({ op: z.literal("replace_text"), nodeId: z.string(), content: z.string().max(4000) }).strict(),
   z.object({ op: z.literal("update_style"), nodeId: z.string(), style: stylePatchSchema }).strict(),
-  z.object({ op: z.literal("set_theme"), colors: z.object({ text: z.string().optional(), surface: z.string().optional(), accent: z.string().optional(), muted: z.string().optional() }).strict().optional(), display: z.enum(["editorial", "romantic", "modern", "playful"]).optional(), body: z.enum(["clean", "humanist", "geometric"]).optional(), radius: z.enum(["sharp", "soft", "round"]).optional(), motion: z.enum(["none", "subtle", "expressive"]).optional() }).strict(),
+  z.object({ op: z.literal("set_theme"), colors: z.object({ text: z.string().optional(), surface: z.string().optional(), accent: z.string().optional(), muted: z.string().optional() }).strict().optional(), display: z.enum(["editorial", "romantic", "modern", "playful", "bold", "vintage", "elegant", "condensed"]).optional(), body: z.enum(["clean", "humanist", "geometric", "serif", "warm"]).optional(), radius: z.enum(["sharp", "soft", "round"]).optional(), motion: z.enum(["none", "subtle", "expressive"]).optional() }).strict(),
   z.object({ op: z.literal("remove_node"), nodeId: z.string() }).strict(),
   z.object({ op: z.literal("move_node"), nodeId: z.string(), beforeNodeId: z.string().nullable() }).strict(),
   z.object({ op: z.literal("set_image"), nodeId: z.string(), url: z.string().max(2048), alt: z.string().max(300).optional() }).strict(),

@@ -12,6 +12,15 @@
   --font-playfair: var(--font-playfair-face), Georgia, "Times New Roman", serif;
   --font-outfit: var(--font-outfit-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-fraunces: var(--font-fraunces-face), Georgia, "Times New Roman", serif;
+  --font-instrument-serif: var(--font-instrument-serif-face), Georgia, "Times New Roman", serif;
+  --font-space-grotesk: var(--font-space-grotesk-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-bricolage-grotesque: var(--font-bricolage-grotesque-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-bodoni-moda: var(--font-bodoni-moda-face), Georgia, "Times New Roman", serif;
+  --font-italiana: var(--font-italiana-face), Georgia, "Times New Roman", serif;
+  --font-big-shoulders-display: var(--font-big-shoulders-display-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-work-sans: var(--font-work-sans-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-newsreader: var(--font-newsreader-face), Georgia, "Times New Roman", serif;
+  --font-ibm-plex-sans: var(--font-ibm-plex-sans-face), "Helvetica Neue", Helvetica, Arial, sans-serif;
   color-scheme: light;
 }
 
