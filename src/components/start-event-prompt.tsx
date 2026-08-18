@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown, Mic, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, ArrowRight, ChevronDown, Mic, Plus } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { eventDraftEntryPath } from "@/lib/event-entry";
@@ -71,8 +72,12 @@ export function StartEventPrompt({
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [eventType, setEventType] = useState<EventType>(() => initialEventType(eventTypeHint));
   const [brief, setBrief] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const [date, setDate] = useState("");
+  const [location, setLocation] = useState("");
   const [promptIndex, setPromptIndex] = useState(0);
   const [displayPrompt, setDisplayPrompt] = useState<string>(rotatingPrompts[0]);
   const [deletingPrompt, setDeletingPrompt] = useState(false);
@@ -83,6 +88,10 @@ export function StartEventPrompt({
   const ctaLabel = authConfigured && !authenticated && !signupEnabled ? "Sign in" : "Start building";
 
   useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  useEffect(() => {
+    if (expanded) dateInputRef.current?.focus();
+  }, [expanded]);
 
   function toggleDictation() {
     if (listening) {
@@ -142,7 +151,16 @@ export function StartEventPrompt({
       inputRef.current?.focus();
       return;
     }
-    const typedBrief = eventType === "other" ? description : `${selectedEventType.label} event. ${description}`;
+    if (!expanded) {
+      setExpanded(true);
+      return;
+    }
+    const details = [
+      date ? `The event date is ${date}.` : "",
+      location.trim() ? `It will be held at ${location.trim()}.` : "",
+    ].filter(Boolean).join(" ");
+    const enrichedDescription = details ? `${description} ${details}` : description;
+    const typedBrief = eventType === "other" ? enrichedDescription : `${selectedEventType.label} event. ${enrichedDescription}`;
     router.push(eventDraftEntryPath({
       brief: typedBrief,
       authenticated,
@@ -152,7 +170,7 @@ export function StartEventPrompt({
   }
 
   return (
-    <form onSubmit={submit} className="flex h-[6.125rem] flex-col justify-between rounded-[1.75rem] bg-white px-3 py-3 text-left shadow-[0_10px_40px_rgba(12,45,58,0.14),0_1px_2px_rgba(12,45,58,0.05)] ring-1 ring-black/[0.04]">
+    <form onSubmit={submit} className={`flex flex-col justify-between rounded-[1.75rem] bg-white px-3 py-3 text-left shadow-[0_10px_40px_rgba(12,45,58,0.14),0_1px_2px_rgba(12,45,58,0.05)] ring-1 ring-black/[0.04] ${expanded ? "" : "h-[6.125rem]"}`}>
       <span className="sr-only">{ctaLabel}</span>
       <label htmlFor="event-brief" className="sr-only">Describe your event</label>
       <div className="relative min-h-0 flex-1">
@@ -172,30 +190,83 @@ export function StartEventPrompt({
           </span>
         )}
       </div>
-      <div className="flex items-center justify-between gap-3">
-        <button type="button" onClick={() => inputRef.current?.focus()} aria-label="Describe your event" className="flex size-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:bg-neutral-50 hover:text-neutral-600">
-          <Plus className="size-4" strokeWidth={1.6} aria-hidden="true" />
-        </button>
-        <div className="flex items-center gap-1">
-          <div className="relative inline-flex items-center">
-            <span className="pointer-events-none inline-flex items-center gap-1 rounded-md px-2 py-1 text-[13px] font-medium text-neutral-400">
-              {selectedEventType.label}
-              <ChevronDown className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
-            </span>
-            <select value={eventType} onChange={(event) => setEventType(event.target.value as EventType)} aria-label="Event type" className="absolute inset-0 cursor-pointer opacity-0">
-              {eventTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
-            </select>
-          </div>
-          <button
-            type="button"
-            onClick={toggleDictation}
-            aria-label={listening ? "Stop voice recording" : "Start voice recording"}
-            aria-pressed={listening}
-            className={`flex size-8 items-center justify-center rounded-full transition hover:bg-neutral-50 ${listening ? "animate-pulse text-rose-500" : "text-neutral-400 hover:text-neutral-600"}`}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="details"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            style={{ overflow: "hidden" }}
           >
-            <Mic className="size-4" strokeWidth={1.6} aria-hidden="true" />
+            <div className="mt-1 flex flex-col gap-3 border-t border-neutral-100 px-2 pt-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[11px] font-medium text-neutral-400">Date</span>
+                  <input
+                    ref={dateInputRef}
+                    type="datetime-local"
+                    value={date}
+                    onChange={(event) => setDate(event.target.value)}
+                    className="rounded-xl border border-neutral-200 bg-transparent px-3 py-2 text-[14px] text-neutral-800 outline-none focus:border-neutral-400"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[11px] font-medium text-neutral-400">Location</span>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(event) => setLocation(event.target.value)}
+                    placeholder="Venue or city"
+                    maxLength={200}
+                    className="rounded-xl border border-neutral-200 bg-transparent px-3 py-2 text-[14px] text-neutral-800 outline-none placeholder:text-neutral-300 focus:border-neutral-400"
+                  />
+                </label>
+              </div>
+              <p className="text-[11px] text-neutral-400">Optional — add now or skip for later.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="flex items-center justify-between gap-3 pt-3">
+        {expanded ? (
+          <button type="button" onClick={() => setExpanded(false)} className="flex items-center gap-1 text-[13px] font-medium text-neutral-400 transition hover:text-neutral-600">
+            <ArrowLeft className="size-3.5" strokeWidth={2} aria-hidden="true" />
+            Edit description
           </button>
-        </div>
+        ) : (
+          <button type="button" onClick={() => inputRef.current?.focus()} aria-label="Describe your event" className="flex size-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:bg-neutral-50 hover:text-neutral-600">
+            <Plus className="size-4" strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        )}
+        {expanded ? (
+          <button type="submit" className="flex items-center gap-1.5 rounded-full bg-neutral-900 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-neutral-700">
+            {ctaLabel}
+            <ArrowRight className="size-3.5" strokeWidth={2} aria-hidden="true" />
+          </button>
+        ) : (
+          <div className="flex items-center gap-1">
+            <div className="relative inline-flex items-center">
+              <span className="pointer-events-none inline-flex items-center gap-1 rounded-md px-2 py-1 text-[13px] font-medium text-neutral-400">
+                {selectedEventType.label}
+                <ChevronDown className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
+              </span>
+              <select value={eventType} onChange={(event) => setEventType(event.target.value as EventType)} aria-label="Event type" className="absolute inset-0 cursor-pointer opacity-0">
+                {eventTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={toggleDictation}
+              aria-label={listening ? "Stop voice recording" : "Start voice recording"}
+              aria-pressed={listening}
+              className={`flex size-8 items-center justify-center rounded-full transition hover:bg-neutral-50 ${listening ? "animate-pulse text-rose-500" : "text-neutral-400 hover:text-neutral-600"}`}
+            >
+              <Mic className="size-4" strokeWidth={1.6} aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </div>
     </form>
   );
