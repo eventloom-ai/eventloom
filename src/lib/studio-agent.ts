@@ -91,8 +91,9 @@ export function normalizeModelEdit(raw: Record<string, unknown>): AgentEdit {
   if (Array.isArray(rawPatch.schedule)) patch.schedule = rawPatch.schedule.flatMap((item) => {
     if (!item || typeof item !== "object") return [];
     const entry = item as Record<string, unknown>;
-    if (typeof entry.title !== "string" || typeof entry.time !== "string") return [];
-    return [{ title: entry.title, time: entry.time, ...(typeof entry.location === "string" ? { location: entry.location } : {}), ...(typeof entry.description === "string" ? { description: entry.description } : {}) }];
+    if (typeof entry.title !== "string" || !entry.title.trim() || typeof entry.time !== "string") return [];
+    const time = entry.time.trim() || "Time to be announced";
+    return [{ title: entry.title, time, ...(typeof entry.location === "string" ? { location: entry.location } : {}), ...(typeof entry.description === "string" ? { description: entry.description } : {}) }];
   });
   if (Array.isArray(rawPatch.rsvpFields)) patch.rsvpFields = rawPatch.rsvpFields.filter((field): field is EventConfig["rsvpFields"][number] => typeof field === "string" && ["name", "attendance", "party_size", "guest_names", "email", "phone", "meal_preference", "note"].includes(field));
   const operations = ((raw.operations as Array<Record<string, unknown>>) ?? []).flatMap((operation) => {

@@ -94,6 +94,9 @@ export function ensureSiteLayout(document: SiteDocument): SiteDocument {
       delete style.width;
       delete style.columns;
     }
+    if ((node.type === "section" || node.type === "stack") && (style.minHeight === "screen" || style.minHeight === "threeQuarter") && (!style.justify || style.justify === "start") && "children" in node && node.children.length <= 2) {
+      style.justify = "center";
+    }
     const next = { ...node, style };
     if ("children" in next) return [{ ...next, children: visit(next.children, depth + 1) }];
     return [next];

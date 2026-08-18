@@ -80,6 +80,47 @@ describe("site contrast", () => {
     }
   });
 
+  it("centers sparse content in a full-height section instead of leaving a dead gap below it", () => {
+    const sparse = ensureSiteLayout({
+      ...creamDocument,
+      nodes: [
+        {
+          id: "sec_opening",
+          type: "section",
+          style: { minHeight: "screen", justify: "start" },
+          children: [
+            { id: "stack_a", type: "stack", children: [{ id: "txt_a", type: "text", content: "A", variant: "body" }] },
+            { id: "overlay_a", type: "overlay", children: [{ id: "txt_b", type: "text", content: "B", variant: "quote" }] },
+          ],
+        },
+      ],
+    });
+    expect(sparse.nodes[0]?.style?.justify).toBe("center");
+
+    const dense = ensureSiteLayout({
+      ...creamDocument,
+      nodes: [
+        {
+          id: "sec_opening",
+          type: "section",
+          style: { minHeight: "screen", justify: "start" },
+          children: [
+            { id: "a", type: "text", content: "A", variant: "body" },
+            { id: "b", type: "text", content: "B", variant: "body" },
+            { id: "c", type: "text", content: "C", variant: "body" },
+          ],
+        },
+      ],
+    });
+    expect(dense.nodes[0]?.style?.justify).toBe("start");
+
+    const short = ensureSiteLayout({
+      ...creamDocument,
+      nodes: [{ id: "sec_opening", type: "section", style: { justify: "start" }, children: [{ id: "a", type: "text", content: "A", variant: "body" }] }],
+    });
+    expect(short.nodes[0]?.style?.justify).toBe("start");
+  });
+
   it("leaves rotate and offset untouched through both contrast and layout passes", () => {
     const document: SiteDocument = {
       ...creamDocument,

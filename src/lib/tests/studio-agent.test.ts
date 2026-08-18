@@ -19,4 +19,23 @@ describe("normalizeModelEdit", () => {
     });
     expect(edit.operations).toEqual([{ op: "set_theme", display: "vintage", body: "warm" }]);
   });
+
+  it("defaults an empty schedule time instead of producing a value that fails validation later, and drops titleless rows", () => {
+    const edit = normalizeModelEdit({
+      message: "Updated the schedule.",
+      summary: "Updated the schedule",
+      operations: [],
+      eventPatch: {
+        schedule: [
+          { title: "Brunch", time: "11:00 AM" },
+          { title: "Getting There", time: "" },
+          { title: "", time: "9:00 PM" },
+        ],
+      },
+    });
+    expect(edit.eventPatch.schedule).toEqual([
+      { title: "Brunch", time: "11:00 AM" },
+      { title: "Getting There", time: "Time to be announced" },
+    ]);
+  });
 });
