@@ -37,4 +37,34 @@ describe("site document renderer", () => {
     expect(html).toContain("container-type:inline-size");
     expect(html).not.toContain("18ch");
   });
+
+  it("honors an explicit column count on grid nodes instead of always falling back to auto-fit cards", () => {
+    const config = defaultEventConfig("Wedding event");
+    const baseDocument: SiteDocument = {
+      schemaVersion: 2,
+      locale: "en",
+      direction: "auto",
+      theme: {
+        colors: { text: "#f6efe6", surface: "#241814", accent: "#c2a27a", muted: "#8a7a68" },
+        typography: { display: "editorial", body: "clean" },
+        radius: "soft",
+        motion: "none",
+      },
+      nodes: [],
+    };
+
+    const withColumns = (columns: 1 | 2 | 3 | 4 | undefined): SiteDocument => ({
+      ...baseDocument,
+      nodes: [{ id: "grd_details", type: "grid", style: columns ? { columns } : undefined, children: [{ id: "txt_a", type: "text", content: "A", variant: "body" }] }],
+    });
+
+    const unset = renderToStaticMarkup(<SiteDocumentRenderer document={withColumns(undefined)} config={config} status="draft" rsvpOpen={false} />);
+    expect(unset).toContain("grid-template-columns:repeat(auto-fit, minmax(min(100%, 22rem), 1fr))");
+
+    const single = renderToStaticMarkup(<SiteDocumentRenderer document={withColumns(1)} config={config} status="draft" rsvpOpen={false} />);
+    expect(single).toContain("grid-template-columns:1fr");
+
+    const three = renderToStaticMarkup(<SiteDocumentRenderer document={withColumns(3)} config={config} status="draft" rsvpOpen={false} />);
+    expect(three).toContain("grid-template-columns:repeat(auto-fit, minmax(min(100%, max(16rem, calc((100% - 2 * 1.75rem) / 3))), 1fr))");
+  });
 });

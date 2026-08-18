@@ -88,7 +88,11 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
   if (node.type === "section") return <section {...common} style={{ display: "flex", flexDirection: "column", gap: common.style.gap ?? "1.75rem", ...common.style }}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</section>;
   if (node.type === "stack") return <div {...common} style={{ display: "flex", flexDirection: "column", ...common.style }}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</div>;
   if (node.type === "grid") {
-    const columns = node.style?.columns === 1 ? "1fr" : "repeat(auto-fit, minmax(min(100%, 22rem), 1fr))";
+    const columns = !node.style?.columns
+      ? "repeat(auto-fit, minmax(min(100%, 22rem), 1fr))"
+      : node.style.columns === 1
+        ? "1fr"
+        : `repeat(auto-fit, minmax(min(100%, max(16rem, calc((100% - ${node.style.columns - 1} * 1.75rem) / ${node.style.columns}))), 1fr))`;
     return <div {...common} style={{ ...common.style, display: "grid", gridTemplateColumns: columns, alignItems: "stretch" }}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</div>;
   }
   if (node.type === "overlay") return (
