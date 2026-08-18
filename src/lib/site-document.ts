@@ -116,14 +116,16 @@ const styleSchema = z.object({
   offset: z.enum(["none", "raised", "lowered"]).optional(),
 }).strict();
 const baseNode = { id: z.string().regex(/^[a-z][a-z0-9_-]{2,63}$/), label: z.string().max(80).optional(), style: styleSchema.optional() };
+// Wide enough to hold a base64 data: URI (demo mode has no storage backend, so uploads inline as data URIs).
+const imageUrlMaxLength = 8_000_000;
 
 const nodeSchema: z.ZodType<SiteNode> = z.lazy(() => z.discriminatedUnion("type", [
   z.object({ ...baseNode, type: z.enum(["section", "stack", "grid", "overlay"]), children: z.array(nodeSchema).max(40) }).strict(),
   z.object({ ...baseNode, type: z.literal("text"), content: z.string().max(4000).optional(), binding: z.enum(["event.title", "event.subtitle", "event.date", "event.venueName", "event.venueAddress", "event.initials"]).optional(), variant: z.enum(["eyebrow", "heading", "subheading", "body", "caption", "quote"]) }).strict(),
-  z.object({ ...baseNode, type: z.literal("image"), url: z.string().max(2048).optional(), alt: z.string().max(300), fit: z.enum(["cover", "contain"]).optional() }).strict(),
+  z.object({ ...baseNode, type: z.literal("image"), url: z.string().max(imageUrlMaxLength).optional(), alt: z.string().max(300), fit: z.enum(["cover", "contain"]).optional() }).strict(),
   z.object({ ...baseNode, type: z.literal("button"), label: z.string().min(1).max(120), href: z.string().min(1).max(2048), variant: z.enum(["primary", "secondary", "ghost"]).optional() }).strict(),
   z.object({ ...baseNode, type: z.literal("divider"), dividerVariant: z.enum(["line", "ornament", "dot"]).optional() }).strict(),
-  z.object({ ...baseNode, type: z.literal("gallery"), images: z.array(z.object({ id: z.string().min(3).max(64), url: z.string().max(2048), alt: z.string().max(300) }).strict()).max(12) }).strict(),
+  z.object({ ...baseNode, type: z.literal("gallery"), images: z.array(z.object({ id: z.string().min(3).max(64), url: z.string().max(imageUrlMaxLength), alt: z.string().max(300) }).strict()).max(12) }).strict(),
   z.object({ ...baseNode, type: z.literal("countdown") }).strict(),
   z.object({ ...baseNode, type: z.literal("schedule") }).strict(),
   z.object({ ...baseNode, type: z.literal("venue"), showMap: z.boolean().optional() }).strict(),
