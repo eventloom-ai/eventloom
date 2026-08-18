@@ -1,26 +1,46 @@
 "use client";
 
-import { ArrowRight, Loader2, Sparkles } from "lucide-react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { ArrowRight, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { creatorErrorMessage } from "@/lib/creator-errors";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
+
+const MAX_IMAGES = 5;
 
 export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }) {
   const router = useRouter();
   const [prompt, setPrompt] = useState(initialBrief);
   const [slug, setSlug] = useState(normalizeSlugInput(suggestSlug(initialBrief) || ""));
   const [slugEdited, setSlugEdited] = useState(false);
+  const [images, setImages] = useState<File[]>([]);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState("");
-  const automaticallyStarted = useRef(false);
 
-  async function start(value: string) {
-    if (!value.trim() || isStarting) return;
+  const previews = useMemo(() => images.map((file) => URL.createObjectURL(file)), [images]);
+  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
+
+  function addImages(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!files.length) return;
+    setImages((current) => [...current, ...files].slice(0, MAX_IMAGES));
+  }
+
+  function removeImage(index: number) {
+    setImages((current) => current.filter((_, i) => i !== index));
+  }
+
+  async function start() {
+    if (!prompt.trim() || isStarting) return;
     setIsStarting(true); setError("");
-    const selectedSlug = slugEdited ? slug : normalizeSlugInput(suggestSlug(value) || slug || "my-event");
+    const selectedSlug = slugEdited ? slug : normalizeSlugInput(suggestSlug(prompt) || slug || "my-event");
     try {
-      const response = await fetch("/api/events/studio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: value.trim(), slug: selectedSlug }) });
+      const form = new FormData();
+      form.set("prompt", prompt.trim());
+      form.set("slug", selectedSlug);
+      images.forEach((file) => form.append("images", file));
+      const response = await fetch("/api/events/studio", { method: "POST", body: form });
       const payload = await response.json().catch(() => null) as { eventId?: string; error?: string; warning?: string } | null;
       if (response.ok && payload?.eventId) {
         const notice = payload.warning ? `?notice=${encodeURIComponent(payload.warning)}` : "";
@@ -35,15 +55,7 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
     }
   }
 
-  useEffect(() => {
-    if (!initialBrief.trim() || automaticallyStarted.current) return;
-    automaticallyStarted.current = true;
-    void start(initialBrief);
-  // Start once from a landing-page brief.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialBrief]);
-
-  function submit(event: FormEvent) { event.preventDefault(); void start(prompt); }
+  function submit(event: FormEvent) { event.preventDefault(); void start(); }
   if (isStarting) {
     return (
       <div className="mx-auto grid min-h-[26rem] max-w-3xl place-items-center rounded-[1.75rem] border border-black/[0.07] bg-white text-center shadow-[0_24px_70px_rgba(38,31,43,0.08)]">
@@ -112,6 +124,34 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
       <p id="event-slug-help" className="mt-2 text-xs text-[#8a858d]">
         This becomes the link you’ll share with guests.
       </p>
+
+      <span className="mt-5 block text-sm font-semibold text-[#37323a]">Photos <span className="font-normal text-[#8a858d]">(optional)</span></span>
+      <p className="mt-1 text-xs text-[#8a858d]">
+        Add up to {MAX_IMAGES} photos to include in your design. The first becomes the hero image.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-3">
+        {previews.map((url, index) => (
+          <div key={url} className="group relative size-20 overflow-hidden rounded-xl border border-black/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" className="size-full object-cover" />
+            <button
+              type="button"
+              onClick={() => removeImage(index)}
+              aria-label="Remove photo"
+              className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-black/60 text-white opacity-0 transition group-hover:opacity-100"
+            >
+              <X className="size-3" strokeWidth={2.5} />
+            </button>
+          </div>
+        ))}
+        {images.length < MAX_IMAGES && (
+          <label className="flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-black/15 text-[#9a959d] transition hover:border-violet-300 hover:text-violet-500">
+            <ImagePlus className="size-4" strokeWidth={1.75} />
+            <span className="text-[10px] font-medium">Add</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={addImages} className="hidden" />
+          </label>
+        )}
+      </div>
 
       {error ? (
         <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
