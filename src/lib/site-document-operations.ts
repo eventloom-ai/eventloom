@@ -23,6 +23,8 @@ const stylePatchSchema = z.object({
   opacity: z.enum(["full", "muted", "faint"]).nullable().optional(),
   border: z.enum(["none", "hairline", "thick"]).nullable().optional(),
   justify: z.enum(["start", "center", "end"]).nullable().optional(),
+  rotate: z.enum(["none", "left", "right"]).nullable().optional(),
+  offset: z.enum(["none", "raised", "lowered"]).nullable().optional(),
 }).strict();
 
 export const siteOperationSchema = z.discriminatedUnion("op", [

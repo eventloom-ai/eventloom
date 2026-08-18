@@ -79,4 +79,36 @@ describe("site contrast", () => {
       expect(section.children[0]?.style?.width).toBeUndefined();
     }
   });
+
+  it("leaves rotate and offset untouched through both contrast and layout passes", () => {
+    const document: SiteDocument = {
+      ...creamDocument,
+      nodes: [
+        {
+          id: "sec_opening",
+          type: "section",
+          style: { rotate: "left", offset: "raised" },
+          children: [{ id: "txt_names", type: "text", binding: "event.title", variant: "heading", style: { rotate: "right", offset: "lowered" } }],
+        },
+      ],
+    };
+
+    const contrasted = ensureSiteContrast(document);
+    const contrastedSection = contrasted.nodes[0];
+    expect(contrastedSection?.style?.rotate).toBe("left");
+    expect(contrastedSection?.style?.offset).toBe("raised");
+    if (contrastedSection && "children" in contrastedSection) {
+      expect(contrastedSection.children[0]?.style?.rotate).toBe("right");
+      expect(contrastedSection.children[0]?.style?.offset).toBe("lowered");
+    }
+
+    const laidOut = ensureSiteLayout(document);
+    const laidOutSection = laidOut.nodes[0];
+    expect(laidOutSection?.style?.rotate).toBe("left");
+    expect(laidOutSection?.style?.offset).toBe("raised");
+    if (laidOutSection && "children" in laidOutSection) {
+      expect(laidOutSection.children[0]?.style?.rotate).toBe("right");
+      expect(laidOutSection.children[0]?.style?.offset).toBe("lowered");
+    }
+  });
 });

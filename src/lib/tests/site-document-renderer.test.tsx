@@ -94,4 +94,41 @@ describe("site document renderer", () => {
     expect(expressive).toContain("opacity:0");
     expect(expressive).toContain("translateY(28px)");
   });
+
+  it("renders the new text quote variant, event.initials binding, divider variants, and rotate/offset transforms", () => {
+    const config = { ...defaultEventConfig("Wedding event"), title: "Osama & Nour" };
+    const baseTheme: SiteDocument["theme"] = {
+      colors: { text: "#f6efe6", surface: "#241814", accent: "#c2a27a", muted: "#8a7a68" },
+      typography: { display: "editorial", body: "clean" },
+      radius: "soft",
+      motion: "none",
+    };
+
+    const quote: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme: baseTheme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "txt_quote", type: "text", variant: "quote", content: "A perfect evening." }] }] };
+    const quoteHtml = renderToStaticMarkup(<SiteDocumentRenderer document={quote} config={config} status="draft" rsvpOpen={false} />);
+    expect(quoteHtml).toContain("<blockquote");
+    expect(quoteHtml).toContain("A perfect evening.");
+
+    const initials: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme: baseTheme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "txt_initials", type: "text", variant: "eyebrow", binding: "event.initials" }] }] };
+    const initialsHtml = renderToStaticMarkup(<SiteDocumentRenderer document={initials} config={config} status="draft" rsvpOpen={false} />);
+    expect(initialsHtml).toContain("O &amp; N");
+
+    const ornament: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme: baseTheme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "div_a", type: "divider", dividerVariant: "ornament" }] }] };
+    const ornamentHtml = renderToStaticMarkup(<SiteDocumentRenderer document={ornament} config={config} status="draft" rsvpOpen={false} />);
+    expect(ornamentHtml).not.toContain("<hr");
+    expect(ornamentHtml).toContain("◆");
+
+    const dot: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme: baseTheme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "div_a", type: "divider", dividerVariant: "dot" }] }] };
+    const dotHtml = renderToStaticMarkup(<SiteDocumentRenderer document={dot} config={config} status="draft" rsvpOpen={false} />);
+    expect(dotHtml).not.toContain("<hr");
+    expect(dotHtml.match(/border-radius:999px/g)?.length).toBe(3);
+
+    const line: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme: baseTheme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "div_a", type: "divider" }] }] };
+    const lineHtml = renderToStaticMarkup(<SiteDocumentRenderer document={line} config={config} status="draft" rsvpOpen={false} />);
+    expect(lineHtml).toContain("<hr");
+
+    const rotated: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme: baseTheme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "txt_a", type: "text", variant: "body", content: "Tilted", style: { rotate: "left", offset: "raised" } }] }] };
+    const rotatedHtml = renderToStaticMarkup(<SiteDocumentRenderer document={rotated} config={config} status="draft" rsvpOpen={false} />);
+    expect(rotatedHtml).toContain("transform:rotate(-2.5deg) translateY(-0.6rem)");
+  });
 });

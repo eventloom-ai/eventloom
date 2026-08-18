@@ -18,7 +18,7 @@ export const siteNodeTypes = [
 ] as const;
 
 export type SiteNodeType = (typeof siteNodeTypes)[number];
-export type SiteTextBinding = "event.title" | "event.subtitle" | "event.date" | "event.venueName" | "event.venueAddress";
+export type SiteTextBinding = "event.title" | "event.subtitle" | "event.date" | "event.venueName" | "event.venueAddress" | "event.initials";
 export type SiteTexture = "none" | "paper" | "grain" | "linen" | "wash";
 export type SiteStyle = {
   background?: string;
@@ -41,6 +41,8 @@ export type SiteStyle = {
   opacity?: "full" | "muted" | "faint";
   border?: "none" | "hairline" | "thick";
   justify?: "start" | "center" | "end";
+  rotate?: "none" | "left" | "right";
+  offset?: "none" | "raised" | "lowered";
 };
 
 type SiteNodeBase = { id: string; type: SiteNodeType; label?: string; style?: SiteStyle };
@@ -49,11 +51,11 @@ export type SiteTextNode = SiteNodeBase & {
   type: "text";
   content?: string;
   binding?: SiteTextBinding;
-  variant: "eyebrow" | "heading" | "subheading" | "body" | "caption";
+  variant: "eyebrow" | "heading" | "subheading" | "body" | "caption" | "quote";
 };
 export type SiteImageNode = SiteNodeBase & { type: "image"; url?: string; alt: string; fit?: "cover" | "contain" };
 export type SiteButtonNode = SiteNodeBase & { type: "button"; label: string; href: string; variant?: "primary" | "secondary" | "ghost" };
-export type SiteDividerNode = SiteNodeBase & { type: "divider" };
+export type SiteDividerNode = SiteNodeBase & { type: "divider"; dividerVariant?: "line" | "ornament" | "dot" };
 export type SiteGalleryNode = SiteNodeBase & { type: "gallery"; images: { id: string; url: string; alt: string }[] };
 export type SiteCountdownNode = SiteNodeBase & { type: "countdown" };
 export type SiteScheduleNode = SiteNodeBase & { type: "schedule" };
@@ -110,15 +112,17 @@ const styleSchema = z.object({
   opacity: z.enum(["full", "muted", "faint"]).optional(),
   border: z.enum(["none", "hairline", "thick"]).optional(),
   justify: z.enum(["start", "center", "end"]).optional(),
+  rotate: z.enum(["none", "left", "right"]).optional(),
+  offset: z.enum(["none", "raised", "lowered"]).optional(),
 }).strict();
 const baseNode = { id: z.string().regex(/^[a-z][a-z0-9_-]{2,63}$/), label: z.string().max(80).optional(), style: styleSchema.optional() };
 
 const nodeSchema: z.ZodType<SiteNode> = z.lazy(() => z.discriminatedUnion("type", [
   z.object({ ...baseNode, type: z.enum(["section", "stack", "grid", "overlay"]), children: z.array(nodeSchema).max(40) }).strict(),
-  z.object({ ...baseNode, type: z.literal("text"), content: z.string().max(4000).optional(), binding: z.enum(["event.title", "event.subtitle", "event.date", "event.venueName", "event.venueAddress"]).optional(), variant: z.enum(["eyebrow", "heading", "subheading", "body", "caption"]) }).strict(),
+  z.object({ ...baseNode, type: z.literal("text"), content: z.string().max(4000).optional(), binding: z.enum(["event.title", "event.subtitle", "event.date", "event.venueName", "event.venueAddress", "event.initials"]).optional(), variant: z.enum(["eyebrow", "heading", "subheading", "body", "caption", "quote"]) }).strict(),
   z.object({ ...baseNode, type: z.literal("image"), url: z.string().max(2048).optional(), alt: z.string().max(300), fit: z.enum(["cover", "contain"]).optional() }).strict(),
   z.object({ ...baseNode, type: z.literal("button"), label: z.string().min(1).max(120), href: z.string().min(1).max(2048), variant: z.enum(["primary", "secondary", "ghost"]).optional() }).strict(),
-  z.object({ ...baseNode, type: z.literal("divider") }).strict(),
+  z.object({ ...baseNode, type: z.literal("divider"), dividerVariant: z.enum(["line", "ornament", "dot"]).optional() }).strict(),
   z.object({ ...baseNode, type: z.literal("gallery"), images: z.array(z.object({ id: z.string().min(3).max(64), url: z.string().max(2048), alt: z.string().max(300) }).strict()).max(12) }).strict(),
   z.object({ ...baseNode, type: z.literal("countdown") }).strict(),
   z.object({ ...baseNode, type: z.literal("schedule") }).strict(),

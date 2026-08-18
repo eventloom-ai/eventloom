@@ -48,11 +48,15 @@ const bodyFontVar = {
   warm: "var(--font-ibm-plex-sans)",
 } as const;
 
+const rotateDeg = { none: undefined, left: "rotate(-2.5deg)", right: "rotate(2.5deg)" } as const;
+const offsetTranslate = { none: undefined, raised: "translateY(-0.6rem)", lowered: "translateY(0.6rem)" } as const;
+
 function styleFor(style: SiteStyle | undefined, document: SiteDocument): CSSProperties {
   if (!style) return {};
   const horizontal = style.width === "full" && style.padding === "none" ? "0" : "clamp(1.2rem,5.5cqw,3.25rem)";
   const layout = Boolean(style.background || style.minHeight || style.columns);
   const surface = backgroundLayers(style.background, style.texture, style.accent ?? document.theme.colors.accent, document.theme.colors.surface);
+  const transform = [style.rotate ? rotateDeg[style.rotate] : undefined, style.offset ? offsetTranslate[style.offset] : undefined].filter(Boolean).join(" ") || undefined;
   return {
     ...surface,
     color: style.color,
@@ -75,6 +79,7 @@ function styleFor(style: SiteStyle | undefined, document: SiteDocument): CSSProp
     marginInline: style.width && style.width !== "full" ? "auto" : undefined,
     width: style.width ? "100%" : undefined,
     boxSizing: "border-box",
+    transform,
     transition: document.theme.motion === "none" ? undefined : "color 220ms ease, background 220ms ease, transform 220ms ease",
   };
 }
@@ -87,6 +92,11 @@ function coupleHeading(value: string) {
 
 function bindingValue(binding: SiteTextBinding | undefined, config: EventConfig) {
   if (!binding) return "";
+  if (binding === "event.initials") {
+    const parts = config.title.split(/\s*&\s*|\s+and\s+/i).map((part) => part.trim()).filter(Boolean);
+    const initials = (parts.length === 2 ? parts : [config.title]).map((part) => part[0]?.toUpperCase()).filter(Boolean);
+    return initials.length === 2 ? initials.join(" & ") : initials.join("");
+  }
   const key = binding.split(".")[1] as keyof EventConfig;
   const value = config[key];
   return typeof value === "string" ? value : "";
@@ -125,7 +135,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
   if (node.type === "text") {
     const raw = node.content ?? bindingValue(node.binding, config);
     const value = node.variant === "heading" ? coupleHeading(raw) : raw;
-    const commit = interactive ? (event: FocusEvent<HTMLDivElement>) => {
+    const commit = interactive ? (event: FocusEvent<HTMLElement>) => {
       const content = event.currentTarget.innerText.trim();
       if (content && content !== raw) onTextCommit?.(node.id, content);
     } : undefined;
@@ -143,6 +153,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
     if (node.variant === "subheading") return <p {...common} {...editable} style={{ ...textStyle, lineHeight: 1.55, maxWidth: "36rem" }}>{value}</p>;
     if (node.variant === "eyebrow") return <p {...common} {...editable} style={{ ...textStyle, textTransform: "uppercase", letterSpacing: node.style?.letterSpacing ? letterSpacing[node.style.letterSpacing] : "0.26em" }}>{value}</p>;
     if (node.variant === "caption") return <small {...common} {...editable} style={{ ...textStyle, display: "block", lineHeight: 1.5, letterSpacing: node.style?.letterSpacing ? letterSpacing[node.style.letterSpacing] : "0.08em", textTransform: "uppercase" }}>{value}</small>;
+    if (node.variant === "quote") return <blockquote {...common} {...editable} style={{ ...textStyle, fontFamily: "var(--event-display)", fontStyle: "italic", lineHeight: 1.25, maxWidth: "40rem" }}><span aria-hidden="true" style={{ fontSize: "1.6em", opacity: 0.35, marginRight: "0.15em" }}>&ldquo;</span>{value}</blockquote>;
     return <p {...common} {...editable} style={{ ...textStyle, lineHeight: 1.7, maxWidth: "42rem" }}>{value}</p>;
   }
   if (node.type === "image") {
@@ -150,7 +161,11 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
     return <figure {...common} style={{ overflow: "hidden", aspectRatio: node.style?.minHeight ? undefined : "4 / 5", position: "relative", minHeight: node.url ? (node.style?.minHeight ? minHeight[node.style.minHeight] : "22rem") : "4.5rem", ...common.style }}>{node.url ? <Image unoptimized fill sizes="(max-width: 768px) 100vw, 1200px" src={node.url} alt={node.alt} style={{ objectFit: node.fit ?? "cover" }} /> : <div style={{ display: "grid", placeItems: "center", minHeight: "inherit", fontSize: "0.8rem", opacity: 0.55, border: "1px dashed color-mix(in srgb, currentColor 28%, transparent)" }}>Add an image</div>}</figure>;
   }
   if (node.type === "button") return <a {...common} href={node.href} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0.95rem 1.4rem", border: "1px solid currentColor", background: node.variant === "primary" ? document.theme.colors.accent : "transparent", color: node.variant === "primary" ? document.theme.colors.surface : "inherit", borderRadius: document.theme.radius === "round" ? "999px" : document.theme.radius === "sharp" ? "0" : "0.85rem", textDecoration: "none", width: "fit-content", ...common.style }}>{node.label}</a>;
-  if (node.type === "divider") return <hr {...common} style={{ border: 0, borderTop: "1px solid currentColor", opacity: 0.2, width: "100%", ...common.style }} />;
+  if (node.type === "divider") {
+    if (node.dividerVariant === "ornament") return <div {...common} style={{ display: "flex", alignItems: "center", gap: "0.85rem", width: "100%", opacity: 0.5, ...common.style }}><span style={{ flex: 1, borderTop: "1px solid currentColor" }} /><span aria-hidden="true" style={{ fontSize: "0.8rem" }}>&#9670;</span><span style={{ flex: 1, borderTop: "1px solid currentColor" }} /></div>;
+    if (node.dividerVariant === "dot") return <div {...common} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", width: "100%", opacity: 0.5, ...common.style }}>{[0, 1, 2].map((dot) => <span key={dot} aria-hidden="true" style={{ width: "0.3rem", height: "0.3rem", borderRadius: "999px", background: "currentColor" }} />)}</div>;
+    return <hr {...common} style={{ border: 0, borderTop: "1px solid currentColor", opacity: 0.2, width: "100%", ...common.style }} />;
+  }
   if (node.type === "gallery") return <div {...common} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(13rem,1fr))", gap: "1rem", ...common.style }}>{node.images.map((image) => <div key={image.id} style={{ aspectRatio: "4 / 5", position: "relative", overflow: "hidden", borderRadius: document.theme.radius === "sharp" ? 0 : "1.25rem" }}><Image unoptimized fill sizes="(max-width: 768px) 50vw, 30vw" src={image.url} alt={image.alt} style={{ objectFit: "cover" }} /></div>)}</div>;
   if (node.type === "countdown") return <div {...common}><p style={{ fontSize: "clamp(1.8rem,8cqw,3.4rem)", fontFamily: "var(--event-display)", lineHeight: 0.95 }}>{config.date}</p><p style={{ opacity: 0.62, marginTop: "0.75rem", letterSpacing: "0.16em", textTransform: "uppercase", fontSize: "0.72rem" }}>Save the date</p></div>;
   if (node.type === "schedule") return <div {...common} style={{ display: "grid", gap: "0.25rem", ...common.style }}>{config.schedule.map((item) => <article key={`${item.title}-${item.time}`} style={{ display: "grid", gridTemplateColumns: "minmax(5.5rem,0.22fr) 1fr", gap: "1.75rem", paddingBlock: "1.4rem", borderTop: "1px solid color-mix(in srgb,currentColor 16%,transparent)" }}><p style={{ opacity: 0.58, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.75rem", paddingTop: "0.45rem" }}>{item.time}</p><div><h3 style={{ fontSize: "clamp(1.4rem,3vw,2.15rem)", fontFamily: "var(--event-display)", fontStyle: "italic", lineHeight: 1.05 }}>{item.title}</h3>{item.location ? <p style={{ marginTop: "0.4rem", opacity: 0.68 }}>{item.location}</p> : null}{item.description ? <p style={{ marginTop: "0.7rem", lineHeight: 1.65, opacity: 0.72, maxWidth: "36rem" }}>{item.description}</p> : null}</div></article>)}</div>;

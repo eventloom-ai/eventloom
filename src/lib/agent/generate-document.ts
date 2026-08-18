@@ -46,8 +46,10 @@ const styleSchema = {
     opacity: { type: ["string", "null"], enum: ["full", "muted", "faint", null] },
     border: { type: ["string", "null"], enum: ["none", "hairline", "thick", null] },
     justify: { type: ["string", "null"], enum: ["start", "center", "end", null] },
+    rotate: { type: ["string", "null"], enum: ["none", "left", "right", null] },
+    offset: { type: ["string", "null"], enum: ["none", "raised", "lowered", null] },
   },
-  required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "texture", "letterSpacing", "italic", "opacity", "border", "justify"],
+  required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "texture", "letterSpacing", "italic", "opacity", "border", "justify", "rotate", "offset"],
 } as const;
 
 const blockSchema = {
@@ -56,19 +58,20 @@ const blockSchema = {
   properties: {
     type: { type: "string", enum: ["text", "image", "button", "divider", "gallery", "countdown", "schedule", "venue", "rsvp"] },
     content: { type: ["string", "null"] },
-    binding: { type: ["string", "null"], enum: ["event.title", "event.subtitle", "event.date", "event.venueName", "event.venueAddress", null] },
-    variant: { type: ["string", "null"], enum: ["eyebrow", "heading", "subheading", "body", "caption", null] },
+    binding: { type: ["string", "null"], enum: ["event.title", "event.subtitle", "event.date", "event.venueName", "event.venueAddress", "event.initials", null] },
+    variant: { type: ["string", "null"], enum: ["eyebrow", "heading", "subheading", "body", "caption", "quote", null] },
     url: { type: ["string", "null"] },
     alt: { type: ["string", "null"] },
     href: { type: ["string", "null"] },
     buttonLabel: { type: ["string", "null"] },
     buttonVariant: { type: ["string", "null"], enum: ["primary", "secondary", "ghost", null] },
+    dividerVariant: { type: ["string", "null"], enum: ["line", "ornament", "dot", null] },
     showMap: { type: ["boolean", "null"] },
     heading: { type: ["string", "null"] },
     description: { type: ["string", "null"] },
     style: styleSchema,
   },
-  required: ["type", "content", "binding", "variant", "url", "alt", "href", "buttonLabel", "buttonVariant", "showMap", "heading", "description", "style"],
+  required: ["type", "content", "binding", "variant", "url", "alt", "href", "buttonLabel", "buttonVariant", "dividerVariant", "showMap", "heading", "description", "style"],
 } as const;
 
 const rowSchema = {
@@ -163,9 +166,10 @@ Quality bar:
 - Paper, grain, linen, and wash are overlays only. They do not replace the section background. Always set a solid hex background on full-bleed sections.
 - Typography is the primary craft, but names must stay legible in a studio preview. Use large display type, not faint watermark type. Do not set opacity to faint on headings or names. Do not use wide/widest tracking on hero names.
 - Split couple names onto two lines when helpful. Keep them upright, high-contrast, and on a real color field. Opening sections must be width full. Do not put hero names inside a two-column grid. Do not emit image blocks without a real URL.
-- Atmosphere copy is allowed. Invented facts are not. Never invent names, dates, times, venues, addresses, or URLs. Bind known facts to event.title, event.subtitle, event.date, event.venueName, or event.venueAddress. If a fact is missing, say so in the bound value — do not add WHEN/WHERE/ADDRESS labels with empty values.
+- Atmosphere copy is allowed. Invented facts are not. Never invent names, dates, times, venues, addresses, or URLs. Bind known facts to event.title, event.subtitle, event.date, event.venueName, event.venueAddress, or event.initials. If a fact is missing, say so in the bound value — do not add WHEN/WHERE/ADDRESS labels with empty values.
 - Always include exactly one RSVP block, visually belonging to the design rather than looking like a form dropped at the end.
 - Forbidden: generic centered-card heroes, "The celebration", "Meet us there", "Will you join us?" as default copy, repeating three-band cream/white/green pages, stock wedding layouts, ghost type, vertical stacked single-letter names, low-contrast overlays.
+- New craft moves, use sparingly (one or two per page): layer type over an image or color field with real depth using overlay rows — a big word behind a portrait, an accent panel behind offset text — not just for tint. Use divider dividerVariant "ornament" or "dot" instead of always defaulting to a plain line when a section wants a printed-invitation feel. Use text variant "quote" for a single atmosphere line that deserves emphasis — never invented, drawn from the brief's own mood. Bind a name block to event.initials for a monogram moment when the brief calls for restraint. Use style.rotate and style.offset to break an otherwise even grid with an intentional, printed-collage tilt — never on the RSVP block or on long body copy.
 
 Return a short user-facing message about the design you made.`;
 
@@ -182,7 +186,7 @@ function asBlock(raw: Record<string, unknown>): SiteNode | null {
   if (type === "text") {
     const binding = typeof raw.binding === "string" ? raw.binding as SiteTextBinding : undefined;
     const content = typeof raw.content === "string" ? raw.content : undefined;
-    const variant = raw.variant === "eyebrow" || raw.variant === "heading" || raw.variant === "subheading" || raw.variant === "body" || raw.variant === "caption" ? raw.variant : "body";
+    const variant = raw.variant === "eyebrow" || raw.variant === "heading" || raw.variant === "subheading" || raw.variant === "body" || raw.variant === "caption" || raw.variant === "quote" ? raw.variant : "body";
     if (!binding && !content) return null;
     return { id, type, content, binding, variant, style };
   }
@@ -193,7 +197,7 @@ function asBlock(raw: Record<string, unknown>): SiteNode | null {
   if (type === "button" && typeof raw.buttonLabel === "string" && typeof raw.href === "string") {
     return { id, type, label: raw.buttonLabel, href: raw.href, variant: typeof raw.buttonVariant === "string" ? raw.buttonVariant as "primary" : undefined, style };
   }
-  if (type === "divider") return { id, type, style };
+  if (type === "divider") return { id, type, dividerVariant: raw.dividerVariant === "ornament" || raw.dividerVariant === "dot" ? raw.dividerVariant : undefined, style };
   if (type === "countdown") return { id, type, style };
   if (type === "schedule") return { id, type, style };
   if (type === "venue") return { id, type, showMap: raw.showMap !== false, style };

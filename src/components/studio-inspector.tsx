@@ -122,12 +122,18 @@ export function StudioInspector({ eventId, node, config, disabled, onOperations,
     if (!node) return;
     onOperations([{ op: "update_style", nodeId: node.id, style: { [key]: value } } as SiteOperation], `Updated ${node.label ?? node.type} style`);
   }
+  const initials = (() => {
+    const parts = config.title.split(/\s*&\s*|\s+and\s+/i).map((part) => part.trim()).filter(Boolean);
+    const letters = (parts.length === 2 ? parts : [config.title]).map((part) => part[0]?.toUpperCase()).filter(Boolean);
+    return letters.length === 2 ? letters.join(" & ") : letters.join("");
+  })();
   const boundText = node?.type === "text" && node.binding ? ({
     "event.title": config.title,
     "event.subtitle": config.subtitle,
     "event.date": config.date,
     "event.venueName": config.venueName,
     "event.venueAddress": config.venueAddress ?? "",
+    "event.initials": initials,
   } as const)[node.binding] : "";
   const textValue = node?.type === "text" ? node.content ?? boundText : "";
   const tabLabels = { content: "Text", style: "Design", details: "Event" } as const;

@@ -78,4 +78,31 @@ describe("structured event site documents", () => {
     expect(() => assertEventAssetOwnership(document, "event-a")).toThrow("asset_not_owned_by_event");
     expect(() => assertEventAssetOwnership(document, "event-b")).not.toThrow();
   });
+
+  it("accepts the new text variant, binding, divider variant, and rotate/offset style keys", () => {
+    const document = documentFor("A garden party");
+    const withNewPrimitives = structuredClone(document);
+    withNewPrimitives.nodes.push(
+      { id: "txt_quote", type: "text", variant: "quote", content: "A perfect evening.", style: { rotate: "left", offset: "raised" } },
+      { id: "txt_initials", type: "text", variant: "heading", binding: "event.initials" },
+      { id: "div_ornament", type: "divider", dividerVariant: "ornament" },
+      { id: "div_dot", type: "divider", dividerVariant: "dot" },
+    );
+    expect(siteDocumentSchema.safeParse(withNewPrimitives).success).toBe(true);
+
+    const invalid = structuredClone(document);
+    invalid.nodes.push({ id: "txt_bad", type: "text", variant: "eyebrow", style: { rotate: "sideways" as never } });
+    expect(siteDocumentSchema.safeParse(invalid).success).toBe(false);
+  });
+
+  it("round-trips a rotate/offset style patch through applySiteOperations, including clearing via null", () => {
+    const document = documentFor("A garden party");
+    const text = walkSiteNodes(document).find((node) => node.type === "text");
+    const applied = applySiteOperations(document, [{ op: "update_style", nodeId: text!.id, style: { rotate: "right", offset: "lowered" } }]);
+    expect(findSiteNode(applied.document, text!.id)?.style).toMatchObject({ rotate: "right", offset: "lowered" });
+
+    const cleared = applySiteOperations(applied.document, [{ op: "update_style", nodeId: text!.id, style: { rotate: null, offset: null } }]);
+    expect(findSiteNode(cleared.document, text!.id)?.style?.rotate).toBeUndefined();
+    expect(findSiteNode(cleared.document, text!.id)?.style?.offset).toBeUndefined();
+  });
 });

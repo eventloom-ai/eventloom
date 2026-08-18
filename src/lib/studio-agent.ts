@@ -64,8 +64,9 @@ const editSchema = {
               texture: { type: ["string", "null"], enum: ["none", "paper", "grain", "linen", "wash", null] }, letterSpacing: { type: ["string", "null"], enum: ["tight", "normal", "wide", "widest", null] },
               italic: { type: ["boolean", "null"] }, opacity: { type: ["string", "null"], enum: ["full", "muted", "faint", null] }, border: { type: ["string", "null"], enum: ["none", "hairline", "thick", null] },
               justify: { type: ["string", "null"], enum: ["start", "center", "end", null] },
+              rotate: { type: ["string", "null"], enum: ["none", "left", "right", null] }, offset: { type: ["string", "null"], enum: ["none", "raised", "lowered", null] },
             },
-            required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden", "texture", "letterSpacing", "italic", "opacity", "border", "justify"],
+            required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden", "texture", "letterSpacing", "italic", "opacity", "border", "justify", "rotate", "offset"],
           },
           theme: {
             type: ["object", "null"], additionalProperties: false,
@@ -84,7 +85,7 @@ const editSchema = {
   required: ["message", "summary", "eventPatch", "operations"],
 } as const;
 
-function normalizeModelEdit(raw: Record<string, unknown>): AgentEdit {
+export function normalizeModelEdit(raw: Record<string, unknown>): AgentEdit {
   const patch = Object.fromEntries(Object.entries((raw.eventPatch as Record<string, unknown>) ?? {}).filter(([, value]) => typeof value === "string"));
   const rawPatch = (raw.eventPatch as Record<string, unknown>) ?? {};
   if (Array.isArray(rawPatch.schedule)) patch.schedule = rawPatch.schedule.flatMap((item) => {
