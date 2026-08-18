@@ -67,4 +67,31 @@ describe("site document renderer", () => {
     const three = renderToStaticMarkup(<SiteDocumentRenderer document={withColumns(3)} config={config} status="draft" rsvpOpen={false} />);
     expect(three).toContain("grid-template-columns:repeat(auto-fit, minmax(min(100%, max(16rem, calc((100% - 2 * 1.75rem) / 3))), 1fr))");
   });
+
+  it("wraps top-level sections in a scroll reveal unless motion is none", () => {
+    const config = defaultEventConfig("Wedding event");
+    const documentWithMotion = (motion: "none" | "subtle" | "expressive"): SiteDocument => ({
+      schemaVersion: 2,
+      locale: "en",
+      direction: "auto",
+      theme: {
+        colors: { text: "#f6efe6", surface: "#241814", accent: "#c2a27a", muted: "#8a7a68" },
+        typography: { display: "editorial", body: "clean" },
+        radius: "soft",
+        motion,
+      },
+      nodes: [{ id: "sec_a", type: "section", children: [{ id: "txt_a", type: "text", content: "Hello", variant: "body" }] }],
+    });
+
+    const none = renderToStaticMarkup(<SiteDocumentRenderer document={documentWithMotion("none")} config={config} status="draft" rsvpOpen={false} />);
+    expect(none).not.toContain("opacity:0");
+
+    const subtle = renderToStaticMarkup(<SiteDocumentRenderer document={documentWithMotion("subtle")} config={config} status="draft" rsvpOpen={false} />);
+    expect(subtle).toContain("opacity:0");
+    expect(subtle).toContain("translateY(14px)");
+
+    const expressive = renderToStaticMarkup(<SiteDocumentRenderer document={documentWithMotion("expressive")} config={config} status="draft" rsvpOpen={false} />);
+    expect(expressive).toContain("opacity:0");
+    expect(expressive).toContain("translateY(28px)");
+  });
 });

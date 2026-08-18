@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties, FocusEvent, MouseEvent } from "react";
 import { RsvpForm } from "@/components/rsvp-form";
+import { SiteReveal } from "@/components/site-reveal";
 import { backgroundLayers, prepareSiteDocument } from "@/lib/site-contrast";
 import type { SiteDocument, SiteNode, SiteStyle, SiteTextBinding } from "@/lib/site-document";
 import type { EventConfig, EventStatus } from "@/lib/types";
@@ -110,14 +111,14 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
       : node.style.columns === 1
         ? "1fr"
         : `repeat(auto-fit, minmax(min(100%, max(16rem, calc((100% - ${node.style.columns - 1} * 1.75rem) / ${node.style.columns}))), 1fr))`;
-    return <div {...common} style={{ ...common.style, display: "grid", gridTemplateColumns: columns, alignItems: "stretch" }}>{node.children.map((child) => <NodeView key={child.id} node={child} context={context} />)}</div>;
+    return <div {...common} style={{ ...common.style, display: "grid", gridTemplateColumns: columns, alignItems: "stretch" }}>{node.children.map((child, index) => <SiteReveal key={child.id} motion={document.theme.motion} index={index}><NodeView node={child} context={context} /></SiteReveal>)}</div>;
   }
   if (node.type === "overlay") return (
     <div {...common} style={{ display: "grid", position: "relative", overflow: "hidden", ...common.style }}>
       {node.children.map((child, index) => (
-        <div key={child.id} style={{ gridArea: "1 / 1", zIndex: index, minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: child.style?.justify === "end" ? "flex-end" : child.style?.justify === "center" ? "center" : "flex-start" }}>
+        <SiteReveal key={child.id} motion={document.theme.motion} index={index} style={{ gridArea: "1 / 1", zIndex: index, minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: child.style?.justify === "end" ? "flex-end" : child.style?.justify === "center" ? "center" : "flex-start" }}>
           <NodeView node={child} context={context} />
-        </div>
+        </SiteReveal>
       ))}
     </div>
   );
@@ -186,7 +187,7 @@ export function SiteDocumentRenderer(props: SiteDocumentRendererProps) {
         containerType: "inline-size",
       } as CSSProperties}
     >
-      {document.nodes.map((node) => <NodeView key={node.id} node={node} context={context} />)}
+      {document.nodes.map((node, index) => <SiteReveal key={node.id} motion={document.theme.motion} index={index}><NodeView node={node} context={context} /></SiteReveal>)}
     </main>
   );
 }
