@@ -24,6 +24,34 @@ const rotatingPrompts = [
 
 const promptPrefix = "Ask Eventloom to create";
 
+interface SpeechRecognitionResultLike {
+  [index: number]: { transcript: string };
+}
+
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionLike extends EventTarget {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
 type EventType = (typeof eventTypes)[number]["value"];
 
 function initialEventType(value?: string): EventType {
@@ -48,9 +76,44 @@ export function StartEventPrompt({
   const [promptIndex, setPromptIndex] = useState(0);
   const [displayPrompt, setDisplayPrompt] = useState<string>(rotatingPrompts[0]);
   const [deletingPrompt, setDeletingPrompt] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const selectedEventType = eventTypes.find((type) => type.value === eventType) ?? eventTypes[0];
   const targetPrompt = rotatingPrompts[promptIndex];
   const ctaLabel = authConfigured && !authenticated && !signupEnabled ? "Sign in" : "Start building";
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  function toggleDictation() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      if (transcript) {
+        setBrief((current) => (current ? `${current} ${transcript}` : transcript));
+      }
+      inputRef.current?.focus();
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
+  }
 
   useEffect(() => {
     if (brief.trim()) return;
@@ -101,9 +164,13 @@ export function StartEventPrompt({
           maxLength={2000}
           aria-label="Describe your event"
           placeholder={selectedEventType.placeholder}
-          className="size-full bg-transparent px-2 text-[16px] leading-6 text-neutral-800 outline-none placeholder:text-transparent"
+          className="flex size-full items-center bg-transparent px-2 text-[16px] leading-6 text-neutral-800 outline-none placeholder:text-transparent"
         />
-        {!brief && <span aria-hidden="true" className="eventloom-prompt-placeholder pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 text-[16px] leading-6 text-neutral-400"><span>{promptPrefix} </span><span>{displayPrompt}</span></span>}
+        {!brief && (
+          <span aria-hidden="true" className="eventloom-prompt-placeholder pointer-events-none absolute inset-0 flex items-center px-2 text-[16px] leading-6 text-neutral-400">
+            <span>{promptPrefix} </span><span>{displayPrompt}</span>
+          </span>
+        )}
       </div>
       <div className="flex items-center justify-between gap-3">
         <button type="button" onClick={() => inputRef.current?.focus()} aria-label="Describe your event" className="flex size-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition hover:bg-neutral-50 hover:text-neutral-600">
@@ -119,7 +186,13 @@ export function StartEventPrompt({
               {eventTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
             </select>
           </div>
-          <button type="button" aria-label="Start voice recording" className="flex size-8 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-50 hover:text-neutral-600">
+          <button
+            type="button"
+            onClick={toggleDictation}
+            aria-label={listening ? "Stop voice recording" : "Start voice recording"}
+            aria-pressed={listening}
+            className={`flex size-8 items-center justify-center rounded-full transition hover:bg-neutral-50 ${listening ? "animate-pulse text-rose-500" : "text-neutral-400 hover:text-neutral-600"}`}
+          >
             <Mic className="size-4" strokeWidth={1.6} aria-hidden="true" />
           </button>
         </div>
