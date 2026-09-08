@@ -18,6 +18,7 @@ type StudioToolbarProps = {
   onUndo: () => void;
   onRedo: () => void;
   onToggleHistory: () => void;
+  showEditingControls?: boolean;
 };
 
 function eventStatusLabel(status: string) {
@@ -26,7 +27,7 @@ function eventStatusLabel(status: string) {
   return "Draft";
 }
 
-export function StudioToolbar({ eventId, title, status, saveStatus, viewport, canUndo, canRedo, onViewport, onUndo, onRedo, onToggleHistory }: StudioToolbarProps) {
+export function StudioToolbar({ eventId, title, status, saveStatus, viewport, canUndo, canRedo, onViewport, onUndo, onRedo, onToggleHistory, showEditingControls = true }: StudioToolbarProps) {
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
@@ -106,17 +107,17 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
         <div className="min-w-0"><p className="truncate text-[13px] font-semibold">{title}</p><p className="text-[10px] text-white/45">{eventStatusLabel(status)} · {saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : "All changes saved"}</p></div>
       </div>
 
-      <div className="hidden items-center rounded-lg border border-white/10 bg-black/20 p-1 md:flex">
+      {showEditingControls ? <div className="hidden items-center rounded-lg border border-white/10 bg-black/20 p-1 md:flex">
         {(["desktop", "tablet", "mobile"] as const).map((item) => {
           const Icon = item === "desktop" ? Laptop : item === "tablet" ? Tablet : Smartphone;
           const label = item === "desktop" ? "Desktop view" : item === "tablet" ? "Tablet view" : "Phone view";
           return <button key={item} type="button" onClick={() => onViewport(item)} aria-label={label} title={label} aria-pressed={viewport === item} className={`grid size-7 place-items-center rounded-md transition ${viewport === item ? "bg-white/15 text-white" : "text-white/40 hover:text-white"}`}><Icon className="size-3.5" /></button>;
         })}
-      </div>
+      </div> : null}
 
       <div className="flex items-center gap-1">
-        <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Undo" className="grid size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-25"><Undo2 className="size-3.5" /></button>
-        <button type="button" onClick={onRedo} disabled={!canRedo} aria-label="Redo" className="grid size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-25"><Redo2 className="size-3.5" /></button>
+        {showEditingControls ? <><button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Undo" className="grid size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-25"><Undo2 className="size-3.5" /></button>
+        <button type="button" onClick={onRedo} disabled={!canRedo} aria-label="Redo" className="grid size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-25"><Redo2 className="size-3.5" /></button></> : null}
         <button type="button" onClick={onToggleHistory} aria-label="Version history" title="Version history" className="hidden size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white sm:grid"><History className="size-3.5" /></button>
         <button type="button" onClick={() => requestFeedbackDialog()} aria-label="Send feedback" title="Send feedback" className="grid size-8 place-items-center rounded-lg text-white/55 hover:bg-white/10 hover:text-white"><MessageSquareText className="size-3.5" /></button>
         <Link href={`/app/events/${eventId}/rsvps`} className="hidden items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:bg-white/10 sm:inline-flex"><Users className="size-3.5" /> RSVPs</Link>

@@ -51,7 +51,7 @@ const bodyFontVar = {
 const rotateDeg = { none: undefined, left: "rotate(-2.5deg)", right: "rotate(2.5deg)" } as const;
 const offsetTranslate = { none: undefined, raised: "translateY(-0.6rem)", lowered: "translateY(0.6rem)" } as const;
 
-function styleFor(style: SiteStyle | undefined, document: SiteDocument): CSSProperties {
+export function siteStyleToCss(style: SiteStyle | undefined, document: SiteDocument): CSSProperties {
   if (!style) return {};
   const horizontal = style.width === "full" && style.padding === "none" ? "0" : "clamp(1.2rem,5.5cqw,3.25rem)";
   const layout = Boolean(style.background || style.minHeight || style.columns);
@@ -90,7 +90,7 @@ function coupleHeading(value: string) {
   return parts.length === 2 ? `${parts[0]}\n&\n${parts[1]}` : value;
 }
 
-function bindingValue(binding: SiteTextBinding | undefined, config: EventConfig) {
+export function siteBindingValue(binding: SiteTextBinding | undefined, config: EventConfig) {
   if (!binding) return "";
   if (binding === "event.initials") {
     const parts = config.title.split(/\s*&\s*|\s+and\s+/i).map((part) => part.trim()).filter(Boolean);
@@ -105,7 +105,7 @@ function bindingValue(binding: SiteTextBinding | undefined, config: EventConfig)
 function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRendererProps }) {
   const { document, config, interactive, selectedNodeId, onSelectNode, onTextCommit } = context;
   const selected = selectedNodeId === node.id;
-  const style = styleFor(node.style, document);
+  const style = siteStyleToCss(node.style, document);
   const common = {
     "data-site-node-id": node.id,
     "data-site-node-type": node.type,
@@ -133,7 +133,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
     </div>
   );
   if (node.type === "text") {
-    const raw = node.content ?? bindingValue(node.binding, config);
+    const raw = node.content ?? siteBindingValue(node.binding, config);
     const value = node.variant === "heading" ? coupleHeading(raw) : raw;
     const commit = interactive ? (event: FocusEvent<HTMLElement>) => {
       const content = event.currentTarget.innerText.trim();
@@ -185,24 +185,29 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
 export function SiteDocumentRenderer(props: SiteDocumentRendererProps) {
   const document = prepareSiteDocument(props.document);
   const context = { ...props, document };
-  const display = displayFontVar[document.theme.typography.display];
-  const body = bodyFontVar[document.theme.typography.body];
-  const surface = backgroundLayers(document.theme.colors.surface, document.theme.texture, document.theme.colors.accent, document.theme.colors.surface);
+  const shellStyle = siteDocumentShellStyle(document);
   return (
     <main
       className="eventloom-site-document"
       dir={document.direction}
-      style={{
-        "--event-display": display,
-        "--event-body": body,
-        ...surface,
-        color: document.theme.colors.text,
-        minHeight: "100svh",
-        fontFamily: body,
-        containerType: "inline-size",
-      } as CSSProperties}
+      style={shellStyle}
     >
       {document.nodes.map((node, index) => <SiteReveal key={node.id} motion={document.theme.motion} index={index}><NodeView node={node} context={context} /></SiteReveal>)}
     </main>
   );
+}
+
+export function siteDocumentShellStyle(document: SiteDocument): CSSProperties {
+  const display = displayFontVar[document.theme.typography.display];
+  const body = bodyFontVar[document.theme.typography.body];
+  const surface = backgroundLayers(document.theme.colors.surface, document.theme.texture, document.theme.colors.accent, document.theme.colors.surface);
+  return {
+    "--event-display": display,
+    "--event-body": body,
+    ...surface,
+    color: document.theme.colors.text,
+    minHeight: "100svh",
+    fontFamily: body,
+    containerType: "inline-size",
+  } as CSSProperties;
 }

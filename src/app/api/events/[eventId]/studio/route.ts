@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyEventDetailsPatch, applySiteOperations } from "@/lib/site-document-operations";
+import { siteDocumentSchema } from "@/lib/site-document";
 import { canEditEvent, commitStudioRevision, loadStudioState } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
@@ -18,13 +19,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ev
   const { eventId } = await params;
   const user = await getServerUser();
   if (!(await canEditEvent(eventId, user?.id ?? null))) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  const body = await req.json().catch(() => null) as { baseVersionId?: string; operations?: unknown; eventPatch?: unknown; summary?: string } | null;
-  if (!body?.baseVersionId || (!body.operations && !body.eventPatch)) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  const body = await req.json().catch(() => null) as { baseVersionId?: string; document?: unknown; operations?: unknown; eventPatch?: unknown; summary?: string } | null;
+  if (!body?.baseVersionId || (!body.document && !body.operations && !body.eventPatch)) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const state = await loadStudioState(eventId, user?.id ?? null);
   if (!state) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (state.revision.id !== body.baseVersionId) return NextResponse.json({ error: "version_conflict", state }, { status: 409 });
   try {
-    const applied = body.operations ? applySiteOperations(state.revision.document, body.operations) : { document: state.revision.document, changedNodeIds: [] };
+    const applied = body.document
+      ? { document: siteDocumentSchema.parse(body.document), changedNodeIds: [] }
+      : body.operations
+        ? applySiteOperations(state.revision.document, body.operations)
+        : { document: state.revision.document, changedNodeIds: [] };
     const config = body.eventPatch ? applyEventDetailsPatch(state.revision.config, body.eventPatch) : state.revision.config;
     const result = await commitStudioRevision({
       eventId,

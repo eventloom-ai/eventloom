@@ -3,14 +3,13 @@ import { describe, expect, it } from "vitest";
 import { shouldRenderGlobalLegalFooter } from "@/components/global-legal-footer";
 
 describe("desktop studio layout", () => {
-  it("constrains the canvas row so the AI composer stays in the viewport", () => {
+  it("keeps the Puck canvas and AI conversation inside the viewport", () => {
     const source = readFileSync("src/components/visual-studio.tsx", "utf8");
 
-    expect(source).toContain("grid-rows-[minmax(0,1fr)]");
-    expect(source).toContain('className="relative min-h-0 min-w-0 overflow-hidden"');
-
-    const canvasSource = readFileSync("src/components/studio-canvas.tsx", "utf8");
-    expect(canvasSource).toContain('className="relative h-full min-h-0 overflow-auto');
+    expect(source).toContain('className="relative flex min-h-0 flex-1"');
+    expect(source).toContain('className="min-w-0 flex-1 bg-[#f3f3f3]"');
+    expect(source).toContain("<Puck");
+    expect(source).toContain("<StudioChat");
   });
 
   it("keeps the shared legal footer out of the full-screen studio", () => {
