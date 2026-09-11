@@ -12,6 +12,13 @@ export const metadata: Metadata = {
     title: "Event Website Builder with RSVPs | Eventloom",
     description: "Create a beautiful event website, collect online RSVPs, and manage every guest response in one simple place.",
     url: "/",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Eventloom event websites with online RSVPs" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Event Website Builder with RSVPs | Eventloom",
+    description: "Create a beautiful event website, collect online RSVPs, and manage every guest response in one simple place.",
+    images: ["/opengraph-image"],
   },
 };
 

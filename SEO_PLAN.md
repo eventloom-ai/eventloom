@@ -69,11 +69,13 @@ Implementation checklist:
 
 ### 1.d — Add structured data and social metadata
 
-- [ ] Add `Organization` structured data for Eventloom.
-- [ ] Add `WebSite` structured data for the main domain.
+Status: implemented in the root layout and Open Graph image route. Deploy and validate the production output before marking the phase complete.
+
+- [x] Add `Organization` structured data for Eventloom.
+- [x] Add `WebSite` structured data for the main domain.
 - [ ] Add `BreadcrumbList` structured data to inner marketing pages.
-- [ ] Add a branded `og:image` for social sharing.
-- [ ] Add a Twitter/X image and use a large summary card where appropriate.
+- [x] Add a branded `og:image` for social sharing.
+- [x] Add a Twitter/X image and use a large summary card where appropriate.
 - [ ] Validate structured data with Google's Rich Results Test.
 - [ ] Test social previews on LinkedIn, Facebook, and X.
 

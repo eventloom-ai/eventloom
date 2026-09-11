@@ -37,6 +37,27 @@ const workSans = Work_Sans({ subsets: ["latin"], variable: "--font-work-sans-fac
 const newsreader = Newsreader({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-newsreader-face", display: "swap", preload: false });
 const ibmPlexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-ibm-plex-sans-face", display: "swap", preload: false });
 
+const siteUrl = env.appUrl().replace(/\/$/, "");
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "Eventloom",
+      url: siteUrl,
+      logo: `${siteUrl}/icon.svg`,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      name: "Eventloom",
+      url: siteUrl,
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
+  ],
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(env.appUrl()),
   title: {
@@ -52,11 +73,13 @@ export const metadata: Metadata = {
     description: "Create an event site, collect guest replies, and share one elegant link with Eventloom.",
     siteName: "Eventloom",
     url: "/",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Eventloom event websites with online RSVPs" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Event Websites and RSVPs, Made Personal",
     description: "Create an event site, collect guest replies, and share one elegant link.",
+    images: ["/opengraph-image"],
   },
 };
 
@@ -71,6 +94,7 @@ export default function RootLayout({
       className={`h-full antialiased ${playfair.variable} ${inter.variable} ${outfit.variable} ${fraunces.variable} ${instrumentSerif.variable} ${spaceGrotesk.variable} ${bricolageGrotesque.variable} ${bodoniModa.variable} ${italiana.variable} ${bigShouldersDisplay.variable} ${workSans.variable} ${newsreader.variable} ${ibmPlexSans.variable}`}
     >
       <body className="min-h-full flex flex-col">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
         <BuildJobProvider>{children}</BuildJobProvider>
         <GlobalLegalFooter />
         <FeedbackWidget turnstileSiteKey={env.turnstileSiteKey()} />
