@@ -5,6 +5,10 @@ import { refreshSupabaseSession } from "@/lib/supabase/middleware";
 import { normalizeHost, slugFromHost } from "@/lib/tenancy";
 
 const authRoutes = ["/login", "/signup", "/auth"];
+const legacyPathRedirects: Record<string, string> = {
+  "/home": "/",
+  "/terms-of-service": "/legal/terms",
+};
 
 function noncePolicy(nonce: string) {
   const devEval = process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
@@ -26,6 +30,19 @@ export async function proxy(req: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("content-security-policy", csp);
 
+  const host = normalizeHost(req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "");
+  const canonicalHost = normalizeHost(rootDomain());
+  const legacyDestination = legacyPathRedirects[pathname];
+  if (legacyDestination || (canonicalHost && host === `www.${canonicalHost}`)) {
+    const canonicalUrl = req.nextUrl.clone();
+    if (legacyDestination) canonicalUrl.pathname = legacyDestination;
+    if (canonicalHost && host === `www.${canonicalHost}`) {
+      canonicalUrl.hostname = canonicalHost;
+      canonicalUrl.port = "";
+    }
+    return secureResponse(NextResponse.redirect(canonicalUrl, 301), csp);
+  }
+
   if (pathname.startsWith("/app") || pathname.startsWith("/admin") || authRoutes.some((route) => pathname.startsWith(route))) {
     if (isSupabaseConfigured()) {
       const { response, user } = await refreshSupabaseSession(req, requestHeaders);
@@ -42,7 +59,6 @@ export async function proxy(req: NextRequest) {
     return secureResponse(NextResponse.next({ request: { headers: requestHeaders } }), csp);
   }
 
-  const host = normalizeHost(req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "");
   const hostTenant = slugFromHost(host, rootDomain());
   if (!hostTenant) return secureResponse(NextResponse.next({ request: { headers: requestHeaders } }), csp);
   const url = req.nextUrl.clone();
