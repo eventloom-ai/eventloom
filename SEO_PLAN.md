@@ -42,6 +42,8 @@ Reference: [Google Search Console sitemap guidance](https://support.google.com/w
 
 ### 1.c — Improve homepage metadata and semantics
 
+Status: implemented in the homepage metadata and landing-page copy. Deploy and verify the production HTML before marking the phase complete.
+
 Update the homepage so the primary search intent is obvious in the title, H1, description, and visible copy.
 
 Suggested homepage title:
@@ -58,12 +60,12 @@ Suggested description:
 
 Implementation checklist:
 
-- [ ] Keep the Eventloom brand name in the title.
-- [ ] Use one clear H1 on the homepage.
-- [ ] Mention event websites and RSVPs in the first visible paragraph.
-- [ ] Use descriptive H2 and H3 headings for features, use cases, pricing, and FAQs.
-- [ ] Remove reliance on the `keywords` meta tag; Google does not use it for ranking.
-- [ ] Keep copy natural and user-focused; do not repeat keywords unnaturally.
+- [x] Keep the Eventloom brand name in the title.
+- [x] Use one clear H1 on the homepage.
+- [x] Mention event websites and RSVPs in the first visible paragraph.
+- [x] Use descriptive H2 and H3 headings for features, use cases, pricing, and FAQs.
+- [x] Remove reliance on the `keywords` meta tag; Google does not use it for ranking.
+- [x] Keep copy natural and user-focused; do not repeat keywords unnaturally.
 
 ### 1.d — Add structured data and social metadata
 

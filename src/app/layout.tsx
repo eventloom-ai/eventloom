@@ -45,7 +45,6 @@ export const metadata: Metadata = {
   },
   description: "Create a custom event website, collect guest RSVPs, and keep every reply organized in one beautiful place.",
   applicationName: "Eventloom",
-  keywords: ["RSVP website", "online RSVP", "event website", "wedding RSVP", "party invitations"],
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
