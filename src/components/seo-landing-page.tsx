@@ -66,6 +66,25 @@ export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
         </div>
       </section>
 
+      <section className="border-y border-[#302821]/10 bg-[#fffaf3] px-5 py-20 sm:px-8 sm:py-24">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1fr_0.85fr] lg:items-center">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">More than an RSVP form</p>
+            <h2 className="mt-5 max-w-xl font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-5xl">Give guests the context they need before they reply.</h2>
+            <div className="mt-7 grid gap-5 text-sm leading-7 text-[#6d6055] sm:grid-cols-2">
+              <p>A form collects an answer. Eventloom gives guests a welcoming event website with the story, schedule, location, and questions in one place.</p>
+              <p>A static invitation looks nice but often creates follow-up work. Eventloom keeps the page and the guest responses connected as plans change.</p>
+            </div>
+          </div>
+          <article className="rounded-[1.5rem] bg-[#302821] p-6 text-[#fff9f2] sm:p-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#dfb89f]">Simple pricing</p>
+            <div className="mt-4 flex items-end justify-between gap-4"><div><p className="text-lg font-semibold">One published event</p><p className="mt-1 text-sm text-[#eadbd0]/65">One year of Eventloom service</p></div><p className="font-[family-name:var(--font-playfair)] text-5xl tracking-[-0.055em]">$20</p></div>
+            <ul className="mt-7 space-y-2 border-t border-white/15 pt-5 text-sm leading-6 text-[#eadbd0]/75"><li>Custom event website and shareable link</li><li>Guest RSVP collection and response management</li><li>Plain-language editing and secure hosting</li></ul>
+            <p className="mt-5 text-xs leading-6 text-[#eadbd0]/55">Create and refine your draft first. A custom domain is optional and charged separately at the live registrar cost shown before payment.</p>
+          </article>
+        </div>
+      </section>
+
       <section className="bg-[#eff2e9] px-5 py-20 sm:px-8 sm:py-28">
         <div className="mx-auto max-w-6xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]">How it works</p>

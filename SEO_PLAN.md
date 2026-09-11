@@ -98,38 +98,38 @@ Create one useful, distinct page for each high-intent search theme. Each page sh
 
 ### 2.a — Define the landing-page architecture
 
-- [ ] Map one primary search intent to each page.
-- [ ] Assign one primary keyword theme and several natural variations to each page.
-- [ ] Avoid assigning the same primary intent to multiple pages.
-- [ ] Define the internal-linking path between related pages.
-- [ ] Decide which pages should be included in the sitemap.
+- [x] Map one primary search intent to each page.
+- [x] Assign one primary keyword theme and several natural variations to each page.
+- [x] Avoid assigning the same primary intent to multiple pages.
+- [x] Define the internal-linking path between related pages.
+- [x] Decide which pages should be included in the sitemap.
 
 ### 2.b — Create the required pages
 
-- [ ] `/rsvp-website`
-- [ ] `/online-rsvp`
-- [ ] `/event-website-builder`
-- [ ] `/wedding-rsvp-website`
-- [ ] `/birthday-event-website`
-- [ ] `/private-event-website`
+- [x] `/rsvp-website`
+- [x] `/online-rsvp`
+- [x] `/event-website-builder`
+- [x] `/wedding-rsvp-website`
+- [x] `/birthday-event-website`
+- [x] `/private-event-website`
 
 ### 2.c — Apply the page requirements
 
 Each page should include:
 
-- [ ] A unique SEO title.
-- [ ] A unique meta description.
-- [ ] One H1 matching the page's primary intent.
-- [ ] A short explanation of who the page is for.
-- [ ] Product screenshots or a working example.
-- [ ] Relevant features and benefits.
-- [ ] How Eventloom differs from generic form tools and invitation platforms.
-- [ ] Pricing and what is included.
-- [ ] A clear CTA to create an event.
-- [ ] A visible FAQ section based on real customer questions.
-- [ ] Internal links to related Eventloom pages.
-- [ ] A canonical URL.
-- [ ] Mobile-friendly layout and fast loading time.
+- [x] A unique SEO title.
+- [x] A unique meta description.
+- [x] One H1 matching the page's primary intent.
+- [x] A short explanation of who the page is for.
+- [x] Product screenshots or a working example.
+- [x] Relevant features and benefits.
+- [x] How Eventloom differs from generic form tools and invitation platforms.
+- [x] Pricing and what is included.
+- [x] A clear CTA to create an event.
+- [x] A visible FAQ section based on real customer questions.
+- [x] Internal links to related Eventloom pages.
+- [x] A canonical URL.
+- [x] Mobile-friendly layout and fast loading time.
 
 ### 2.d — Position each page for a distinct audience
 
