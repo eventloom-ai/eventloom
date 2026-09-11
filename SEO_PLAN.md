@@ -20,15 +20,15 @@ There is no guaranteed way to obtain the first organic Google position. The obje
 - [x] Add application-level redirects for `www.eventloom.co` to the matching `https://eventloom.co` URL.
 - [x] Redirect `/home` to `/` with a permanent `301` redirect.
 - [x] Redirect `/terms-of-service` to `/legal/terms` with a permanent `301` redirect.
-- [ ] Confirm that the old `www` deployment is no longer serving a separate application.
+- [x] Confirm that the old `www` deployment is no longer serving a separate application.
 - [ ] Confirm that all internal links use `https://eventloom.co` or relative URLs consistently.
 - [x] Confirm that only `https://eventloom.co` appears in the homepage canonical tag and sitemap.
 
-Implementation note: the repository now handles these redirects in `src/proxy.ts`. The old `www` deployment still needs to be removed or pointed at this deployment in Vercel/DNS.
+Implementation note: the repository handles these redirects in `src/proxy.ts`. The redirect deployment is live, and `www.eventloom.co` is now attached to the Eventloom production project in Vercel.
 
 ### 1.b — Configure Google Search Console
 
-Status: ownership verified and sitemap submitted on 2026-09-11. Search Console currently shows `Couldn't fetch`; the live sitemap endpoint returns HTTP 200 and valid XML, so Google should retry processing it. Investigate if the status remains after the next crawl.
+Status: ownership verified and sitemap submitted on 2026-09-11. The sitemap was resubmitted after the canonical redirects went live; Search Console may take time to refresh its status.
 
 - [x] Add a Domain property for `eventloom.co`.
 - [x] Verify ownership through DNS.
