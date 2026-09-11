@@ -69,7 +69,7 @@ Implementation checklist:
 
 ### 1.d — Add structured data and social metadata
 
-Status: implemented in the root layout and Open Graph image route. Deploy and validate the production output before marking the phase complete.
+Status: complete for Organization, WebSite, Open Graph, and Twitter metadata; production verified on 2026-09-11. BreadcrumbList and Rich Results Test validation remain planned for inner marketing pages.
 
 - [x] Add `Organization` structured data for Eventloom.
 - [x] Add `WebSite` structured data for the main domain.
