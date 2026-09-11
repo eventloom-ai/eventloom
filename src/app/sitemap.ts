@@ -3,6 +3,12 @@ import { appUrl } from "@/lib/env";
 
 const publicRoutes = [
   "/",
+  "/rsvp-website",
+  "/online-rsvp",
+  "/event-website-builder",
+  "/wedding-rsvp-website",
+  "/birthday-event-website",
+  "/private-event-website",
   "/contact",
   "/legal",
   "/legal/terms",
