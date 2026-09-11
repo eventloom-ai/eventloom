@@ -162,12 +162,12 @@ Avoid creating pages that are nearly identical except for swapping a keyword. Ea
 ### 2.e — Review and publish the landing pages
 
 - [ ] Test every page on mobile and desktop.
-- [ ] Confirm that each page has one H1 and a unique title and description.
-- [ ] Confirm that every CTA works.
-- [ ] Confirm that every page has a canonical URL.
+- [x] Confirm that each page has one H1 and a unique title and description.
+- [x] Confirm that every CTA works.
+- [x] Confirm that every page has a canonical URL.
 - [ ] Validate structured data and social previews.
-- [ ] Add approved pages to the sitemap.
-- [ ] Submit the updated sitemap in Search Console.
+- [x] Add approved pages to the sitemap.
+- [x] Submit the updated sitemap in Search Console.
 
 ## Phase 3: Build authority over time
 
