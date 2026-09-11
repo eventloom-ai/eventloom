@@ -42,7 +42,7 @@ Reference: [Google Search Console sitemap guidance](https://support.google.com/w
 
 ### 1.c — Improve homepage metadata and semantics
 
-Status: implemented in the homepage metadata and landing-page copy. Deploy and verify the production HTML before marking the phase complete.
+Status: complete and verified in production on 2026-09-11. The homepage title, description, canonical, H1, and search-focused visible copy are live.
 
 Update the homepage so the primary search intent is obvious in the title, H1, description, and visible copy.
 
