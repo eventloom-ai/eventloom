@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { softProgressCeiling } from "@/lib/agent/build-progress";
 import type { BuildJobStatus, BuildProgressStep } from "@/lib/agent/progress";
 import { clearStoredBuildJob, readStoredBuildJob, writeStoredBuildJob } from "@/lib/build-job-store";
+import { creatorErrorMessage } from "@/lib/creator-errors";
 import type { EventConfig } from "@/lib/types";
 
 export type BuildUiState = {
@@ -189,7 +190,7 @@ export function useBuildJob() {
             ? "That link name is already taken. Choose another one."
             : payload?.error === "slug_reserved"
               ? "That link name is reserved by Eventloom. Choose another one."
-              : payload?.error ?? "We couldn't start the build. Please try again.";
+              : creatorErrorMessage(payload?.error, "We couldn't start the build. Please try again.");
         setState((current) => ({
           ...current,
           isBuilding: false,

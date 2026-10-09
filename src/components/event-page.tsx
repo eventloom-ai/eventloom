@@ -23,7 +23,7 @@ export function EventPage({ event }: { event: EventRecord }) {
       <FallbackSite event={event} />
       <section className="eventloom-managed-rsvp px-5 pb-12 sm:px-8" aria-label="Guest reply">
         <div className="mx-auto max-w-2xl">
-          <RsvpForm className="eventloom-managed-rsvp__form" formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} fields={event.config.rsvpFields} />
+          <RsvpForm className="eventloom-managed-rsvp__form" formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} isDraft={event.status === "draft"} fields={event.config.rsvpFields} />
         </div>
       </section>
       <GuestFooter slug={event.slug} />

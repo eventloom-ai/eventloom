@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { processAndStoreEventImage } from "@/lib/event-assets";
+import sharp from "sharp";
+import { MAX_EVENT_IMAGE_EDGE_PX, processAndStoreEventImage } from "@/lib/event-assets";
 
 const ONE_PIXEL_PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
@@ -30,6 +31,33 @@ describe("processAndStoreEventImage", () => {
     expect(result).toEqual({ id: "asset-123", url: "/api/assets/asset-123" });
     expect(upload).toHaveBeenCalledOnce();
     expect(insert).toHaveBeenCalledOnce();
+  });
+
+  it("resizes large uploads to the long-edge cap, applies EXIF orientation, and strips metadata", async () => {
+    const { client, upload, insert } = mockClient();
+    const jpeg = await sharp({ create: { width: 4_000, height: 3_000, channels: 3, background: "#b48a5a" } })
+      .jpeg({ quality: 90 })
+      .withExif({ IFD0: { Copyright: "Guest photographer", Make: "Camera" } })
+      .withMetadata({ orientation: 6 })
+      .toBuffer();
+    expect((await sharp(jpeg).metadata()).exif).toBeDefined();
+
+    await processAndStoreEventImage(client as never, "event-1", new File([new Uint8Array(jpeg)], "portrait.jpg", { type: "image/jpeg" }));
+    const [path, stored, options] = upload.mock.calls[0] as unknown as [string, Buffer, { contentType: string }];
+    const output = await sharp(stored).metadata();
+    expect(path).toMatch(/^event-1\/[0-9a-f-]{36}\.webp$/);
+    expect(options.contentType).toBe("image/webp");
+    expect([output.format, output.width, output.height]).toEqual(["webp", 1_800, MAX_EVENT_IMAGE_EDGE_PX]);
+    expect(output.exif).toBeUndefined();
+    expect(output.orientation).toBeUndefined();
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ width: 1_800, height: MAX_EVENT_IMAGE_EDGE_PX, size: stored.length }) }));
+  });
+
+  it("never enlarges small uploads", async () => {
+    const { client, upload } = mockClient();
+    await processAndStoreEventImage(client as never, "event-1", pngFile());
+    const output = await sharp((upload.mock.calls[0] as unknown as [string, Buffer])[1]).metadata();
+    expect([output.width, output.height]).toEqual([1, 1]);
   });
 
   it("rejects a disallowed file type without touching storage", async () => {

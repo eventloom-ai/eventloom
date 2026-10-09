@@ -1,6 +1,7 @@
 import { formatBriefDateTime } from "@/lib/agent/brief-facts";
+import { MAX_BRIEF_CHARS } from "@/lib/prompt-limits";
 
-const MAX_LANDING_BRIEF_LENGTH = 2_000;
+const MAX_LANDING_BRIEF_LENGTH = MAX_BRIEF_CHARS;
 
 /** Joins the landing composer's description, event type, date and location into one brief that fits the length cap. */
 export function composeLandingBrief({ description, eventTypeLabel, date, location }: { description: string; eventTypeLabel?: string; date?: string; location?: string }) {

@@ -4,10 +4,12 @@ import { getAuthContext } from "@/lib/security/auth";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
 import { serviceSupabase } from "@/lib/supabase/server";
+import { slugSchema } from "@/lib/validation";
 
+// Organization slugs share the event slug rules, including the reserved list of app routes and official-looking names.
 const organizationSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(3).max(63),
+  slug: slugSchema,
 });
 
 export async function POST(request: NextRequest) {
@@ -19,7 +21,10 @@ export async function POST(request: NextRequest) {
   const parsedBody = await readJsonWithinLimit(request, 4_096);
   if (!parsedBody.ok) return NextResponse.json({ error: "invalid_request" }, { status: parsedBody.error === "payload_too_large" ? 413 : 400 });
   const parsed = organizationSchema.safeParse(parsedBody.data);
-  if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  if (!parsed.success) {
+    const reserved = parsed.error.issues.some((issue) => issue.message === "slug_reserved");
+    return NextResponse.json({ error: reserved ? "slug_reserved" : "invalid_request" }, { status: reserved ? 409 : 400 });
+  }
   const client = serviceSupabase();
   if (!client) return NextResponse.json({ error: "unavailable" }, { status: 503 });
   const { data, error } = await client.rpc("create_organization", {

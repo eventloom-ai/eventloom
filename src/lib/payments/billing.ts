@@ -36,7 +36,7 @@ export async function reserveBuildCredit(userId: string, eventId?: string | null
   return { ok: true as const, remainingCents: data as number };
 }
 
-export async function refundBuildCredit(userId: string, eventId: string, jobId: string) {
+export async function refundBuildCredit(userId: string, eventId: string | null, jobId: string) {
   const client = serviceSupabase();
   if (!client || jobId.startsWith("demo-run-") || await isPlatformAdmin(userId)) return true;
   const { data, error } = await client.rpc("refund_ai_build_credit", {

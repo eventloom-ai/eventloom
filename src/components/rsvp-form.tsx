@@ -9,7 +9,7 @@ import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
 
-export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, fields = defaultFields, className = "" }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; fields?: RsvpField[]; className?: string }) {
+export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, isDraft = false, fields = defaultFields, className = "" }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; isDraft?: boolean; fields?: RsvpField[]; className?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [attending, setAttending] = useState(true);
   const [partySize, setPartySize] = useState(1);
@@ -67,10 +67,11 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
   }
 
   if (!isOpen) {
+    // A draft has never accepted replies, so "no longer accepting" would mislead the host previewing it.
     return (
       <section className={`rounded-[8px] border border-black/10 bg-white/70 p-6 ${className}`}>
-        <h2 className="text-2xl font-semibold">Guest replies are closed</h2>
-        <p className="mt-2 text-stone-600">This event is no longer accepting responses.</p>
+        <h2 className="text-2xl font-semibold">{isDraft ? "RSVPs are not open yet" : "Guest replies are closed"}</h2>
+        <p className="mt-2 text-stone-600">{isDraft ? "RSVPs open when this event is published." : "This event is no longer accepting responses."}</p>
       </section>
     );
   }

@@ -4,6 +4,7 @@ import { Eye, EyeOff, ImagePlus, Palette, SlidersHorizontal, Type } from "lucide
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import type { SiteNode, SiteStyle } from "@/lib/site-document";
 import type { SiteOperation } from "@/lib/site-document-operations";
+import { eventInitials } from "@/lib/couple-title";
 import type { EventConfig } from "@/lib/types";
 
 type StudioInspectorProps = {
@@ -122,11 +123,7 @@ export function StudioInspector({ eventId, node, config, disabled, onOperations,
     if (!node) return;
     onOperations([{ op: "update_style", nodeId: node.id, style: { [key]: value } } as SiteOperation], `Updated ${node.label ?? node.type} style`);
   }
-  const initials = (() => {
-    const parts = config.title.split(/\s*&\s*|\s+and\s+/i).map((part) => part.trim()).filter(Boolean);
-    const letters = (parts.length === 2 ? parts : [config.title]).map((part) => part[0]?.toUpperCase()).filter(Boolean);
-    return letters.length === 2 ? letters.join(" & ") : letters.join("");
-  })();
+  const initials = eventInitials(config.title, config.eventType);
   const boundText = node?.type === "text" && node.binding ? ({
     "event.title": config.title,
     "event.subtitle": config.subtitle,

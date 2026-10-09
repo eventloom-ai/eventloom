@@ -1,6 +1,8 @@
 import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
+import { aiDeadline } from "@/lib/ai/deadline";
 import { reserveBuildCredit } from "@/lib/payments/billing";
+import { promptTooLong } from "@/lib/prompt-limits";
 import { executeStudioRun } from "@/lib/studio-agent";
 import { canEditEvent, createBuilderMessage, createStudioRun, loadStudioState, updateStudioRun } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
@@ -9,6 +11,7 @@ import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
+  const deadline = aiDeadline();
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!requestWithinLimit(req, 16_384)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const { eventId } = await params;
@@ -16,7 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   if (!user || !(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const body = await req.json().catch(() => null) as { message?: string; baseVersionId?: string; selectedNodeIds?: string[] } | null;
   const message = body?.message?.trim() ?? "";
-  if (!message || message.length > 8000 || !body?.baseVersionId) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (!message || !body?.baseVersionId) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (promptTooLong(message)) return NextResponse.json({ error: "prompt_too_long" }, { status: 400 });
   const state = await loadStudioState(eventId, user.id);
   if (!state) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (state.revision.id !== body.baseVersionId) return NextResponse.json({ error: "version_conflict", state }, { status: 409 });
@@ -31,6 +35,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
     return NextResponse.json({ error: credit.error }, { status: 402 });
   }
   const userMessage = await createBuilderMessage({ eventId, runId, role: "user", content: message, selectedNodeIds, versionId: state.revision.id, ownerId: user.id });
-  after(async () => executeStudioRun({ jobId: runId, eventId, ownerId: user.id, prompt: message, selectedNodeIds }));
+  after(async () => executeStudioRun({ jobId: runId, eventId, ownerId: user.id, prompt: message, selectedNodeIds, deadline }));
   return NextResponse.json({ runId, message: userMessage, remainingCreditCents: credit.remainingCents }, { status: 202 });
 }

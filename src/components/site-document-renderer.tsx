@@ -3,7 +3,7 @@ import type { CSSProperties, FocusEvent, MouseEvent } from "react";
 import { RsvpForm } from "@/components/rsvp-form";
 import { SiteReveal } from "@/components/site-reveal";
 import { backgroundLayers, prepareSiteDocument } from "@/lib/site-contrast";
-import { coupleTitleLines } from "@/lib/couple-title";
+import { coupleTitleLines, eventInitials } from "@/lib/couple-title";
 import type { SiteDocument, SiteNode, SiteStyle, SiteTextBinding } from "@/lib/site-document";
 import type { EventConfig, EventStatus } from "@/lib/types";
 
@@ -92,11 +92,7 @@ function coupleHeading(value: string, eventType: string) {
 
 export function siteBindingValue(binding: SiteTextBinding | undefined, config: EventConfig) {
   if (!binding) return "";
-  if (binding === "event.initials") {
-    const parts = config.title.split(/\s*&\s*|\s+and\s+/i).map((part) => part.trim()).filter(Boolean);
-    const initials = (parts.length === 2 ? parts : [config.title]).map((part) => part[0]?.toUpperCase()).filter(Boolean);
-    return initials.length === 2 ? initials.join(" & ") : initials.join("");
-  }
+  if (binding === "event.initials") return eventInitials(config.title, config.eventType);
   const key = binding.split(".")[1] as keyof EventConfig;
   const value = config[key];
   return typeof value === "string" ? value : "";
@@ -176,7 +172,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
         <h2 style={{ fontFamily: "var(--event-display)", fontSize: "clamp(2.4rem,10cqw,4.4rem)", lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.045em" }}>{node.heading ?? "Will you join us?"}</h2>
         {node.description ? <p style={{ marginTop: "1.15rem", opacity: 0.68, lineHeight: 1.6, maxWidth: "28rem" }}>{node.description}</p> : null}
       </div>
-      <RsvpForm className="eventloom-managed-rsvp__form" formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} fields={config.rsvpFields} />
+      <RsvpForm className="eventloom-managed-rsvp__form" formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} isDraft={context.status === "draft"} fields={config.rsvpFields} />
     </div>
   );
   return null;

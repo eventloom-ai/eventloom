@@ -3,12 +3,13 @@ import { NewEventStarter } from "@/components/new-event-starter";
 import { SiteBuildStudio } from "@/components/site-build-studio";
 import { redirect } from "next/navigation";
 import { eventDraftPath } from "@/lib/event-entry";
+import { MAX_BRIEF_CHARS } from "@/lib/prompt-limits";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getServerUser } from "@/lib/supabase/server";
 
 export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ brief?: string }> }) {
   const { brief } = await searchParams;
-  const landingBrief = brief?.trim().slice(0, 8000) ?? "";
+  const landingBrief = brief?.trim().slice(0, MAX_BRIEF_CHARS) ?? "";
   const user = await getServerUser();
   const authConfigured = hasSupabasePublicEnv();
   if (authConfigured && !user) {

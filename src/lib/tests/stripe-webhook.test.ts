@@ -46,6 +46,7 @@ vi.mock("@/lib/payments/monitoring", () => ({
 
 vi.mock("@/lib/domains/provision", () => ({
   provisionPurchasedDomain: mocks.provisionDomain,
+  domainProvisioningStore: (_client: unknown, orderId: string, domain: string) => ({ orderId, domain }),
 }));
 vi.mock("@/lib/domains/registrant", () => ({ deleteRegistrantPayload: mocks.deleteRegistrant }));
 vi.mock("@/lib/payments/webhook-store", () => ({ beginProviderEvent: mocks.beginProviderEvent, startFulfillmentJob: mocks.startFulfillmentJob, markFulfillment: mocks.markFulfillment }));
@@ -151,7 +152,7 @@ describe("Stripe launch webhook", () => {
     const response = await POST(webhookRequest());
 
     expect(response.status).toBe(200);
-    expect(mocks.provisionDomain).toHaveBeenCalledWith("mira-adam.com", { firstName: "Mira" });
+    expect(mocks.provisionDomain).toHaveBeenCalledWith("mira-adam.com", { firstName: "Mira" }, { orderId: event.data.object.metadata.order_id, domain: "mira-adam.com" });
     expect(mocks.rpc).toHaveBeenCalledWith("fulfill_event_launch", expect.objectContaining({
       p_domain: "mira-adam.com",
       p_domain_provider_id: "mira-adam.com",

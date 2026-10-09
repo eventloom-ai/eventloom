@@ -1,5 +1,6 @@
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { briefFacts } from "@/lib/agent/brief-facts";
+import { aiCallTimeoutMs } from "@/lib/ai/deadline";
 import { env, openaiResponsesOptions } from "@/lib/env";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt } from "@/lib/event-theme";
@@ -66,10 +67,11 @@ const eventConfigSchema = {
   ],
 } as const;
 
-export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOverrides): Promise<GeneratedSitePlan> {
+export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOverrides, options: { deadline?: number } = {}): Promise<GeneratedSitePlan> {
   const fallback = fallbackSitePlan(prompt, themeOverrides);
   const openaiKey = env.openaiApiKey();
-  if (!openaiKey) {
+  const timeoutMs = aiCallTimeoutMs(options.deadline);
+  if (!openaiKey || timeoutMs === null) {
     return fallback;
   }
 
@@ -101,7 +103,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
         },
       },
     }),
-    signal: AbortSignal.timeout(240_000),
+    signal: AbortSignal.timeout(timeoutMs),
   }).catch(() => null);
 
   if (!response?.ok) {

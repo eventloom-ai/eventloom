@@ -59,38 +59,6 @@ export function validateRsvpPayload(input: unknown) {
   return { ok: true as const, payload };
 }
 
-export const pageArtifactSchema = z.object({
-  html: z.string().min(20).max(50_000),
-  css: z.string().max(30_000).default(""),
-  generatedAt: z.string(),
-  model: z.string().min(1).max(80),
-});
-
-const forbiddenArtifactPatterns = [
-  /<script[\s>]/i,
-  /\son[a-z]+\s*=/i,
-  /\bfetch\s*\(/i,
-  /\bXMLHttpRequest\b/i,
-  /\bprocess\.env\b/i,
-  /\blocalStorage\b/i,
-  /\bsessionStorage\b/i,
-  /\bdocument\.cookie\b/i,
-];
-
-export function validateGeneratedArtifact(input: unknown) {
-  const parsed = pageArtifactSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false as const, error: "invalid_artifact" };
-  }
-
-  const joined = `${parsed.data.html}\n${parsed.data.css}`;
-  if (forbiddenArtifactPatterns.some((pattern) => pattern.test(joined))) {
-    return { ok: false as const, error: "unsafe_artifact" };
-  }
-
-  return { ok: true as const, artifact: parsed.data };
-}
-
 export function evaluateDomainQuote(quote: DomainQuote, capUsd: number) {
   if (!quote.available) {
     return { ok: false as const, reason: "unavailable" };

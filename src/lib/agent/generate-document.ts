@@ -1,7 +1,8 @@
 import "server-only";
 
 import { groundConfigInPrompt } from "@/lib/agent/generate-config";
-import { AI_REQUEST_TIMEOUT_MS, env, openaiResponsesOptions } from "@/lib/env";
+import { aiCallTimeoutMs } from "@/lib/ai/deadline";
+import { env, openaiResponsesOptions } from "@/lib/env";
 import {
   composeSiteDocument,
   newSiteNodeId,
@@ -21,6 +22,8 @@ export type GeneratedOriginalSite = {
   config: EventConfig;
   message: string;
   summary: string;
+  // False when the provider was unavailable or failed and the deterministic fallback was used instead.
+  generated: boolean;
 };
 
 const styleSchema = {
@@ -301,15 +304,17 @@ function configFromGeneratedEvent(base: EventConfig, raw: Record<string, unknown
   }, prompt);
 }
 
-export async function generateOriginalSite(prompt: string, config: EventConfig): Promise<GeneratedOriginalSite> {
+export async function generateOriginalSite(prompt: string, config: EventConfig, options: { deadline?: number } = {}): Promise<GeneratedOriginalSite> {
   const fallback = {
     document: prepareSiteDocument(composeSiteDocument(config, prompt)),
     config: groundConfigInPrompt(config, prompt),
     message: "I designed a first version from your description. Tell me what to change.",
     summary: "Designed the first original version",
+    generated: false,
   };
   const key = env.openaiApiKey();
-  if (!key) return fallback;
+  const timeoutMs = aiCallTimeoutMs(options.deadline);
+  if (!key || timeoutMs === null) return fallback;
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -323,7 +328,7 @@ export async function generateOriginalSite(prompt: string, config: EventConfig):
       ],
       text: { format: { type: "json_schema", name: "eventloom_original_site", strict: true, schema: originalSiteSchema } },
     }),
-    signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   }).catch(() => null);
 
   if (!response?.ok) return fallback;
@@ -341,6 +346,7 @@ export async function generateOriginalSite(prompt: string, config: EventConfig):
       config: nextConfig,
       message: concept ? `${message}${message.endsWith(".") ? "" : "."} ${concept}` : message,
       summary: typeof parsed.summary === "string" && parsed.summary.trim() ? parsed.summary : fallback.summary,
+      generated: true,
     };
   } catch {
     return fallback;
