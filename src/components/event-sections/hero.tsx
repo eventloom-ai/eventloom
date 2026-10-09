@@ -34,6 +34,8 @@ function Title({ props, ctx, centered, className }: { props: HeroProps; ctx: Sec
 }
 
 function RsvpButton({ props, ghost = false, className }: { props: HeroProps; ghost?: boolean; className?: string }) {
+  // A CTA without a target (a decorative thumbnail inside a link) renders as a span, never a nested <a>.
+  if (!props.cta.href) return <span className={cx(s.button, ghost && s.buttonGhost, className)}>{props.cta.label}</span>;
   return <a href={props.cta.href} className={cx(s.button, ghost && s.buttonGhost, className)}>{props.cta.label}</a>;
 }
 
@@ -200,7 +202,7 @@ function TypesetHero({ section, ctx }: { section: HeroSection; ctx: SectionConte
         <div>
           <div className="flex items-end justify-between gap-6 pb-3">
             <p className={cx(s.label, "flex items-center gap-3")}>{minimal ? <span aria-hidden="true" className="inline-block size-2.5" style={{ background: "var(--ev-accent)" }} /> : null}{props.eyebrow}</p>
-            <a href={props.cta.href} className={cx(s.label, s.link, "!text-[var(--ev-ink)]")}>{props.cta.label}</a>
+            {props.cta.href ? <a href={props.cta.href} className={cx(s.label, s.link, "!text-[var(--ev-ink)]")}>{props.cta.label}</a> : <span className={cx(s.label, "!text-[var(--ev-ink)]")}>{props.cta.label}</span>}
           </div>
           {minimal ? <div className={cx(s.lineBg, "h-px w-full")} /> : <Ornament kind="rule" />}
         </div>

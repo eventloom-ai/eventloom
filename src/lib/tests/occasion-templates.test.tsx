@@ -187,5 +187,7 @@ describe("template pages", () => {
     expect(html).not.toContain("<main class=\"eventloom-site-document\"");
     expect(html.match(/data-event-style="/g)).toHaveLength(occasionTemplates.length);
     expect(html.match(/<h1[ >]/g)).toHaveLength(1);
+    // Thumbnails sit inside the card links: no nested <a> (a hydration error and invalid HTML).
+    for (const card of html.split("<li>").slice(1).map((chunk) => chunk.split("</li>")[0])) expect(card.match(/<a /g)?.length ?? 0).toBeLessThanOrEqual(1);
   });
 });

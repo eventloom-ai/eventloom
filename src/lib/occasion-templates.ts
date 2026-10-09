@@ -3,7 +3,7 @@ import { composeLandingBrief, eventDraftPath } from "@/lib/event-entry";
 import { MOOD_PALETTE, STYLE_FOR_KIND, chooseDesignStyle } from "@/lib/event-design/style-choice";
 import { designEventSite } from "@/lib/event-design/design-event-site";
 import { DESIGN_STYLES, type StyleKey } from "@/lib/event-design/styles";
-import type { EventSiteDesign } from "@/lib/event-design/types";
+import type { DesignedSection, EventSiteDesign } from "@/lib/event-design/types";
 import { MOOD_PALETTES } from "@/lib/event-theme";
 import { occasionTemplateContent, type OccasionMood, type OccasionTemplateContent } from "@/lib/occasion-template-content";
 import type { EventConfig } from "@/lib/types";
@@ -93,9 +93,17 @@ export function sampleDesignedSite(occasion: OccasionTemplate, styleIndex = 0): 
   return designEventSite(config, styleKey, {}, { paletteKey });
 }
 
-/** The opening and the section after it: enough to read as the top of the page in a thumbnail. */
+/**
+ * The opening and the section after it: enough to read as the top of the page in a thumbnail. Thumbnails sit inside
+ * gallery links, so their RSVP button and directions link carry no target and render as plain text.
+ */
 export function sampleThumbnailSite(design: EventSiteDesign): EventSiteDesign {
-  return { ...design, sections: design.sections.slice(0, 2) };
+  const sections = design.sections.slice(0, 2).map((section): DesignedSection => {
+    if (section.kind === "hero") return { ...section, props: { ...section.props, cta: { ...section.props.cta, href: "" } } };
+    if (section.kind === "details") return { ...section, props: { ...section.props, mapUrl: undefined } };
+    return section;
+  });
+  return { ...design, sections };
 }
 
 const ogImage = { url: "/opengraph-image", width: 1200, height: 630, alt: "Eventloom event websites with online RSVPs" };
