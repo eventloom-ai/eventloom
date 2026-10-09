@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
+import { MarketingHeader } from "@/components/marketing-header";
 import { StartEventPrompt } from "@/components/start-event-prompt";
 import { appUrl, publicSignupEnabled } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
@@ -22,17 +23,7 @@ export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
         faqPageJsonLd(page.faqs, absoluteUrl(siteUrl, `/${page.slug}`)),
         breadcrumbJsonLd(siteUrl, [{ name: "Eventloom", path: "/" }, { name: page.title, path: `/${page.slug}` }]),
       ]} />
-      <header className="border-b border-[#302821]/10 bg-[#302821] text-white">
-        <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="text-[15px] font-semibold text-white" aria-label="Eventloom home">Eventloom</Link>
-          <nav aria-label="Main navigation" className="hidden items-center gap-6 text-[13px] text-white/70 md:flex">
-            <Link href="/event-website-builder" className="transition hover:text-white">Event websites</Link>
-            <Link href="/rsvp-website" className="transition hover:text-white">RSVP websites</Link>
-            <Link href="/contact" className="transition hover:text-white">Contact</Link>
-          </nav>
-          <Link href="/#create" className="rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-[#302821] transition hover:bg-[#fffaf3]">Create an event</Link>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <section className="bg-[#302821] px-5 py-20 text-[#fff9f2] sm:px-8 sm:py-28">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
@@ -139,6 +130,7 @@ export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-3 text-sm text-[#6d6055]">
           <span className="font-semibold text-[#302821]">Explore more:</span>
           {page.related.map((related) => <Link key={related.href} href={related.href} className="underline decoration-[#c19a7d] underline-offset-4 transition hover:text-[#8a6153]">{related.label}</Link>)}
+          <Link href="/templates" className="underline decoration-[#c19a7d] underline-offset-4 transition hover:text-[#8a6153]">Event website templates</Link>
         </div>
       </section>
     </main>

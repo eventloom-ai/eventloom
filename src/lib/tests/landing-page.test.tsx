@@ -23,6 +23,7 @@ describe("landing page", () => {
 
     for (const page of Object.values(seoLandingPages)) expect(html).toContain(`href="/${page.slug}"`);
     expect(html).toContain('id="use-cases"');
+    expect(html).toContain('href="/templates"');
   });
 
   it("adapts account and creation calls to the active auth state", () => {
