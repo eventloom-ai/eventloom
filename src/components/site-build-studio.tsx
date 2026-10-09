@@ -18,12 +18,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EventloomMark } from "@/components/logo";
 import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
-import { enrichBriefWithIntake, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
+import { enrichBriefWithIntake, intakeAction, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
 import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { useBuildJob } from "@/hooks/use-build-job";
@@ -65,6 +65,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
   const [intakeStep, setIntakeStep] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const intakeRef = useRef<HTMLDivElement>(null);
+  const lastQuestionShownAt = useRef(0);
   const previewHost = publicSiteHost();
   const suggestedSlug = normalizeSlugInput(suggestSlug(prompt) || "");
   const activeSlug = slugEdited ? slug : suggestedSlug;
@@ -72,6 +73,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
   const localPreviewImage = useMemo(() => (files[0] ? URL.createObjectURL(files[0]) : undefined), [files]);
   const imageUrl = build.previewConfig?.heroImageUrl ?? localPreviewImage;
   const intakeQuestions = useMemo(() => intakeQuestionsForBrief(prompt), [prompt]);
+  const action = intakeAction({ refining: Boolean(build.completedEventId), showIntake, step: intakeStep, total: intakeQuestions.length });
   const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(intakeAnswers.venue?.trim() || "event venue")}`;
 
   useEffect(() => {
@@ -94,16 +96,30 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
     event.target.value = "";
   }
 
+  function advanceIntake() {
+    if (intakeStep + 1 >= intakeQuestions.length - 1) lastQuestionShownAt.current = Date.now();
+    setIntakeStep((current) => Math.min(current + 1, intakeQuestions.length - 1));
+  }
+
+  function answerKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (action === "advance") advanceIntake();
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!build.completedEventId && !showIntake) {
+    if (action === "open") {
+      if (intakeQuestions.length <= 1) lastQuestionShownAt.current = Date.now();
       setShowIntake(true);
       return;
     }
-    if (!build.completedEventId && intakeStep < intakeQuestions.length - 1) {
-      setIntakeStep((current) => Math.min(current + 1, intakeQuestions.length - 1));
+    if (action === "advance") {
+      advanceIntake();
       return;
     }
+    // Swallow the second click of a double-click that landed on the Build button the first click revealed.
+    if (!build.completedEventId && Date.now() - lastQuestionShownAt.current < 600) return;
 
     const form = new FormData();
     form.set("prompt", enrichBriefWithIntake(prompt, intakeAnswers));
@@ -164,9 +180,9 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
               <button type="button" onClick={() => fileInputRef.current?.click()} disabled={build.isBuilding} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-[#a8a8af] transition hover:bg-white/[0.08] hover:text-white disabled:opacity-50">
                 <ImagePlus className="size-3.5" /> Add references
               </button>
-              <button type="submit" disabled={!canBuild} className="inline-flex items-center gap-2 rounded-md bg-[#8b5cf6] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#9b72ff] disabled:cursor-not-allowed disabled:opacity-40">
+              <button key={action === "advance" ? "advance" : "submit"} type={action === "advance" ? "button" : "submit"} onClick={action === "advance" ? advanceIntake : undefined} disabled={!canBuild} className="inline-flex items-center gap-2 rounded-md bg-[#8b5cf6] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#9b72ff] disabled:cursor-not-allowed disabled:opacity-40">
                 {build.isBuilding ? <Loader2 className="size-3.5 animate-spin" /> : <ArrowUp className="size-3.5" />}
-                {build.completedEventId ? "Refine" : showIntake ? intakeStep < intakeQuestions.length - 1 ? "Next question" : "Build site" : "Continue"}
+                {build.completedEventId ? "Refine" : action === "advance" ? "Next question" : action === "build" ? "Build site" : "Continue"}
               </button>
             </div>
           </div>
@@ -185,6 +201,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
                           <select
                             value={intakeAnswers[question.id] ?? ""}
                             onChange={(event) => setIntakeAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
+                            onKeyDown={answerKeyDown}
                             disabled={build.isBuilding}
                             className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#181818] px-3 py-2 text-[12px] text-white outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/15 disabled:opacity-60"
                           >
@@ -196,6 +213,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
                             type={question.input ?? "text"}
                             value={intakeAnswers[question.id] ?? ""}
                             onChange={(event) => setIntakeAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
+                            onKeyDown={answerKeyDown}
                             disabled={build.isBuilding}
                             placeholder={question.placeholder}
                             className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#181818] px-3 py-2 text-[12px] text-white outline-none placeholder:text-[#777780] focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/15 disabled:opacity-60"
@@ -219,10 +237,11 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-violet-300/15 pt-3">
                     <span className="text-[10px] text-[#aaa5b8]">Question {intakeStep + 1} of {intakeQuestions.length}</span>
-                    {intakeStep === intakeQuestions.length - 1 ? (
-                      <button type="submit" disabled={!canBuild} className="rounded-md bg-violet-500 px-2.5 py-1.5 text-[10px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Build site</button>
+                    {/* Distinct keys: React must not morph the type="button" into the submit button mid-click, or that click starts a paid build. */}
+                    {action === "build" ? (
+                      <button key="build" type="submit" disabled={!canBuild} className="rounded-md bg-violet-500 px-2.5 py-1.5 text-[10px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Build site</button>
                     ) : (
-                      <button type="button" onClick={() => setIntakeStep((current) => Math.min(current + 1, intakeQuestions.length - 1))} className="rounded-md bg-violet-500 px-2.5 py-1.5 text-[10px] font-semibold text-white">Next question →</button>
+                      <button key="next" type="button" onClick={advanceIntake} className="rounded-md bg-violet-500 px-2.5 py-1.5 text-[10px] font-semibold text-white">Next question →</button>
                     )}
                   </div>
                 </div>

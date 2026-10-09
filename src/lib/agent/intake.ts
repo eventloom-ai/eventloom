@@ -42,6 +42,15 @@ export function intakeQuestionsForBrief(prompt: string): IntakeQuestion[] {
   return questions;
 }
 
+export type IntakeAction = "open" | "advance" | "build";
+
+/** What submitting the build form should do: open the questionnaire, move to the next question, or start a (paid) build. */
+export function intakeAction({ refining, showIntake, step, total }: { refining: boolean; showIntake: boolean; step: number; total: number }): IntakeAction {
+  if (refining) return "build";
+  if (!showIntake) return "open";
+  return step < total - 1 ? "advance" : "build";
+}
+
 export function enrichBriefWithIntake(prompt: string, answers: IntakeAnswers) {
   const details: Array<[string, string | undefined]> = [
     ["Event name", answers.eventName],
