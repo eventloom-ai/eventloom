@@ -1,6 +1,7 @@
 import { coupleTitleLines, eventInitials } from "@/lib/couple-title";
 import { parseEventDate, splitScheduleTime } from "@/lib/event-design/date";
 import { DESIGN_STYLES, pickPalette, type StyleKey, type Tone } from "@/lib/event-design/styles";
+import { SECTION_KEYS, isStyleVariant, readEventDesign, type EventDesignSections, type SectionKey } from "@/lib/event-design/schema";
 import type { DesignImage, DesignedSection, EventDesignContent, EventSiteDesign, HeroProps } from "@/lib/event-design/types";
 import type { EventConfig } from "@/lib/types";
 
@@ -50,7 +51,11 @@ function hasRtlScript(value: string) {
   return /[֐-ࣿיִ-﷿ﹰ-﻿]/.test(value);
 }
 
-export type DesignOptions = { paletteKey?: string };
+export type DesignOptions = {
+  paletteKey?: string;
+  /** Host or AI overrides: order, hidden sections, variants and tones. */
+  sections?: EventDesignSections;
+};
 
 /**
  * Deterministic "art director" layout: EventConfig + a style → an ordered list of sections with variants,
@@ -98,7 +103,7 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
     kind: "details",
     variant: style.variants.details,
     props: {
-      heading: copy.details,
+      heading: content.detailsHeading ?? copy.details,
       date,
       venueName: config.venueName,
       venueAddress: config.venueAddress && !isTba(config.venueAddress) ? config.venueAddress : undefined,
@@ -126,7 +131,7 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
       id: "schedule",
       kind: "schedule",
       variant: style.variants.schedule,
-      props: { eyebrow: "Schedule", heading: copy.schedule, items: scheduleItems, multiDay: new Set(scheduleItems.map((item) => item.day).filter(Boolean)).size > 1 },
+      props: { eyebrow: "Schedule", heading: content.scheduleHeading ?? copy.schedule, items: scheduleItems, multiDay: new Set(scheduleItems.map((item) => item.day).filter(Boolean)).size > 1 },
     });
   }
 
@@ -139,7 +144,7 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
     ...(content.goodToKnow ?? []),
   ];
   if (goodToKnow.length >= 2) {
-    sections.push({ id: "good-to-know", kind: "goodToKnow", variant: "cards", props: { eyebrow: "Before you go", heading: "Good to know", items: goodToKnow.slice(0, 6) } });
+    sections.push({ id: "good-to-know", kind: "goodToKnow", variant: "cards", props: { eyebrow: "Before you go", heading: content.goodToKnowHeading ?? "Good to know", items: goodToKnow.slice(0, 6) } });
   }
 
   if (content.travel?.items.length) {
@@ -172,15 +177,19 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
     props: { title: config.title, coupleNames: couple, line: content.closingLine ?? copy.closing, dateLabel: date.dateLabel, venueName: config.venueName, monogram: eventInitials(config.title, config.eventType) },
   });
 
+  const overrides = options.sections;
+  const arranged = arrangeSections(sections, overrides);
+
   // Rhythm: each style says which tone a section prefers; neighbours on the same tone either alternate
-  // (tone separation) or get a hairline between them (rule separation).
+  // (tone separation) or get a hairline between them (rule separation). A host-picked tone is kept as is.
   let previous: Tone | null = null;
   let previousIsCover = false;
-  const toned = sections.map((section) => {
-    let tone: Tone = style.tones[section.kind as keyof typeof style.tones] ?? "base";
+  const toned = arranged.map((section) => {
+    const picked = overrides?.tones?.[section.kind];
+    let tone: Tone = picked ?? style.tones[section.kind as keyof typeof style.tones] ?? "base";
     let ruled = false;
     if (previous === tone && !previousIsCover) {
-      if (style.separation === "tone") tone = tone === "base" ? "alt" : "base";
+      if (style.separation === "tone" && !picked) tone = tone === "base" ? "alt" : "base";
       else ruled = true;
     }
     previous = tone;
@@ -194,4 +203,41 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
     direction: hasRtlScript(`${config.title} ${config.subtitle}`) ? "rtl" : "ltr",
     sections: toned,
   };
+}
+
+type UntonedSection = Omit<DesignedSection, "tone" | "ruled">;
+
+/**
+ * Applies host overrides to the default section list: hidden sections are dropped (never the hero or RSVP),
+ * variants are swapped within each section's closed set, and `order` reorders everything after the hero.
+ * Sections the order does not mention keep their default order after the ordered ones; the closing stays
+ * last unless the order places it.
+ */
+function arrangeSections(sections: UntonedSection[], overrides: EventDesignSections | undefined): UntonedSection[] {
+  if (!overrides) return sections;
+  const hidden = new Set<SectionKey>((overrides.hidden ?? []).filter((key) => key !== "hero" && key !== "rsvp"));
+  const visible = sections
+    .filter((section) => !hidden.has(section.kind))
+    .map((section) => {
+      const variant = overrides.variants?.[section.kind];
+      return isStyleVariant(section.kind, variant) ? ({ ...section, variant } as UntonedSection) : section;
+    });
+  const order: SectionKey[] = (overrides.order ?? []).filter((key) => key !== "hero");
+  if (!order.length) return visible;
+  const rank = (kind: SectionKey) => {
+    const index = order.indexOf(kind);
+    if (index >= 0) return index;
+    if (kind === "closing") return order.length + SECTION_KEYS.length;
+    return order.length + SECTION_KEYS.indexOf(kind);
+  };
+  const [hero, ...rest] = visible;
+  const sorted = rest.map((section, index) => ({ section, index })).sort((a, b) => rank(a.section.kind) - rank(b.section.kind) || a.index - b.index);
+  return [hero, ...sorted.map(({ section }) => section)];
+}
+
+/** The rendered design for an event with a valid EventConfig.design, or null for a legacy (site document) event. */
+export function designSiteFromConfig(config: EventConfig): EventSiteDesign | null {
+  const design = readEventDesign(config);
+  if (!design) return null;
+  return designEventSite(config, design.styleKey, design.content, { paletteKey: design.paletteKey, sections: design.sections });
 }
