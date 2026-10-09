@@ -1,7 +1,7 @@
 import "server-only";
 
 import { generateOriginalSite } from "@/lib/agent/generate-document";
-import { env, openaiResponsesOptions } from "@/lib/env";
+import { AI_REQUEST_TIMEOUT_MS, env, openaiResponsesOptions } from "@/lib/env";
 import { refundBuildCredit } from "@/lib/payments/billing";
 import { applyEventDetailsPatch, applySiteOperations, type SiteOperation } from "@/lib/site-document-operations";
 import { findSiteNode, type SiteDocument } from "@/lib/site-document";
@@ -152,6 +152,7 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
       ],
       text: { format: { type: "json_schema", name: "eventloom_document_edit", strict: true, schema: editSchema } },
     }),
+    signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
   }).catch(() => null);
   if (!response?.ok) return fallbackEdit(prompt, document, selectedNodeIds);
   const data = await response.json().catch(() => null) as { id?: string; output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }> } | null;

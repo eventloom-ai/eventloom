@@ -1,4 +1,4 @@
-import { env, openaiResponsesOptions } from "@/lib/env";
+import { AI_REQUEST_TIMEOUT_MS, env, openaiResponsesOptions } from "@/lib/env";
 import type { EventConfig, PageArtifact } from "@/lib/types";
 import { validateGeneratedArtifact } from "@/lib/validation";
 
@@ -74,10 +74,11 @@ export async function generatePageArtifact(config: EventConfig, prompt: string, 
           { role: "user", content: JSON.stringify({ prompt, config }) },
         ],
       }),
-    });
+      signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
+    }).catch(() => null);
 
-    if (result.ok) {
-      const json = (await result.json()) as { html?: string; css?: string; content?: string };
+    if (result?.ok) {
+      const json = (await result.json().catch(() => ({}))) as { html?: string; css?: string; content?: string };
       const candidate = {
         html: json.html ?? json.content ?? "",
         css: json.css ?? "",
@@ -156,6 +157,7 @@ async function generateWithOpenAI(openaiKey: string, config: EventConfig, prompt
         },
       },
     }),
+    signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
   }).catch(() => null);
 
   if (!response?.ok) {
