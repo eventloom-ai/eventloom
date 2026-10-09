@@ -1,3 +1,5 @@
+import { MAX_PROMPT_CHARS } from "@/lib/prompt-limits";
+
 export function creatorErrorMessage(code: string | null | undefined, fallback = "That didn’t finish. Please try again.") {
   switch (code) {
     case "slug_taken":
@@ -8,6 +10,8 @@ export function creatorErrorMessage(code: string | null | undefined, fallback = 
       return "Your sign-in expired. Sign in again, then continue where you left off.";
     case "forbidden":
       return "That action was blocked for your protection. Refresh the page and try again.";
+    case "prompt_too_long":
+      return `That description is too long. Keep it under ${MAX_PROMPT_CHARS.toLocaleString("en-US")} characters, then try again.`;
     case "payload_too_large":
       return "That request is too large. Shorten the description or use a smaller image.";
     case "invalid":

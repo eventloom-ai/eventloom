@@ -1,6 +1,7 @@
 import type { ImageInput } from "@/lib/ai/generator";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt, visualDirectionForMood } from "@/lib/event-theme";
+import { promptTooLong } from "@/lib/prompt-limits";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { slugSchema } from "@/lib/validation";
 
@@ -8,6 +9,7 @@ export type ParsedBuildForm = {
   prompt: string;
   slug: string | null;
   slugReserved?: boolean;
+  promptTooLong?: boolean;
   images: ImageInput[];
   themeOverrides?: ThemeOverrides;
   existingEventId?: string;
@@ -24,6 +26,7 @@ export async function parseBuildForm(form: FormData | null, body: Record<string,
     prompt,
     slug: slug.success ? slug.data : null,
     slugReserved: typeof body.slug === "string" && isReservedSlug(body.slug),
+    promptTooLong: promptTooLong(prompt),
     images,
     themeOverrides,
     existingEventId,

@@ -34,6 +34,7 @@ export async function startBuildJob(
   startedAt = Date.now(),
 ): Promise<StartBuildResult> {
   if (parsed.slugReserved) return { ok: false, error: "slug_reserved", status: 409 };
+  if (parsed.promptTooLong) return { ok: false, error: "prompt_too_long", status: 400 };
   if (!parsed.slug || !parsed.prompt.trim()) {
     return { ok: false, error: "invalid", status: 400 };
   }

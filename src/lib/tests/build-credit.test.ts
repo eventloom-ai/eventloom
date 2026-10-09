@@ -70,6 +70,11 @@ describe("startBuildJob credit", () => {
     expect(mocks.refund).not.toHaveBeenCalled();
   });
 
+  it("rejects an over-long prompt before creating a job or charging", async () => {
+    await expect(startBuildJob({ ...parsed, promptTooLong: true }, "owner-1")).resolves.toEqual({ ok: false, error: "prompt_too_long", status: 400 });
+    expect(mocks.calls).toEqual([]);
+  });
+
   it("charges nothing when the job cannot be created", async () => {
     mocks.jobId = null;
     await expect(startBuildJob(parsed, "owner-1")).resolves.toMatchObject({ ok: false, error: "job_create_failed" });
@@ -118,6 +123,13 @@ describe("studio workspace credit", () => {
     const response = await createStudio(studioRequest());
     expect(response.status).toBe(500);
     expect(mocks.refund).toHaveBeenCalledWith("owner-1", "event-1", "run-1");
+  });
+
+  it("rejects an over-long prompt before creating the event", async () => {
+    const response = await createStudio(studioRequest("a".repeat(4_001)));
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "prompt_too_long" });
+    expect(mocks.createEvent).not.toHaveBeenCalled();
   });
 
   it("never charges without a run to refund against", async () => {

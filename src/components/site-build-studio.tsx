@@ -24,6 +24,7 @@ import { EventloomMark } from "@/components/logo";
 import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
 import { enrichBriefWithIntake, intakeAction, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
+import { MAX_BRIEF_CHARS, MAX_INTAKE_ANSWER_CHARS } from "@/lib/prompt-limits";
 import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
 import { normalizeSlugInput, normalizeSlugTyping, suggestSlugOrFallback } from "@/lib/slug-suggest";
 import { useBuildJob } from "@/hooks/use-build-job";
@@ -156,7 +157,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
         <form onSubmit={submit} className="flex min-h-[760px] flex-col border-b border-white/10 bg-[#191919] p-4 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a9a9ae]">Agent conversation</p>
-            <span className="rounded-md bg-white/[0.05] px-2 py-1 text-[10px] text-[#8f8f96]">{prompt.length}/2,000</span>
+            <span className="rounded-md bg-white/[0.05] px-2 py-1 text-[10px] text-[#8f8f96]">{prompt.length}/{MAX_BRIEF_CHARS.toLocaleString("en-US")}</span>
           </div>
 
           {prompt.trim() ? <div className="mt-5 rounded-xl bg-[#273d59] px-3.5 py-3 text-[13px] leading-5 text-[#e8efff]">{prompt}</div> : <div className="mt-5 rounded-xl border border-dashed border-white/10 px-3.5 py-3 text-[12px] text-[#85858d]">Describe an event and the agent will turn it into a custom website.</div>}
@@ -164,7 +165,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
             <textarea
               value={prompt}
               required
-              maxLength={2000}
+              maxLength={MAX_BRIEF_CHARS}
               rows={7}
               onChange={(event) => {
                 setPrompt(event.target.value);
@@ -211,6 +212,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
                         ) : (
                           <input
                             type={question.input ?? "text"}
+                            maxLength={MAX_INTAKE_ANSWER_CHARS}
                             value={intakeAnswers[question.id] ?? ""}
                             onChange={(event) => setIntakeAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
                             onKeyDown={answerKeyDown}

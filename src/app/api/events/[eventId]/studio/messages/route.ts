@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { aiDeadline } from "@/lib/ai/deadline";
 import { reserveBuildCredit } from "@/lib/payments/billing";
+import { promptTooLong } from "@/lib/prompt-limits";
 import { executeStudioRun } from "@/lib/studio-agent";
 import { canEditEvent, createBuilderMessage, createStudioRun, loadStudioState, updateStudioRun } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
@@ -18,7 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   if (!user || !(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const body = await req.json().catch(() => null) as { message?: string; baseVersionId?: string; selectedNodeIds?: string[] } | null;
   const message = body?.message?.trim() ?? "";
-  if (!message || message.length > 8000 || !body?.baseVersionId) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (!message || !body?.baseVersionId) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (promptTooLong(message)) return NextResponse.json({ error: "prompt_too_long" }, { status: 400 });
   const state = await loadStudioState(eventId, user.id);
   if (!state) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (state.revision.id !== body.baseVersionId) return NextResponse.json({ error: "version_conflict", state }, { status: 409 });

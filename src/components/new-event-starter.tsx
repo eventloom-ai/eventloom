@@ -4,6 +4,7 @@ import { ArrowRight, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { creatorErrorMessage } from "@/lib/creator-errors";
+import { MAX_PROMPT_CHARS } from "@/lib/prompt-limits";
 import { normalizeSlugInput, normalizeSlugTyping, suggestSlugOrFallback } from "@/lib/slug-suggest";
 
 const MAX_IMAGES = 5;
@@ -98,7 +99,7 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
           if (!slugEdited) setSlug(suggestSlugOrFallback(event.target.value));
         }}
         rows={7}
-        maxLength={8000}
+        maxLength={MAX_PROMPT_CHARS}
         placeholder="A candlelit garden wedding for Maya and Adam in Toronto next September…"
         className="mt-2 w-full resize-none rounded-2xl border border-black/10 bg-[#fbfaf8] px-4 py-3 text-sm leading-6 text-[#252329] outline-none transition placeholder:text-[#aaa5ad] focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
       />

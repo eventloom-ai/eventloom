@@ -5,6 +5,7 @@ import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { createEventRecord } from "@/lib/agent/tools";
 import { processAndStoreEventImage } from "@/lib/event-assets";
 import { refundBuildCredit, reserveBuildCredit } from "@/lib/payments/billing";
+import { promptTooLong } from "@/lib/prompt-limits";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { createBuilderMessage, createStudioRun, seedInitialRevision, updateStudioRun } from "@/lib/studio-store";
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest) {
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const prompt = String(form.get("prompt") ?? "").trim();
-  if (!prompt || prompt.length > 8000) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (!prompt) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  if (promptTooLong(prompt)) return NextResponse.json({ error: "prompt_too_long" }, { status: 400 });
   const slugField = form.get("slug");
   const baseSlug = normalizeSlugInput((typeof slugField === "string" ? slugField : "") || suggestSlug(prompt) || "my-event");
   const slug = baseSlug.length >= 3 ? baseSlug : `event-${Date.now().toString(36)}`;
