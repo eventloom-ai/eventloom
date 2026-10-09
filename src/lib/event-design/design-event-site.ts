@@ -75,7 +75,8 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
   const heroImage = photos[0];
   const galleryImages = photos.slice(1);
   const venueKnown = !isTba(config.venueName);
-  const deadline = config.rsvpDeadline?.trim() || undefined;
+  // "To be announced" is not a deadline: leave it off rather than print "Reply by: To be announced".
+  const deadline = config.rsvpDeadline && !isTba(config.rsvpDeadline) ? config.rsvpDeadline.trim() : undefined;
   const sections: Omit<DesignedSection, "tone" | "ruled">[] = [];
 
   sections.push({

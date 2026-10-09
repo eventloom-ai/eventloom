@@ -72,6 +72,13 @@ describe("designEventSite section overrides", () => {
     expect(site.paletteKey).toBe("sage");
   });
 
+  it("never prints a placeholder RSVP deadline", () => {
+    const site = designEventSite({ ...wedding.config, rsvpDeadline: "To be announced" }, "playful");
+    const rsvp = site.sections.find((section) => section.kind === "rsvp")!.props as { deadline?: string; reminder: { label: string }[] };
+    expect(rsvp.deadline).toBeUndefined();
+    expect(rsvp.reminder.map((item) => item.label)).not.toContain("Reply by");
+  });
+
   it("uses the stored heading copy when there is some", () => {
     const site = designEventSite(wedding.config, "editorial", { detailsHeading: "The essentials", scheduleHeading: "How the day unfolds", goodToKnowHeading: "Notes", dressCode: { body: "Garden formal" }, goodToKnow: [{ title: "Parking", body: "On site." }] });
     const heading = (kind: string) => (site.sections.find((section) => section.kind === kind)?.props as { heading: string }).heading;
