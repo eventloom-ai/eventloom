@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { coupleTitleLines } from "@/lib/couple-title";
 import type { EventConfig } from "@/lib/types";
 
 export const siteNodeTypes = [
@@ -221,12 +222,9 @@ export function composeSiteDocument(config: EventConfig, prompt = "", makeId: (p
   const heroImage = config.heroImageUrl;
   const rsvp = rsvpCopy(config);
   const composition = fingerprint(`${prompt}|${config.title}|${config.eventType}|${config.theme.mood}`) % 4;
-  const titleLines = config.title.split(/\s*&\s*|\s+and\s+/i);
   const openingCopy: SiteNode[] = [
     { id: makeId("eyebrow"), type: "text", content: config.eventType, variant: "eyebrow", style: { font: "body", size: "xs", weight: "semibold", letterSpacing: "widest", opacity: "muted" } },
-    titleLines.length === 2
-      ? { id: makeId("title"), type: "text", content: `${titleLines[0].trim()}\n&\n${titleLines[1].trim()}`, variant: "heading", style: { font: "display", size: "hero", weight: "regular", letterSpacing: "tight", italic: theme.typography.display === "romantic" } }
-      : { id: makeId("title"), type: "text", binding: "event.title", variant: "heading", style: { font: "display", size: "hero", weight: "regular", letterSpacing: "tight" } },
+    { id: makeId("title"), type: "text", binding: "event.title", variant: "heading", style: { font: "display", size: "hero", weight: "regular", letterSpacing: "tight", ...(coupleTitleLines(config.title, config.eventType) && theme.typography.display === "romantic" ? { italic: true } : {}) } },
     { id: makeId("subtitle"), type: "text", binding: "event.subtitle", variant: "subheading", style: { font: "body", size: "lg", opacity: "muted" } },
     { id: makeId("date"), type: "text", binding: "event.date", variant: "caption", style: { size: "sm", weight: "medium", letterSpacing: "wide" } },
   ];

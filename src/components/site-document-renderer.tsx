@@ -3,6 +3,7 @@ import type { CSSProperties, FocusEvent, MouseEvent } from "react";
 import { RsvpForm } from "@/components/rsvp-form";
 import { SiteReveal } from "@/components/site-reveal";
 import { backgroundLayers, prepareSiteDocument } from "@/lib/site-contrast";
+import { coupleTitleLines } from "@/lib/couple-title";
 import type { SiteDocument, SiteNode, SiteStyle, SiteTextBinding } from "@/lib/site-document";
 import type { EventConfig, EventStatus } from "@/lib/types";
 
@@ -84,10 +85,9 @@ export function siteStyleToCss(style: SiteStyle | undefined, document: SiteDocum
   };
 }
 
-function coupleHeading(value: string) {
-  if (value.includes("\n")) return value;
-  const parts = value.split(/\s*&\s*|\s+and\s+/i).map((part) => part.trim()).filter(Boolean);
-  return parts.length === 2 ? `${parts[0]}\n&\n${parts[1]}` : value;
+function coupleHeading(value: string, eventType: string) {
+  const parts = coupleTitleLines(value, eventType);
+  return parts ? `${parts[0]}\n&\n${parts[1]}` : value;
 }
 
 export function siteBindingValue(binding: SiteTextBinding | undefined, config: EventConfig) {
@@ -134,7 +134,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
   );
   if (node.type === "text") {
     const raw = node.content ?? siteBindingValue(node.binding, config);
-    const value = node.variant === "heading" ? coupleHeading(raw) : raw;
+    const value = node.variant === "heading" && !node.content && node.binding === "event.title" ? coupleHeading(raw, config.eventType) : raw;
     const commit = interactive ? (event: FocusEvent<HTMLElement>) => {
       const content = event.currentTarget.innerText.trim();
       if (content && content !== raw) onTextCommit?.(node.id, content);
