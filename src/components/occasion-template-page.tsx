@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
-import { MarketingHeader } from "@/components/marketing-header";
+import { MarketingHeader, marketingHeaderCtaClass } from "@/components/marketing-header";
+import { TemplateStartLink } from "@/components/template-start-link";
 import { TemplateSitePreview, TemplateThumbnail } from "@/components/template-preview";
 import { comparisonLinksFor } from "@/lib/comparisons";
-import { appUrl } from "@/lib/env";
-import { getOccasionTemplate, occasionPath, occasionTemplateHref, TEMPLATES_PATH, type OccasionTemplate } from "@/lib/occasion-templates";
+import { appUrl, publicSignupEnabled } from "@/lib/env";
+import { getOccasionTemplate, occasionPath, occasionTemplateBrief, TEMPLATES_PATH, type OccasionTemplate } from "@/lib/occasion-templates";
 import { seoLandingPages, type SeoLandingPage } from "@/lib/seo-landing-pages";
 import { absoluteUrl, breadcrumbJsonLd, faqPageJsonLd } from "@/lib/structured-data";
+import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 
 const eyebrow = "text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a6153]";
 const sectionHeading = "mt-5 font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-5xl";
@@ -20,7 +22,9 @@ function landingPage(slug: string): SeoLandingPage | null {
 export function OccasionTemplatePage({ occasion }: { occasion: OccasionTemplate }) {
   const siteUrl = appUrl();
   const path = occasionPath(occasion.slug);
-  const startHref = occasionTemplateHref(occasion);
+  // Read at build time: template pages are static, and the signed-in check happens in the browser (TemplateStartLink).
+  const entry = { authConfigured: hasSupabasePublicEnv(), signupEnabled: publicSignupEnabled() };
+  const startBrief = occasionTemplateBrief(occasion);
   const related = occasion.related.map(getOccasionTemplate).filter((item): item is OccasionTemplate => Boolean(item));
   const guides = occasion.landingPages.map(landingPage).filter((item): item is SeoLandingPage => Boolean(item));
   const lowerName = occasion.name.toLowerCase();
@@ -31,7 +35,7 @@ export function OccasionTemplatePage({ occasion }: { occasion: OccasionTemplate 
         faqPageJsonLd(occasion.faqs, absoluteUrl(siteUrl, path)),
         breadcrumbJsonLd(siteUrl, [{ name: "Eventloom", path: "/" }, { name: "Templates", path: TEMPLATES_PATH }, { name: occasion.name, path }]),
       ]} />
-      <MarketingHeader ctaHref={startHref} ctaLabel="Use this template" />
+      <MarketingHeader cta={<TemplateStartLink brief={startBrief} {...entry} className={marketingHeaderCtaClass}>Use this template</TemplateStartLink>} />
 
       <section className="bg-[#302821] px-5 pb-16 pt-10 text-[#fff9f2] sm:px-8 sm:pb-24 sm:pt-14">
         <div className="mx-auto max-w-6xl">
@@ -50,7 +54,7 @@ export function OccasionTemplatePage({ occasion }: { occasion: OccasionTemplate 
             <div>
               <p className="max-w-xl text-base leading-8 text-[#eadbd0]/75">{occasion.intro}</p>
               <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-                <Link href={startHref} prefetch={false} className="inline-flex items-center gap-2 rounded-full bg-[#fffaf3] px-6 py-3.5 text-sm font-semibold text-[#302821] transition hover:bg-white">Use this template <ArrowRight className="size-4" aria-hidden="true" /></Link>
+                <TemplateStartLink brief={startBrief} {...entry} className="inline-flex items-center gap-2 rounded-full bg-[#fffaf3] px-6 py-3.5 text-sm font-semibold text-[#302821] transition hover:bg-white">Use this template <ArrowRight className="size-4" aria-hidden="true" /></TemplateStartLink>
                 <a href="#what-to-include" className="text-sm font-semibold text-[#eadbd0]/80 underline decoration-[#dfb89f]/60 underline-offset-4 transition hover:text-white">Read the planning guide</a>
               </div>
               <p className="mt-5 text-[13px] leading-6 text-[#eadbd0]/55">Draft it first · $20 once to publish for a year · Guests reply without an account</p>
@@ -81,7 +85,7 @@ export function OccasionTemplatePage({ occasion }: { occasion: OccasionTemplate 
                         <p className="font-semibold">{style.name}</p>
                         <p className="mt-1 text-xs capitalize text-[#74675d]">{style.mood} palette{index === 0 ? " · shown above" : ""}</p>
                       </div>
-                      <Link href={occasionTemplateHref(occasion, style.mood)} prefetch={false} className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#302821] transition hover:text-[#8a6153]" aria-label={`Start a ${lowerName} site in the ${style.name} style`}>Start <ArrowRight className="size-4" aria-hidden="true" /></Link>
+                      <TemplateStartLink brief={occasionTemplateBrief(occasion, style.mood)} {...entry} className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#302821] transition hover:text-[#8a6153]" ariaLabel={`Start a ${lowerName} site in the ${style.name} style`}>Start <ArrowRight className="size-4" aria-hidden="true" /></TemplateStartLink>
                     </div>
                   </li>
                 ))}
@@ -189,7 +193,7 @@ export function OccasionTemplatePage({ occasion }: { occasion: OccasionTemplate 
           <p className={eyebrow}>Start with this template</p>
           <h2 className="mx-auto mt-5 max-w-3xl font-[family-name:var(--font-playfair)] text-4xl leading-[0.95] tracking-[-0.055em] sm:text-6xl">Make your {lowerName} page in a minute.</h2>
           <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-[#6d6055]">The brief is filled in for you. Add your names, date, and place, review the draft, and publish when you are ready.</p>
-          <Link href={startHref} prefetch={false} className="mt-9 inline-flex items-center gap-2 rounded-full bg-[#302821] px-6 py-3.5 text-sm font-semibold text-[#fffaf3] transition hover:bg-[#4a2d2a]">Use this template <ArrowRight className="size-4" aria-hidden="true" /></Link>
+          <TemplateStartLink brief={startBrief} {...entry} className="mt-9 inline-flex items-center gap-2 rounded-full bg-[#302821] px-6 py-3.5 text-sm font-semibold text-[#fffaf3] transition hover:bg-[#4a2d2a]">Use this template <ArrowRight className="size-4" aria-hidden="true" /></TemplateStartLink>
         </div>
       </section>
 

@@ -6,8 +6,10 @@ Positioning: **"Your event website and RSVPs in a minute. $20 once — no subscr
 
 ## 1. Built-in loop (shipped / next)
 - [x] "Made with Eventloom" link on every guest page (UTM `utm_source=guest_page`). Every published event shows it to 20–200 guests.
-- [ ] After a guest RSVPs: "Planning something? Make your own in a minute" card.
-- [ ] Share card: per-event OG image so iMessage/WhatsApp previews look premium (biggest share surface).
+- [x] After a guest RSVPs: "Planning something too? Make your own event site in a minute" card (dismissible, published events only, UTM `utm_source=guest_rsvp`, `utm_campaign=<slug>`).
+- [x] Share card: per-event OG image so iMessage/WhatsApp previews look premium (biggest share surface). Drawn in the event's design style and palette (title or couple names, date, venue city, eventloom.co); drafts/archived/missing events get the generic card. URL id is a content hash, so it changes per published version. Template pages get the same card from their sample. Samples: `docs/design/og/`.
+- [x] "Use this template" goes through signup (or login when public signup is off) and back to the draft, like the homepage prompt; the build intake pre-selects the template's palette chip.
+- [ ] Non-Latin titles (Arabic etc.) get the generic share card for now — needs script-aware fonts in the card.
 
 ## 2. SEO — the main channel
 Done: 6 landing pages, sitemap, OG/JSON-LD, per-event metadata + noindex.
@@ -49,3 +51,4 @@ How these engines pick sources (third-party reporting, verify periodically): Cha
 | 2026-10-08 | Shipped /templates gallery + 14 occasion pages, homepage use-case links, FAQ/Product/Breadcrumb JSON-LD | — |
 | 2026-10-08 | Resubmitted sitemap in Search Console (15 new template URLs). Search baseline, last 3 months: 19 clicks, 314 impressions, avg position 6.3 — all branded ("eventloom" 14 clicks/84 impr; "loom event(s)" 57 impr, 0 clicks). Zero non-brand search traffic yet. | baseline |
 | 2026-10-08 | Shipped /compare hub, 7 sourced comparison pages, /guides/best-rsvp-website-builders; removed copy implying custom domains are on sale and that RSVP questions are fully custom | — |
+| 2026-10-09 | Shipped per-event and per-template OG share cards, post-RSVP "make your own" card (`utm_source=guest_rsvp`), template CTA via signup (N18). Watch `guest_rsvp` vs `guest_page` referrals once production RSVPs are on (N1). | — |

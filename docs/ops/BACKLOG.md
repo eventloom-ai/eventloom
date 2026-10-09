@@ -84,7 +84,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | N15 | Essentially no traffic: ~48 requests in 7 days (2026-10-08), almost all internal testing |
 | N16 | (fixed: public pages now CDN-cached with nonce-free CSP) Every response gets `Cache-Control: private, no-store` from `src/proxy.ts`, so prerendered marketing/template pages are never CDN-cached; prerendered HTML has no CSP nonces, so `CSP_ENFORCE_ENABLED=true` would break static pages. Needs a per-route policy (public static pages: cacheable + hash/self CSP) |
 | N17 | Two-column sections with a large gap only show two columns at ≥ ~1150px (column min-width formula ignores the gap) — affects live event pages |
-| N18 | "Use this template" sends logged-out visitors to /login rather than signup; palette chip not pre-selected from the template brief |
+| N18 | "Use this template" sends logged-out visitors to /login rather than signup; palette chip not pre-selected from the template brief — **fixed** (chip pre-select applies to the build studio; the signed-in production path, NewEventStarter, has no chips and relies on the palette word in the brief) |
 | N19 | Stuck domain order cases remain: register succeeded but recording failed + later step failed, or registrar reports pending — needs a registrar ownership check |
 | N20 | Credit refund rules inconsistent (studio edit keeps credit on fallback; studio create refunds on fallback; main build keeps credit on template fallback); failed builds leave an empty placeholder draft — **fixed**: one rule in `payments/ai-credit-rule.ts` (see DECISIONS.md), failed first builds delete their placeholder |
 

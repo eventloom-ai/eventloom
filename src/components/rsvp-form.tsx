@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import { optionalFormString, rsvpErrorMessage, rsvpPartySize } from "@/lib/form-values";
 import type { RsvpField } from "@/lib/types";
 import { TurnstileWidget } from "@/components/turnstile-widget";
@@ -9,8 +10,11 @@ import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
 
-/** `hideHeader` drops the form's own "Guest reply" heading when the surrounding section already titles it. */
-export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, isDraft = false, fields = defaultFields, className = "", hideHeader = false }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; isDraft?: boolean; fields?: RsvpField[]; className?: string; hideHeader?: boolean }) {
+/**
+ * `hideHeader` drops the form's own "Guest reply" heading when the surrounding section already titles it.
+ * `growthHref`, passed only on published guest pages, adds a small "make your own" card under the confirmation.
+ */
+export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, isDraft = false, fields = defaultFields, className = "", hideHeader = false, growthHref }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; isDraft?: boolean; fields?: RsvpField[]; className?: string; hideHeader?: boolean; growthHref?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [attending, setAttending] = useState(true);
   const [partySize, setPartySize] = useState(1);
@@ -77,14 +81,7 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
     );
   }
 
-  if (status === "done") {
-    return (
-      <section className={`rounded-[8px] border border-[#405448]/20 bg-[#405448] p-6 text-white ${className}`}>
-        <h2 className="text-2xl font-semibold">Reply received</h2>
-        <p className="mt-2 text-white/80">Your response has been recorded.</p>
-      </section>
-    );
-  }
+  if (status === "done") return <RsvpConfirmation className={className} growthHref={isDraft ? undefined : growthHref} />;
 
   return (
     <form onSubmit={submit} className={`rounded-[8px] border border-black/10 bg-white p-5 shadow-sm ${className}`}>
@@ -152,5 +149,38 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
         {status === "sending" ? "Sending..." : "Send reply"}
       </button>
     </form>
+  );
+}
+
+/** Shown once a reply is accepted. Exported for tests: the form only reaches this state after a successful submit. */
+export function RsvpConfirmation({ className = "", growthHref }: { className?: string; growthHref?: string }) {
+  return (
+    <div>
+      <section className={`rounded-[8px] border border-[#405448]/20 bg-[#405448] p-6 text-white ${className}`}>
+        <h2 className="text-2xl font-semibold">Reply received</h2>
+        <p className="mt-2 text-white/80">Your response has been recorded.</p>
+      </section>
+      {growthHref ? <RsvpGrowthCard href={growthHref} /> : null}
+    </div>
+  );
+}
+
+/**
+ * A quiet, dismissible invitation for guests to make their own site. Neutral and small so it sits under any event
+ * design; an <aside>, not a <section>, so the designed RSVP slot's form/section skin does not restyle it.
+ */
+function RsvpGrowthCard({ href }: { href: string }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <aside aria-label="Make your own event site" className="mt-3 flex items-start gap-3 rounded-[8px] border border-black/10 bg-white/95 px-4 py-3 text-left text-[13px] leading-5 text-stone-600 shadow-sm">
+      <p className="m-0 min-w-0 flex-1">
+        <span className="font-semibold text-stone-900">Planning something too?</span>{" "}
+        <a href={href} target="_blank" rel="noopener" className="text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-900">Make your own event site in a minute</a>
+      </p>
+      <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss" className="-m-1 shrink-0 rounded p-1 text-stone-400 transition hover:text-stone-800 focus-visible:outline-2 focus-visible:outline-stone-500">
+        <X className="size-3.5" aria-hidden="true" />
+      </button>
+    </aside>
   );
 }

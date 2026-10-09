@@ -24,6 +24,7 @@ import { EventloomMark } from "@/components/logo";
 import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
 import { enrichBriefWithIntake, intakeAction, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
+import { briefPaletteMood } from "@/lib/event-entry";
 import { MAX_BRIEF_CHARS, MAX_INTAKE_ANSWER_CHARS } from "@/lib/prompt-limits";
 import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
 import { normalizeSlugInput, normalizeSlugTyping, suggestSlugOrFallback } from "@/lib/slug-suggest";
@@ -59,7 +60,8 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const [mood, setMood] = useState<string | null>(null);
+  // A template brief names its palette ("Use the blush color palette."); start with that chip selected.
+  const [mood, setMood] = useState<string | null>(() => briefPaletteMood(initialPrompt, moods));
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [showIntake, setShowIntake] = useState(Boolean(initialPrompt));
   const [intakeAnswers, setIntakeAnswers] = useState<IntakeAnswers>({});
