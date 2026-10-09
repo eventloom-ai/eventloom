@@ -65,11 +65,11 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
       return;
     }
 
-    const payload = res ? await res.json().catch(() => null) as { error?: string } | null : null;
+    const payload = res ? await res.json().catch(() => null) as { error?: string; retryAfterSeconds?: number } | null : null;
     setTurnstileToken("");
     setTurnstileResetKey((value) => value + 1);
     setStatus("error");
-    setMessage(rsvpErrorMessage(res ? (payload?.error ?? (res.status === 429 ? "try_later" : null)) : "network_error"));
+    setMessage(rsvpErrorMessage(res ? (payload?.error ?? (res.status === 429 ? "try_later" : null)) : "network_error", payload?.retryAfterSeconds));
   }
 
   if (!isOpen && closedOn && !isDraft) {

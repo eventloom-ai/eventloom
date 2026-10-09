@@ -5,6 +5,7 @@ import { ChevronLeft, Eye, Globe2, History, Laptop, Loader2, MessageSquareText, 
 import Link from "next/link";
 import { requestFeedbackDialog } from "@/lib/feedback";
 import { publishErrorPresentation } from "@/lib/publish-errors";
+import { rateLimitedMessage, retryAfterFrom } from "@/lib/rate-limit-message";
 
 type StudioToolbarProps = {
   eventId: string;
@@ -30,6 +31,7 @@ function eventStatusLabel(status: string) {
 export function StudioToolbar({ eventId, title, status, saveStatus, viewport, canUndo, canRedo, onViewport, onUndo, onRedo, onToggleHistory, showEditingControls = true }: StudioToolbarProps) {
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishRetryAfter, setPublishRetryAfter] = useState<number | null>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
   const [domain, setDomain] = useState("");
   const [checkingDomain, setCheckingDomain] = useState(false);
@@ -40,7 +42,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
   const [domainTermsAccepted, setDomainTermsAccepted] = useState(false);
   const [launchTermsAccepted, setLaunchTermsAccepted] = useState(false);
   const isPublished = status === "published";
-  const publishIssue = publishError ? publishErrorPresentation(publishError, eventId) : null;
+  const publishIssue = publishError ? publishErrorPresentation(publishError, eventId, publishRetryAfter) : null;
 
   async function publish(requestedDomain?: string | null) {
     if (publishing) return;
@@ -52,8 +54,9 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
         headers: { Accept: "application/json", "Content-Type": "application/json" },
         body: JSON.stringify({ domain: requestedDomain || null, registrant: requestedDomain ? registrant : undefined, legalAccepted: launchTermsAccepted && (!requestedDomain || domainTermsAccepted), legalVersion: "2026-07-22-beta" }),
       });
-      const payload = await response.json().catch(() => null) as { error?: string; checkout_url?: string } | null;
+      const payload = await response.json().catch(() => null) as { error?: string; checkout_url?: string; retryAfterSeconds?: number } | null;
       if (!response.ok) {
+        setPublishRetryAfter(retryAfterFrom(payload));
         setPublishError(payload?.error ?? "unknown");
         return;
       }
@@ -83,11 +86,12 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
       });
       const payload = await response.json().catch(() => null) as {
         error?: string;
+        retryAfterSeconds?: number;
         quotes?: Array<{ domain: string; included: boolean; registrationCost: number; renewalCost: number; currency: string; available: boolean; premium: boolean }>;
       } | null;
       const quote = payload?.quotes?.find((item) => item.domain === normalized);
       if (!response.ok || !quote) {
-        setDomainError(payload?.error ?? "The domain could not be checked.");
+        setDomainError(payload?.error === "rate_limited" ? rateLimitedMessage(payload.retryAfterSeconds) : payload?.error ?? "The domain could not be checked.");
       } else if (!quote.included) {
         setDomainError(!quote.available ? "That domain is no longer available." : quote.premium ? "Premium domains are not supported." : "That domain costs more than the included domain allowance.");
       } else {

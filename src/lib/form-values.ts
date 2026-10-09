@@ -1,3 +1,5 @@
+import { retryAfterPhrase } from "@/lib/rate-limit-message";
+
 export function optionalFormString(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value : "";
 }
@@ -8,8 +10,10 @@ export function rsvpPartySize(input: { attending: boolean; hasPartySizeField: bo
   return input.hasPartySizeField ? input.partySize : Math.max(1, input.guestNames.length);
 }
 
-export function rsvpErrorMessage(code: unknown) {
+export function rsvpErrorMessage(code: unknown, retryAfterSeconds?: number | null) {
   switch (code) {
+    case "rate_limited":
+      return `Too many replies were sent from this connection. Please try again ${retryAfterPhrase(retryAfterSeconds)}.`;
     case "guest_count_mismatch":
       return "Add one guest name per attendee, so the names match your party size.";
     case "duplicate_guest":

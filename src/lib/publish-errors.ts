@@ -1,11 +1,17 @@
+import { rateLimitedMessage } from "@/lib/rate-limit-message";
+
 export type PublishErrorPresentation = {
   message: string;
   actionLabel?: string;
   actionHref?: string;
 };
 
-export function publishErrorPresentation(code: string, eventId: string): PublishErrorPresentation {
+export function publishErrorPresentation(code: string, eventId: string, retryAfterSeconds?: number | null): PublishErrorPresentation {
   switch (code) {
+    case "rate_limited":
+      return {
+        message: `${rateLimitedMessage(retryAfterSeconds)} Your draft is safe.`,
+      };
     case "mfa_required":
       return {
         message: "Finish account security before publishing. Verify your email and set up your authenticator.",

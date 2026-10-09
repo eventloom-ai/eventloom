@@ -42,14 +42,14 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
       form.set("slug", selectedSlug);
       images.forEach((file) => form.append("images", file));
       const response = await fetch("/api/events/studio", { method: "POST", body: form });
-      const payload = await response.json().catch(() => null) as { eventId?: string; error?: string; warning?: string } | null;
+      const payload = await response.json().catch(() => null) as { eventId?: string; error?: string; warning?: string; retryAfterSeconds?: number } | null;
       if (response.ok && payload?.eventId) {
         const notice = payload.warning ? `?notice=${encodeURIComponent(payload.warning)}` : "";
         router.replace(`/app/events/${payload.eventId}/studio${notice}`);
         return;
       }
       setIsStarting(false);
-      setError(creatorErrorMessage(payload?.error, "We couldn’t create the workspace. Nothing was charged—please try again."));
+      setError(creatorErrorMessage(payload?.error, "We couldn’t create the workspace. Nothing was charged—please try again.", payload?.retryAfterSeconds));
     } catch {
       setIsStarting(false);
       setError(creatorErrorMessage("network_error"));

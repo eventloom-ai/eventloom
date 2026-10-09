@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useState } from "react";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { rateLimitedMessage } from "@/lib/rate-limit-message";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 export function PrivacyRequestForm({ siteKey }: { siteKey: string }) {
@@ -26,11 +27,11 @@ export function PrivacyRequestForm({ siteKey }: { siteKey: string }) {
         turnstileToken,
       }),
     }).catch(() => null);
-    const result = await response?.json().catch(() => ({})) as { request_id?: string } | undefined;
+    const result = await response?.json().catch(() => ({})) as { request_id?: string; error?: string; retryAfterSeconds?: number } | undefined;
     setBusy(false);
     setTurnstileToken("");
     setTurnstileResetKey((value) => value + 1);
-    setStatus(response?.ok ? `Request received. Reference: ${result?.request_id}` : "We could not receive the request. Verify the form and try again.");
+    setStatus(response?.ok ? `Request received. Reference: ${result?.request_id}` : result?.error === "rate_limited" ? rateLimitedMessage(result.retryAfterSeconds) : "We could not receive the request. Verify the form and try again.");
     if (response?.ok) event.currentTarget.reset();
   }
 

@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { FEEDBACK_OPEN_EVENT, isFeedbackSubmitDisabled, takePendingFeedbackDialogRequest } from "@/lib/feedback";
+import { rateLimitedMessage } from "@/lib/rate-limit-message";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const categories = [
@@ -77,9 +78,11 @@ export function FeedbackWidget({ turnstileSiteKey = "" }: { turnstileSiteKey?: s
     setTurnstileToken("");
     setTurnstileResetKey((value) => value + 1);
     if (!response?.ok) {
-      const payload = await response?.json().catch(() => null) as { error?: string } | null;
+      const payload = await response?.json().catch(() => null) as { error?: string; retryAfterSeconds?: number } | null;
       setError(
-        payload?.error === "try_later"
+        payload?.error === "rate_limited"
+          ? rateLimitedMessage(payload.retryAfterSeconds)
+          : payload?.error === "try_later"
           ? "Thanks for helping. Please wait a little before sending more feedback."
           : payload?.error === "verification_required"
             ? "Complete the security check and try again."

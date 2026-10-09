@@ -184,13 +184,13 @@ export function useBuildJob() {
       }).catch(() => null);
 
       if (!response?.ok) {
-        const payload = (await response?.json().catch(() => null)) as { error?: string } | null;
+        const payload = (await response?.json().catch(() => null)) as { error?: string; retryAfterSeconds?: number } | null;
         const message =
           payload?.error === "slug_taken"
             ? "That link name is already taken. Choose another one."
             : payload?.error === "slug_reserved"
               ? "That link name is reserved by Eventloom. Choose another one."
-              : creatorErrorMessage(payload?.error, "We couldn't start the build. Please try again.");
+              : creatorErrorMessage(payload?.error, "We couldn't start the build. Please try again.", payload?.retryAfterSeconds);
         setState((current) => ({
           ...current,
           isBuilding: false,

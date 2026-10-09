@@ -144,10 +144,10 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ baseVersionId: baseVersionIdRef.current, ...(edit.design ? { design: edit.design } : { document: edit.document }), eventPatch: edit.eventPatch, summary: "Edited in the visual studio" }),
         });
-        const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; state?: StudioState } | null;
+        const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; state?: StudioState; retryAfterSeconds?: number } | null;
         if (!response.ok || !payload?.revision) {
           setSaveStatus("error");
-          setError(creatorErrorMessage(payload?.error, "We couldn’t save that edit. Your previous version is safe."));
+          setError(creatorErrorMessage(payload?.error, "We couldn’t save that edit. Your previous version is safe.", payload?.retryAfterSeconds));
           if (payload?.state) applyCommittedRevision(payload.state.revision, true);
           queuedEditRef.current = null;
           break;
@@ -290,10 +290,10 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     const optimistic: BuilderMessage = { id: `pending-${crypto.randomUUID()}`, event_id: event.id, run_id: null, role: "user", content: prompt, selected_node_ids: selectedNodeId ? [selectedNodeId] : [], version_id: baseVersionIdRef.current, status: "pending", created_at: new Date().toISOString() };
     setMessages((current) => [...current, optimistic]);
     const response = await fetch(`/api/events/${event.id}/studio/messages`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: prompt, baseVersionId: baseVersionIdRef.current, selectedNodeIds: selectedNodeId ? [selectedNodeId] : [] }) });
-    const payload = await response.json().catch(() => null) as { runId?: string; message?: BuilderMessage; error?: string; state?: StudioState } | null;
+    const payload = await response.json().catch(() => null) as { runId?: string; message?: BuilderMessage; error?: string; state?: StudioState; retryAfterSeconds?: number } | null;
     if (!response.ok || !payload?.runId) {
       setMessages((current) => current.filter((message) => message.id !== optimistic.id));
-      setError(creatorErrorMessage(payload?.error, "We couldn’t start that change. Your message and draft are safe."));
+      setError(creatorErrorMessage(payload?.error, "We couldn’t start that change. Your message and draft are safe.", payload?.retryAfterSeconds));
       activeRunRef.current = null;
       if (payload?.state) {
         queuedEditRef.current = null;
@@ -315,10 +315,10 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     const form = new FormData();
     form.set("image", file);
     const response = await fetch(`/api/events/${event.id}/assets`, { method: "POST", body: form });
-    const payload = await response.json().catch(() => null) as { url?: string; error?: string } | null;
+    const payload = await response.json().catch(() => null) as { url?: string; error?: string; retryAfterSeconds?: number } | null;
     setUploadingAttachment(false);
     if (!response.ok || !payload?.url) {
-      setError(creatorErrorMessage(payload?.error, "We couldn’t upload that reference image."));
+      setError(creatorErrorMessage(payload?.error, "We couldn’t upload that reference image.", payload?.retryAfterSeconds));
       return;
     }
     setAttachment({ name: file.name, url: payload.url });
@@ -339,11 +339,11 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     setSaveStatus("saving");
     setError("");
     const response = await fetch(`/api/events/${event.id}/studio`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ baseVersionId: baseVersionIdRef.current, adoptDesign: true, summary: "Switched to the new designs" }) });
-    const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; state?: StudioState } | null;
+    const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; state?: StudioState; retryAfterSeconds?: number } | null;
     if (response.ok && payload?.revision) applyCommittedRevision(payload.revision, true);
     else {
       setSaveStatus("error");
-      setError(creatorErrorMessage(payload?.error, "We couldn’t switch designs. Your current version is unchanged."));
+      setError(creatorErrorMessage(payload?.error, "We couldn’t switch designs. Your current version is unchanged.", payload?.retryAfterSeconds));
       if (payload?.state) applyCommittedRevision(payload.state.revision, true);
     }
   }
@@ -352,13 +352,13 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     if (activeRunId || saveStatus === "saving") return;
     setSaveStatus("saving");
     const response = await fetch(`/api/events/${event.id}/studio/versions/${versionId}/restore`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ baseVersionId: baseVersionIdRef.current }) });
-    const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string } | null;
+    const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; retryAfterSeconds?: number } | null;
     if (response.ok && payload?.revision) {
       applyCommittedRevision(payload.revision, true);
       setDrawerOpen(false);
     } else {
       setSaveStatus("error");
-      setError(creatorErrorMessage(payload?.error, "We couldn’t restore that version. Your current version is unchanged."));
+      setError(creatorErrorMessage(payload?.error, "We couldn’t restore that version. Your current version is unchanged.", payload?.retryAfterSeconds));
     }
   }
 

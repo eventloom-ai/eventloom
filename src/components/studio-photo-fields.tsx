@@ -50,9 +50,9 @@ export function uploadEventPhoto(eventId: string, file: File, onProgress?: (frac
       if (event.lengthComputable && event.total > 0) onProgress?.(Math.min(1, event.loaded / event.total));
     };
     request.onload = () => {
-      const payload = (request.response ?? null) as { url?: string; error?: string } | null;
+      const payload = (request.response ?? null) as { url?: string; error?: string; retryAfterSeconds?: number } | null;
       if (request.status >= 200 && request.status < 300 && payload?.url) finish({ url: payload.url });
-      else finish({ error: creatorErrorMessage(payload?.error ?? (request.status === 413 ? "invalid_image" : "upload_failed"), "We couldn’t upload that photo.") });
+      else finish({ error: creatorErrorMessage(payload?.error ?? (request.status === 413 ? "invalid_image" : "upload_failed"), "We couldn’t upload that photo.", payload?.retryAfterSeconds) });
     };
     request.onerror = () => finish({ error: creatorErrorMessage("network_error") });
     request.onabort = () => finish({ error: creatorErrorMessage("network_error") });

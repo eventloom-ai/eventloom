@@ -1,7 +1,12 @@
 import { MAX_PROMPT_CHARS } from "@/lib/prompt-limits";
+import { rateLimitedMessage } from "@/lib/rate-limit-message";
 
-export function creatorErrorMessage(code: string | null | undefined, fallback = "That didn’t finish. Please try again.") {
+export function creatorErrorMessage(code: string | null | undefined, fallback = "That didn’t finish. Please try again.", retryAfterSeconds?: number | null) {
   switch (code) {
+    case "rate_limited":
+      return rateLimitedMessage(retryAfterSeconds);
+    case "rate_limit_unavailable":
+      return "We can’t start that right now. Your draft is safe — try again in a minute.";
     case "slug_taken":
       return "That site address is already in use. Choose another one and try again.";
     case "slug_reserved":
