@@ -47,6 +47,9 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
     return { ok: false as const, error: entitlement.status === "active" && entitlement.expires_at && new Date(entitlement.expires_at) > new Date() ? "already_launched" : "renewal_not_available" };
   }
 
+  const superseded = await supersedePendingLaunchCheckouts(stripe, client, input.eventId);
+  if (!superseded.ok) return superseded;
+
   let domainQuote: Awaited<ReturnType<ReturnType<typeof domainProvider>["check"]>>[number] | null = null;
   if (input.domain) {
     const parsed = domainSchema.safeParse(input.domain);
@@ -123,6 +126,7 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
     success_url: `${appUrl()}/app/events/${input.eventId}/studio?checkout=success`,
     cancel_url: `${appUrl()}/app/events/${input.eventId}/studio?checkout=cancelled`,
     client_reference_id: order.id,
+    expires_at: Math.floor(Date.now() / 1000) + CHECKOUT_TTL_SECONDS,
     metadata: {
       event_id: input.eventId,
       order_id: order.id,
@@ -149,4 +153,24 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
   }
 
   return { ok: true as const, url: session.url, id: session.id };
+}
+
+const CHECKOUT_TTL_SECONDS = 60 * 60;
+
+// One event can only be paid for once, so an older open session is expired before a new one is offered.
+// A session that already completed means a payment is in flight; its webhook will publish the site.
+async function supersedePendingLaunchCheckouts(stripe: Stripe, client: NonNullable<ReturnType<typeof serviceSupabase>>, eventId: string) {
+  const { data: pending, error } = await client.from("orders").select("id, provider_reference").eq("event_id", eventId).eq("kind", "event_launch").eq("status", "pending");
+  if (error) return { ok: false as const, error: "order_lookup_failed" };
+  for (const order of pending ?? []) {
+    if (order.provider_reference) {
+      const session = await stripe.checkout.sessions.retrieve(order.provider_reference).catch(() => null);
+      if (!session) return { ok: false as const, error: "checkout_lookup_failed" };
+      if (session.status === "complete") return { ok: false as const, error: "payment_in_progress" };
+      if (session.status === "open" && !(await stripe.checkout.sessions.expire(session.id).then(() => true, () => false))) return { ok: false as const, error: "checkout_lookup_failed" };
+    }
+    await deleteRegistrantPayload(order.id);
+    await client.from("orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "pending");
+  }
+  return { ok: true as const };
 }

@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   updatedOrder: null as unknown,
   sessionCreate: vi.fn(),
   sessionExpire: vi.fn(),
+  sessionRetrieve: vi.fn(),
+  pendingOrders: [] as Array<{ id: string; provider_reference: string | null }>,
+  cancelledOrders: [] as string[],
   domainCheck: vi.fn(),
   storeRegistrant: vi.fn(),
   deleteRegistrant: vi.fn(),
@@ -19,7 +22,7 @@ vi.mock("stripe", () => ({
   default: vi.fn(function StripeMock() {
     return {
       checkout: {
-        sessions: { create: mocks.sessionCreate, expire: mocks.sessionExpire },
+        sessions: { create: mocks.sessionCreate, expire: mocks.sessionExpire, retrieve: mocks.sessionRetrieve },
       },
     };
   }),
@@ -72,18 +75,27 @@ function createClient() {
         single: vi.fn(),
         update: vi.fn(), delete: vi.fn(), in: vi.fn(),
       };
-      builder.select.mockImplementation(() => builder);
+      builder.select.mockImplementation(() => {
+        // Pending-order lookups are awaited directly on the filter chain.
+        if (table === "orders" && operation === "select") Object.assign(builder, { then: (resolve: (value: unknown) => void) => resolve({ data: mocks.pendingOrders, error: null }) });
+        return builder;
+      });
       builder.in.mockImplementation((_column, values: string[]) => Promise.resolve({ data: values.map((document_key) => ({ id: `doc-${document_key}`, document_key, version: "2026-07-22-beta" })), error: null }));
       builder.delete.mockReturnValue(builder);
-      builder.eq.mockImplementation(() => operation === "update"
-        ? Promise.resolve({ error: mocks.orderUpdateError })
-        : builder);
+      builder.eq.mockImplementation((column: string, value: string) => {
+        if (operation === "update" && (mocks.updatedOrder as { status?: string } | null)?.status === "cancelled") {
+          if (column === "id") mocks.cancelledOrders.push(value);
+          return builder;
+        }
+        return operation === "update" ? Promise.resolve({ error: mocks.orderUpdateError }) : builder;
+      });
       builder.maybeSingle.mockResolvedValue({
         data: table === "events" ? mocks.event : mocks.entitlement,
         error: null,
       });
       builder.insert.mockImplementation((value) => {
         operation = "insert";
+        Reflect.deleteProperty(builder, "then");
         if (table === "orders") mocks.insertedOrder = value;
         return builder;
       });
@@ -93,6 +105,7 @@ function createClient() {
       });
       builder.update.mockImplementation((value) => {
         operation = "update";
+        Reflect.deleteProperty(builder, "then");
         mocks.updatedOrder = value;
         return builder;
       });
@@ -112,6 +125,9 @@ describe("Stripe launch checkout", () => {
     mocks.client = createClient();
     mocks.sessionCreate.mockReset().mockResolvedValue({ id: "cs_launch_1", url: "https://checkout.stripe.test/cs_launch_1" });
     mocks.sessionExpire.mockReset().mockResolvedValue({});
+    mocks.sessionRetrieve.mockReset().mockResolvedValue({ id: "cs_old", status: "open" });
+    mocks.pendingOrders = [];
+    mocks.cancelledOrders = [];
     mocks.domainCheck.mockReset().mockResolvedValue([]);
     mocks.storeRegistrant.mockReset().mockResolvedValue(true);
     mocks.deleteRegistrant.mockReset().mockResolvedValue(undefined);
@@ -193,5 +209,20 @@ describe("Stripe launch checkout", () => {
 
     await expect(createLaunchCheckoutSession({ eventId, ownerId, acceptance })).resolves.toEqual({ ok: false, error: "order_update_failed" });
     expect(mocks.sessionExpire).toHaveBeenCalledWith("cs_launch_1");
+  });
+
+  it("expires an older open checkout for the same event before offering a new one", async () => {
+    mocks.pendingOrders = [{ id: "order_old", provider_reference: "cs_old" }];
+    const result = await createLaunchCheckoutSession({ eventId, ownerId, acceptance });
+    expect(result.ok).toBe(true);
+    expect(mocks.sessionExpire).toHaveBeenCalledWith("cs_old");
+    expect(mocks.cancelledOrders).toContain("order_old");
+  });
+
+  it("does not open a second checkout while an earlier payment is completing", async () => {
+    mocks.pendingOrders = [{ id: "order_old", provider_reference: "cs_old" }];
+    mocks.sessionRetrieve.mockResolvedValue({ id: "cs_old", status: "complete" });
+    await expect(createLaunchCheckoutSession({ eventId, ownerId, acceptance })).resolves.toEqual({ ok: false, error: "payment_in_progress" });
+    expect(mocks.sessionCreate).not.toHaveBeenCalled();
   });
 });

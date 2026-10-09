@@ -46,6 +46,10 @@ export function publishErrorPresentation(code: string, eventId: string): Publish
       return {
         message: "This event is already published. Reload the studio to see its live status.",
       };
+    case "payment_in_progress":
+      return {
+        message: "Your payment is being confirmed. Your site will go live in a minute — reload the studio shortly.",
+      };
     case "site_version_missing":
       return {
         message: "Your draft is not ready to publish yet. Finish creating the site, then try again.",
