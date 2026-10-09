@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isHttpsHref } from "@/lib/safety/links";
 import { DESIGN_STYLES, STYLE_KEYS, TONES, type StyleKey } from "@/lib/event-design/styles";
 import type { EventDesignContent } from "@/lib/event-design/types";
 import type { EventConfig } from "@/lib/types";
@@ -26,7 +27,7 @@ export const REQUIRED_SECTIONS = ["hero", "rsvp"] as const satisfies readonly Se
 export const EVENT_DESIGN_VERSION = 1;
 
 const text = (max: number) => z.string().trim().min(1).max(max);
-const safeHref = z.string().trim().max(2048).refine((value) => /^https:\/\//i.test(value), "https_only");
+const safeHref = z.string().trim().max(2048).refine(isHttpsHref, "https_only");
 
 export const eventDesignContentSchema = z.object({
   eyebrow: text(80).optional(),

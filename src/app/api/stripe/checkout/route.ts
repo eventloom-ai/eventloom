@@ -9,6 +9,7 @@ import { clientIpHash, isSameOriginMutation, readJsonWithinLimit } from "@/lib/s
 import { domainRegistrantSchema } from "@/lib/domains/registrant";
 import { hasCreatorLegalOnboarding } from "@/lib/security/creator-legal";
 import { hasCompleteEventPrivacyNotice } from "@/lib/privacy/event-privacy";
+import { checkPublishSafety } from "@/lib/safety/publish-check";
 
 export async function POST(req: NextRequest) {
   if (!publicCheckoutEnabled() || !legalIdentityConfigured()) return NextResponse.json({ error: "checkout_unavailable" }, { status: 503 });
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest) {
   if (!(await hasCreatorLegalOnboarding(user.id))) return NextResponse.json({ error: "legal_onboarding_required" }, { status: 403 });
   if (!(await hasCompleteEventPrivacyNotice(body.event_id))) return NextResponse.json({ error: "event_privacy_notice_required" }, { status: 409 });
   if (body.legalAccepted !== true || body.legalVersion !== "2026-07-22-beta") return NextResponse.json({ error: "legal_acceptance_required" }, { status: 400 });
+  const safety = await checkPublishSafety(body.event_id);
+  if (!safety.ok) return NextResponse.json({ error: safety.error }, { status: safety.status });
   if (await isPlatformAdmin(user.id)) {
     if (!(await isEventOwner(body.event_id, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
     const client = serviceSupabase();

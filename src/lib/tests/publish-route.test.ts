@@ -13,7 +13,10 @@ const mocks = vi.hoisted(() => ({
   checkout: vi.fn(),
   client: null as unknown,
   legalOnboarding: true,
+  safety: { ok: true } as { ok: true } | { ok: false; error: string; status: number },
 }));
+
+vi.mock("@/lib/safety/publish-check", () => ({ checkPublishSafety: async () => mocks.safety }));
 
 vi.mock("@/lib/payments/stripe", () => ({
   createLaunchCheckoutSession: mocks.checkout,
@@ -96,6 +99,7 @@ describe("event publishing payment gate", () => {
     mocks.entitlementUpsert = null;
     mocks.client = createClient();
     mocks.legalOnboarding = true;
+    mocks.safety = { ok: true };
     mocks.checkout.mockReset().mockResolvedValue({ ok: true, url: "https://checkout.stripe.test/cs_launch_1" });
   });
 
@@ -107,6 +111,22 @@ describe("event publishing payment gate", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, published: true, free: false });
     expect(mocks.publishedUpdate).toMatchObject({ status: "published", rsvp_open: true, published_version_id: versionId });
+    expect(mocks.checkout).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["content_needs_review", 422],
+    ["content_not_allowed", 422],
+    ["event_suspended", 403],
+  ])("holds the publish when the safety check returns %s, before publishing or checkout", async (error, status) => {
+    mocks.entitlement = { status: "active", expires_at: "2099-01-01T00:00:00.000Z" };
+    mocks.safety = { ok: false, error, status };
+
+    const response = await invoke({ legalAccepted: true, legalVersion: "2026-07-22-beta" });
+
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toEqual({ error });
+    expect(mocks.publishedUpdate).toBeNull();
     expect(mocks.checkout).not.toHaveBeenCalled();
   });
 

@@ -24,6 +24,7 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
     const filters: Filter[] = [];
     let order: { column: string; ascending: boolean } | null = null;
     let limit: number | null = null;
+    let countOnly = false;
 
     const run = () => {
       const rows = table(name);
@@ -52,12 +53,13 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
         const { column, ascending } = order;
         matched = [...matched].sort((a, b) => (String(a[column]) < String(b[column]) ? -1 : String(a[column]) > String(b[column]) ? 1 : 0) * (ascending ? 1 : -1));
       }
+      if (countOnly) return { data: null, count: matched.length, error: null };
       if (limit !== null) matched = matched.slice(0, limit);
       return { data: matched.map((row) => ({ ...row })), error: null };
     };
 
     const builder = {
-      select: () => { returning = true; return builder; },
+      select: (_columns?: string, options?: { count?: string; head?: boolean }) => { returning = true; countOnly = Boolean(options?.count && options.head); return builder; },
       insert: (values: Row | Row[]) => { action = "insert"; payload = values; return builder; },
       update: (values: Row) => { action = "update"; payload = values; return builder; },
       delete: () => { action = "delete"; return builder; },
@@ -67,6 +69,8 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
       in: (column: string, values: unknown[]) => { filters.push((row) => values.includes(row[column])); return builder; },
       not: (column: string, operator: string, value: unknown) => { filters.push((row) => operator === "is" ? (row[column] ?? null) !== value : row[column] !== value); return builder; },
       lt: (column: string, value: unknown) => { filters.push((row) => String(row[column]) < String(value)); return builder; },
+      gte: (column: string, value: unknown) => { filters.push((row) => String(row[column]) >= String(value)); return builder; },
+      abortSignal: () => builder,
       gt: (column: string, value: unknown) => { filters.push((row) => Number(row[column]) > Number(value)); return builder; },
       order: (column: string, options: { ascending?: boolean } = {}) => { order = { column, ascending: options.ascending ?? true }; return builder; },
       limit: (count: number) => { limit = count; return builder; },
@@ -80,7 +84,7 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
         const rows = Array.isArray(result.data) ? result.data : [];
         return { data: rows[0] ?? null, error: result.error };
       },
-      then: (resolve: (value: { data: unknown; error: unknown }) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve().then(run).then(resolve, reject),
+      then: (resolve: (value: { data: unknown; error: unknown; count?: number }) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve().then(run).then(resolve, reject),
     };
     return builder;
   }
