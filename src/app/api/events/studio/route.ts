@@ -4,10 +4,11 @@ import { artDirectEvent, fallbackEventDesign } from "@/lib/agent/art-director";
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { createEventRecord } from "@/lib/agent/tools";
-import { processAndStoreEventImage } from "@/lib/event-assets";
+import { checkEventImageContent, processAndStoreEventImage } from "@/lib/event-assets";
 import { settleBuildCredit } from "@/lib/payments/ai-credit-rule";
 import { reserveBuildCredit } from "@/lib/payments/billing";
 import { promptTooLong } from "@/lib/prompt-limits";
+import { isBlocked, moderateText } from "@/lib/safety/moderation";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { createBuilderMessage, createStudioRun, seedInitialRevision, updateStudioRun } from "@/lib/studio-store";
@@ -34,6 +35,12 @@ export async function POST(req: NextRequest) {
   const slug = baseSlug.length >= 3 ? baseSlug : `event-${Date.now().toString(36)}`;
   if (isReservedSlug(slug)) return NextResponse.json({ error: "slug_reserved" }, { status: 409 });
   const imageFiles = form.getAll("images").filter((entry): entry is File => entry instanceof File).slice(0, MAX_INITIAL_IMAGES);
+  // Refuse before the event, the run or the credit exists; the photos are then stored without a second check.
+  const [textVerdict, ...imageVerdicts] = await Promise.all([
+    moderateText(prompt, { surface: "studio_create" }),
+    ...imageFiles.map((file) => checkEventImageContent(file, null)),
+  ]);
+  if (isBlocked(textVerdict) || imageVerdicts.includes("blocked")) return NextResponse.json({ error: "content_not_allowed" }, { status: 422 });
 
   let planConfig = defaultEventConfig(prompt);
   const created = await createEventRecord({ slug, config: planConfig, ownerId: user.id });
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (storageClient) {
       const urls: string[] = [];
       for (const file of imageFiles) {
-        const result = await processAndStoreEventImage(storageClient, created.event.id, file);
+        const result = await processAndStoreEventImage(storageClient, created.event.id, file, { alreadyModerated: true });
         if ("url" in result) urls.push(result.url);
       }
       if (urls.length) planConfig = { ...planConfig, heroImageUrl: urls[0], galleryImageUrls: urls.slice(1) };

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { aiDeadline } from "@/lib/ai/deadline";
 import { reserveBuildCredit } from "@/lib/payments/billing";
 import { promptTooLong } from "@/lib/prompt-limits";
+import { isBlocked, moderateText } from "@/lib/safety/moderation";
 import { executeStudioRun } from "@/lib/studio-agent";
 import { canEditEvent, createBuilderMessage, createStudioRun, loadStudioState, updateStudioRun } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   if (!state) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (state.revision.id !== body.baseVersionId) return NextResponse.json({ error: "version_conflict", state }, { status: 409 });
   if (state.activeRun) return NextResponse.json({ error: "run_in_progress", runId: state.activeRun.id }, { status: 409 });
+  // Before the run and the credit reservation: a refused message costs nothing.
+  if (isBlocked(await moderateText(message, { surface: "studio_message", eventId }))) return NextResponse.json({ error: "content_not_allowed" }, { status: 422 });
 
   const selectedNodeIds = (body.selectedNodeIds ?? []).filter((value): value is string => typeof value === "string").slice(0, 8);
   const runId = await createStudioRun({ eventId, ownerId: user.id, baseVersionId: state.revision.id, prompt: message, selectedNodeIds });

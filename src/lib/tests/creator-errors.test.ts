@@ -28,4 +28,8 @@ describe("creator error guidance", () => {
       "Your draft is unchanged.",
     );
   });
+
+  it("explains a moderation refusal and that nothing was charged", () => {
+    expect(creatorErrorMessage("content_not_allowed")).toMatch(/Acceptable Use Policy.*Nothing was charged/);
+  });
 });
