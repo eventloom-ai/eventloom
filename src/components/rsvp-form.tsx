@@ -2,7 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import Link from "next/link";
-import { optionalFormString } from "@/lib/form-values";
+import { optionalFormString, rsvpErrorMessage, rsvpPartySize } from "@/lib/form-values";
 import type { RsvpField } from "@/lib/types";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
@@ -22,7 +22,9 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
     event.preventDefault();
     if (!isOpen) return;
 
-    const form = new FormData(event.currentTarget);
+    // currentTarget is null once the handler awaits, so keep the element for the reset below.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const guestNames = String(form.get("guest_names") ?? "")
       .split("\n")
       .map((name) => name.trim())
@@ -44,7 +46,7 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
         email: optionalFormString(form.get("email")),
         phone: optionalFormString(form.get("phone")),
         is_attending: attending,
-        party_size: attending ? partySize : 0,
+        party_size: rsvpPartySize({ attending, hasPartySizeField: fields.includes("party_size"), partySize, guestNames }),
         guest_names: attending ? guestNames : [],
         answers: { note: String(form.get("note") ?? ""), meal_preference: String(form.get("meal_preference") ?? "") },
       }),
@@ -53,14 +55,15 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
     if (res?.ok) {
       idempotencyKey.current = null;
       setStatus("done");
-      event.currentTarget.reset();
+      formElement.reset();
       return;
     }
 
+    const payload = res ? await res.json().catch(() => null) as { error?: string } | null : null;
     setTurnstileToken("");
     setTurnstileResetKey((value) => value + 1);
     setStatus("error");
-    setMessage("We could not save your reply. Please check the form and try again.");
+    setMessage(rsvpErrorMessage(res ? (payload?.error ?? (res.status === 429 ? "try_later" : null)) : "network_error"));
   }
 
   if (!isOpen) {
