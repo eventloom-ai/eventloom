@@ -1,5 +1,4 @@
 import type { ImageInput } from "@/lib/ai/generator";
-import { generatePageArtifact } from "@/lib/ai/generator";
 import { progressForStep } from "@/lib/agent/build-progress";
 import type { BuildJobStatus, BuildProgressEvent, BuildProgressStep } from "@/lib/agent/progress";
 import { addDomainToVercelProject } from "@/lib/domains/vercel";
@@ -7,7 +6,7 @@ import { appUrl } from "@/lib/env";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { createLocalDemoJob, finishLocalDemoJob, getLocalDemoEventById, getLocalDemoJob, updateLocalDemoJob } from "@/lib/local-demo-store";
 import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
-import type { EventConfig, EventRecord, PageArtifact } from "@/lib/types";
+import type { EventConfig, EventRecord } from "@/lib/types";
 
 async function writableClient(ownerId?: string | null) {
   if (ownerId) {
@@ -278,32 +277,6 @@ export async function saveEventVersion(
   });
 }
 
-export async function savePageArtifact(
-  eventId: string,
-  artifact: PageArtifact,
-  status: "draft" | "published" = "draft",
-  ownerId?: string | null,
-) {
-  const client = await writableClient(ownerId);
-  if (!client) return null;
-
-  const { data, error } = await client
-    .from("page_artifacts")
-    .insert({
-      event_id: eventId,
-      status,
-      html: artifact.html,
-      css: artifact.css,
-      model: artifact.model,
-      generated_at: artifact.generatedAt,
-    })
-    .select("id")
-    .single();
-
-  if (error) return null;
-  return data.id as string;
-}
-
 export async function updateEventConfig(eventId: string, config: EventConfig, ownerId?: string | null) {
   const client = await writableClient(ownerId);
   if (!client) return false;
@@ -366,8 +339,4 @@ export function previewUrls(slug: string) {
     slugPath: `${base}/${slug}`,
     subdomain: `${base}/${slug}`,
   };
-}
-
-export async function generateArtifactForConfig(config: EventConfig, prompt: string, images: ImageInput[] = []) {
-  return generatePageArtifact(config, prompt, images);
 }

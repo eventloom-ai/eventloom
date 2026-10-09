@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { optionalFormString } from "@/lib/form-values";
-import { evaluateDomainQuote, validateGeneratedArtifact, validateRsvpPayload } from "@/lib/validation";
+import { evaluateDomainQuote, validateRsvpPayload } from "@/lib/validation";
 
 describe("RSVP validation", () => {
   it("accepts a valid attending RSVP", () => {
@@ -48,39 +48,6 @@ describe("RSVP validation", () => {
       party_size: 1,
       guest_names: [],
       answers: { note: "Looking forward to it" },
-    });
-
-    expect(result.ok).toBe(true);
-  });
-});
-
-describe("generated artifact validation", () => {
-  it("rejects scripts and event handlers", () => {
-    expect(
-      validateGeneratedArtifact({
-        html: "<section><script>alert(1)</script></section>",
-        css: "",
-        generatedAt: new Date().toISOString(),
-        model: "x",
-      }).ok,
-    ).toBe(false);
-
-    expect(
-      validateGeneratedArtifact({
-        html: "<section onclick='x'>hello world safe length</section>",
-        css: "",
-        generatedAt: new Date().toISOString(),
-        model: "x",
-      }).ok,
-    ).toBe(false);
-  });
-
-  it("accepts safe frontend markup", () => {
-    const result = validateGeneratedArtifact({
-      html: "<section><h1>Mira &amp; Adam</h1><p>Custom event page.</p></section>",
-      css: ".hero{padding:2rem}",
-      generatedAt: new Date().toISOString(),
-      model: "test",
     });
 
     expect(result.ok).toBe(true);

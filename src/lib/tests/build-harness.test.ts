@@ -2,9 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BuildProgressEvent } from "@/lib/agent/progress";
 import type { EventRecord } from "@/lib/types";
 
-const mocks = vi.hoisted(() => ({ persist: false, seedInitialRevision: vi.fn(), generatePageArtifact: vi.fn() }));
+const mocks = vi.hoisted(() => ({ persist: false, seedInitialRevision: vi.fn() }));
 
-vi.mock("@/lib/ai/generator", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/ai/generator")>()), generatePageArtifact: mocks.generatePageArtifact }));
 vi.mock("@/lib/studio-store", () => ({ seedInitialRevision: mocks.seedInitialRevision }));
 vi.mock("@/lib/agent/runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/agent/runtime")>();
@@ -17,7 +16,6 @@ vi.mock("@/lib/agent/tools", async (importOriginal) => {
     ...actual,
     updateEventRecord: vi.fn(async ({ config }) => ({ event: { ...saved, config } })),
     saveEventVersion: vi.fn(),
-    savePageArtifact: vi.fn(),
     uploadEventImages: vi.fn(async () => []),
     updateEventConfig: vi.fn(async () => true),
     updateGenerationJobProgress: vi.fn(),
@@ -27,7 +25,6 @@ vi.mock("@/lib/agent/tools", async (importOriginal) => {
 
 const { buildCompleteSite } = await import("@/lib/agent/harness");
 const { getLocalDemoEventBySlug } = await import("@/lib/local-demo-store");
-const tools = await import("@/lib/agent/tools");
 
 const prompt = "Garden supper for Lena. The event is on Saturday, November 21, 2026 at 7:30 PM. It will be held at Rose Court.";
 
@@ -45,7 +42,6 @@ describe("site build harness", () => {
     const { result, percents } = await build({});
 
     expect(result.ok).toBe(true);
-    expect(mocks.generatePageArtifact).not.toHaveBeenCalled();
     expect(percents.at(-1)).toBe(100);
     expect(percents).toEqual([...percents].sort((a, b) => a - b));
     const saved = getLocalDemoEventBySlug("garden-supper");
@@ -58,8 +54,6 @@ describe("site build harness", () => {
     const { result, percents } = await build({ placeholderEventId: "11111111-1111-4111-8111-111111111111" });
 
     expect(result.ok).toBe(true);
-    expect(mocks.generatePageArtifact).not.toHaveBeenCalled();
-    expect(tools.savePageArtifact).not.toHaveBeenCalled();
     expect(mocks.seedInitialRevision).toHaveBeenCalledWith(expect.objectContaining({ id: "11111111-1111-4111-8111-111111111111" }), null, expect.objectContaining({ prompt, document: expect.objectContaining({ schemaVersion: 2 }) }));
     expect(percents.at(-1)).toBe(100);
     expect(percents).toEqual([...percents].sort((a, b) => a - b));
