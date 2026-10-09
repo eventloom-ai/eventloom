@@ -82,7 +82,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | N13 | Preview deploys failing since 2026-09-23: Dependabot PRs #19 (prod deps, Stripe SDK expects apiVersion `2026-08-26.dahlia`) and #18 (dev deps) are stale and conflict with main — rebase (`@dependabot recreate`), fix the Stripe apiVersion, verify, merge |
 | N14 | No error monitoring in production (Sentry env unset) |
 | N15 | Essentially no traffic: ~48 requests in 7 days (2026-10-08), almost all internal testing |
-| N16 | Every response gets `Cache-Control: private, no-store` from `src/proxy.ts`, so prerendered marketing/template pages are never CDN-cached; prerendered HTML has no CSP nonces, so `CSP_ENFORCE_ENABLED=true` would break static pages. Needs a per-route policy (public static pages: cacheable + hash/self CSP) |
+| N16 | (fixed: public pages now CDN-cached with nonce-free CSP) Every response gets `Cache-Control: private, no-store` from `src/proxy.ts`, so prerendered marketing/template pages are never CDN-cached; prerendered HTML has no CSP nonces, so `CSP_ENFORCE_ENABLED=true` would break static pages. Needs a per-route policy (public static pages: cacheable + hash/self CSP) |
 | N17 | Two-column sections with a large gap only show two columns at ≥ ~1150px (column min-width formula ignores the gap) — affects live event pages |
 | N18 | "Use this template" sends logged-out visitors to /login rather than signup; palette chip not pre-selected from the template brief |
 | N19 | Stuck domain order cases remain: register succeeded but recording failed + later step failed, or registrar reports pending — needs a registrar ownership check |
