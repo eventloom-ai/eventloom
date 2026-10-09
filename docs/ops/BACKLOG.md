@@ -100,7 +100,12 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | U5 | Images already stored before moderation shipped were never checked; publish re-checks text only | open |
 | U6 | Reporter emails are stored in plain text (service-role only); encrypt like privacy requests if the encryption key is set everywhere | open |
 
+| N24 | Pre-launch audit 2026-10-09 "fix soon": MFA on event delete; open redirect via /app/security?next= (mfa-settings.tsx:52 should use safeRedirectPath); GET /api/events/build/[jobId] must require a session; loadStudioState must check draft_version_id belongs to the event; asset CDN cache after unpublish (s-maxage 86400) + only serve assets used by the published version; restrict event image URLs to /api/assets/<uuid>; fail closed if service role missing in production (canEditEvent demo fallback); readiness check requires IP_HASH_SECRET; raw DB/provider error text in studio/events-studio responses; /login?error= reflected text; logout CSRF; webhook refund branch before livemode check; chargebacks unhandled; private,no-store on signed-in API responses; credit reservation should record job_id |
+| N25 | CSP enforcement blocked: prerendered /login, /signup, /auth/reset-password, /privacy/request get the nonce policy but carry no nonces — serve them the static policy (src/lib/public-paths.ts) or render dynamically; add https://www.google.com to frame-src for the venue map; log blocked-uri + page in /api/csp-report; collect a few days of reports before CSP_ENFORCE_ENABLED=true |
+
 ## Needs owner
+
+See `docs/ops/LAUNCH-CHECKLIST.md` for the ordered pre-Stripe list.
 
 - Confirm Stripe is in live mode and payouts go to the right bank (Dashboard → Settings → Payouts). Check `PUBLIC_CHECKOUT_ENABLED` is `true` in Vercel production env — it defaults to off.
 - `vercel login` on this machine so agents can read deployments/logs/env names.
