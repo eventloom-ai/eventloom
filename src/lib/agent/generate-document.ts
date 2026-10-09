@@ -1,7 +1,7 @@
 import "server-only";
 
 import { groundConfigInPrompt } from "@/lib/agent/generate-config";
-import { env, openaiResponsesOptions } from "@/lib/env";
+import { AI_REQUEST_TIMEOUT_MS, env, openaiResponsesOptions } from "@/lib/env";
 import {
   composeSiteDocument,
   newSiteNodeId,
@@ -323,6 +323,7 @@ export async function generateOriginalSite(prompt: string, config: EventConfig):
       ],
       text: { format: { type: "json_schema", name: "eventloom_original_site", strict: true, schema: originalSiteSchema } },
     }),
+    signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
   }).catch(() => null);
 
   if (!response?.ok) return fallback;

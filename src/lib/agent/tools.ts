@@ -315,9 +315,10 @@ export async function updateEventConfig(eventId: string, config: EventConfig, ow
 
 export async function uploadEventImages(eventId: string, images: ImageInput[], ownerId?: string | null) {
   const client = await writableClient(ownerId);
-  if (!client || !images.length) return [];
+  const references = images.filter((image) => !image.storedUrl);
+  if (!client || !references.length) return [];
 
-  const rows = images.map((image) => ({
+  const rows = references.map((image) => ({
     event_id: eventId,
     kind: "reference",
     url: image.dataUrl,

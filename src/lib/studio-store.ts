@@ -1,6 +1,8 @@
 import "server-only";
 
 import { assertEventAssetOwnership, composeSiteDocument, siteDocumentSchema, type SiteDocument } from "@/lib/site-document";
+import { getLocalDemoEventById, getLocalDemoRevisions, saveLocalDemoEvent, saveLocalDemoRevision } from "@/lib/local-demo-store";
+import { refundBuildCredit } from "@/lib/payments/billing";
 import { demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { BuilderMessage, BuilderRunEvent, EventConfig, EventRecord, SiteRevision } from "@/lib/types";
@@ -26,8 +28,26 @@ export type StudioState = {
   persistence: "database" | "demo";
 };
 
+export const STALE_JOB_MS = 10 * 60 * 1000;
+
+const unsafeImageUrl = (value: string | undefined) => Boolean(value) && !(value!.startsWith("/") || /^https:\/\//i.test(value!));
+
+// Builds can carry inline `data:` reference photos in the config, which the site document rejects.
+// Seed without them instead of failing the studio forever.
+export function composeSeedDocument(config: EventConfig, prompt: string, makeId?: (prefix: string) => string) {
+  try {
+    return { document: composeSiteDocument(config, prompt, makeId), config };
+  } catch (error) {
+    if (!unsafeImageUrl(config.heroImageUrl) && !config.galleryImageUrls?.some(unsafeImageUrl)) throw error;
+    const { heroImageUrl, galleryImageUrls, ...rest } = config;
+    const safe: EventConfig = { ...rest, ...(unsafeImageUrl(heroImageUrl) ? {} : { heroImageUrl }), ...(galleryImageUrls ? { galleryImageUrls: galleryImageUrls.filter((url) => !unsafeImageUrl(url)) } : {}) };
+    return { document: composeSiteDocument(safe, prompt, makeId), config: safe };
+  }
+}
+
 function demoRevision(event: EventRecord): SiteRevision {
   const eventKey = event.id.replaceAll("-", "").slice(0, 10);
+  const seeded = composeSeedDocument(event.config, event.config.title, (prefix) => `${prefix}_${eventKey}`);
   return {
     id: `demo-version-${event.id}`,
     event_id: event.id,
@@ -35,8 +55,8 @@ function demoRevision(event: EventRecord): SiteRevision {
     source: "initial",
     summary: "First original version",
     prompt: event.config.title,
-    config: event.config,
-    document: composeSiteDocument(event.config, event.config.title, (prefix) => `${prefix}_${eventKey}`),
+    config: seeded.config,
+    document: seeded.document,
     created_at: new Date(0).toISOString(),
   };
 }
@@ -80,10 +100,13 @@ export async function seedInitialRevision(event: EventRecord, ownerId: string | 
   summary?: string;
 }) {
   const client = serviceSupabase();
-  const config = seed?.config ?? event.config;
   const prompt = seed?.prompt ?? event.config.title;
-  const document = seed?.document ?? composeSiteDocument(config, prompt);
-  if (!client) return { ...demoRevision({ ...event, config }), document, config, prompt, summary: seed?.summary ?? "First original version" };
+  const { document, config } = seed?.document ? { document: seed.document, config: seed.config ?? event.config } : composeSeedDocument(seed?.config ?? event.config, prompt);
+  if (!client) {
+    const revision = { ...demoRevision({ ...event, config }), document, config, prompt, summary: seed?.summary ?? "First original version" };
+    saveLocalDemoRevision(revision);
+    return revision;
+  }
   const { data, error } = await client.from("event_versions").insert({
     event_id: event.id,
     prompt,
@@ -111,10 +134,12 @@ export async function seedInitialRevision(event: EventRecord, ownerId: string | 
 export async function loadStudioState(eventId: string, ownerId: string | null): Promise<StudioState | null> {
   const client = serviceSupabase();
   if (!client) {
-    const event = demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
-    if (!event) return null;
-    const revision = demoRevision(event);
-    return { event: { ...event, document: revision.document, draft_version_id: revision.id }, revision, versions: [revision], messages: [], activeRun: null, persistence: "demo" };
+    const found = getLocalDemoEventById(eventId) ?? demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
+    if (!found) return null;
+    const event = { ...found, id: eventId };
+    const saved = getLocalDemoRevisions(eventId);
+    const revision = saved[0] ?? demoRevision(event);
+    return { event: { ...event, config: revision.config, document: revision.document, draft_version_id: revision.id }, revision, versions: saved.length ? saved : [revision], messages: [], activeRun: null, persistence: "demo" };
   }
 
   const full = await client.from("events").select("id, owner_id, slug, status, rsvp_open, config, draft_version_id, published_version_id").eq("id", eventId).maybeSingle();
@@ -132,6 +157,7 @@ export async function loadStudioState(eventId: string, ownerId: string | null): 
     revision = data ? revisionFromRow(data as Record<string, unknown>) : null;
   }
   revision ??= await seedInitialRevision(event, ownerId);
+  await reapStaleGenerationJobs({ eventId });
 
   const [versionsResult, messagesResult, runResult] = await Promise.all([
     client.from("event_versions").select("id, event_id, parent_version_id, source, summary, prompt, config, document, created_at").eq("event_id", eventId).not("document", "is", null).order("created_at", { ascending: false }).limit(50),
@@ -164,7 +190,11 @@ export async function commitStudioRevision(input: {
   const document = siteDocumentSchema.parse(input.document);
   assertEventAssetOwnership(document, input.eventId);
   if (!client) {
-    return { ok: true as const, revision: { ...demoRevision({ id: input.eventId, slug: "demo", status: "draft", rsvp_open: false, config: input.config }), id: `demo-version-${crypto.randomUUID()}`, parent_version_id: input.baseVersionId, source: input.source, summary: input.summary, prompt: input.prompt, document, created_at: new Date().toISOString() } };
+    const revision: SiteRevision = { id: `demo-version-${crypto.randomUUID()}`, event_id: input.eventId, parent_version_id: input.baseVersionId, source: input.source, summary: input.summary, prompt: input.prompt, config: input.config, document, created_at: new Date().toISOString() };
+    saveLocalDemoRevision(revision);
+    const local = getLocalDemoEventById(input.eventId);
+    if (local) saveLocalDemoEvent({ ...local, config: input.config, document });
+    return { ok: true as const, revision };
   }
 
   const { data: inserted, error } = await client.from("event_versions").insert({
@@ -235,9 +265,15 @@ export async function createStudioRun(input: { eventId: string; ownerId: string;
 
 export async function appendRunEvent(jobId: string, eventId: string, type: BuilderRunEvent["type"], payload: Record<string, unknown>) {
   const client = serviceSupabase();
-  if (!client || jobId.startsWith("demo-run-")) return;
-  const { data } = await client.from("generation_job_events").select("sequence").eq("job_id", jobId).order("sequence", { ascending: false }).limit(1).maybeSingle();
-  await client.from("generation_job_events").insert({ job_id: jobId, event_id: eventId, sequence: Number(data?.sequence ?? 0) + 1, type, payload });
+  if (!client || jobId.startsWith("demo-run-")) return false;
+  // The worker and the cancel route can append concurrently; on a (job_id, sequence) collision re-read and retry.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data } = await client.from("generation_job_events").select("sequence").eq("job_id", jobId).order("sequence", { ascending: false }).limit(1).maybeSingle();
+    const { error } = await client.from("generation_job_events").insert({ job_id: jobId, event_id: eventId, sequence: Number(data?.sequence ?? 0) + 1, type, payload });
+    if (!error) return true;
+    if (error.code !== "23505") return false;
+  }
+  return false;
 }
 
 export async function loadRunEvents(jobId: string, afterSequence = 0) {
@@ -265,4 +301,29 @@ export async function requestStudioRunCancellation(jobId: string) {
   if (!client) return true;
   const { data } = await client.from("generation_jobs").update({ cancel_requested: true, progress_message: "Stopping after the current step…" }).eq("id", jobId).eq("status", "running").select("id").maybeSingle();
   return Boolean(data);
+}
+
+// Workers are killed at maxDuration (300s), so a job still "running" after STALE_JOB_MS will never finish.
+// Fail it, tell any listening studio, and refund its build credit (refunds are idempotent per job).
+export async function reapStaleGenerationJobs(scope: { eventId?: string | null; ownerId?: string | null } = {}) {
+  const client = serviceSupabase();
+  if (!client) return 0;
+  try {
+    let query = client.from("generation_jobs")
+      .update({ status: "failed", error: "job_timed_out", progress_step: "error", progress_message: "This run took too long and was stopped.", completed_at: new Date().toISOString() })
+      .eq("status", "running")
+      .lt("created_at", new Date(Date.now() - STALE_JOB_MS).toISOString());
+    if (scope.eventId) query = query.eq("event_id", scope.eventId);
+    if (scope.ownerId) query = query.eq("owner_id", scope.ownerId);
+    const { data, error } = await query.select("id, event_id, owner_id");
+    if (error || !data) return 0;
+    for (const job of data as Array<{ id: string; event_id: string | null; owner_id: string | null }>) {
+      if (!job.event_id) continue;
+      await appendRunEvent(job.id, job.event_id, "error", { message: "job_timed_out" });
+      if (job.owner_id) await refundBuildCredit(job.owner_id, job.event_id, job.id);
+    }
+    return data.length;
+  } catch {
+    return 0;
+  }
 }

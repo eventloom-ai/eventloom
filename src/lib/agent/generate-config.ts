@@ -100,6 +100,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
         },
       },
     }),
+    signal: AbortSignal.timeout(240_000),
   }).catch(() => null);
 
   if (!response?.ok) {

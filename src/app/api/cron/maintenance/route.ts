@@ -6,6 +6,7 @@ import { serviceSupabase } from "@/lib/supabase/server";
 import { stripeClient } from "@/lib/payments/stripe";
 import { processVerifiedStripeEvent } from "@/app/api/stripe/webhook/route";
 import { DAILY_MAINTENANCE_JOB } from "@/lib/maintenance-status";
+import { reapStaleGenerationJobs } from "@/lib/studio-store";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
     }).eq("job_key", DAILY_MAINTENANCE_JOB);
     if (result.error) reportOperationalEvent("error", "maintenance_heartbeat_failed", { code: result.error.code });
   };
+  const reapedGenerationJobs = await reapStaleGenerationJobs();
   const feedbackHashCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const feedbackSlaCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, staleFeedbackResult, retryEventsResult] = await Promise.all([
@@ -117,6 +119,7 @@ export async function GET(request: NextRequest) {
     overduePrivacyRequests,
     staleFeedback,
     replayedEvents,
+    reapedGenerationJobs,
   });
 
   return NextResponse.json({
@@ -128,5 +131,6 @@ export async function GET(request: NextRequest) {
     overdue_privacy_requests: overduePrivacyRequests,
     feedback_items_past_sla: staleFeedback,
     replayed_provider_events: replayedEvents,
+    reaped_generation_jobs: reapedGenerationJobs,
   });
 }

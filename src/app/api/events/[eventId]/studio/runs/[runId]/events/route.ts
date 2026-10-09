@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { canEditEvent, getStudioRun, loadRunEvents } from "@/lib/studio-store";
+import { canEditEvent, getStudioRun, loadRunEvents, reapStaleGenerationJobs } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
 
 export const maxDuration = 300;
@@ -9,6 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ even
   const { eventId, runId } = await params;
   const user = await getServerUser();
   if (!user || !(await canEditEvent(eventId, user.id))) return new Response("not_found", { status: 404 });
+  await reapStaleGenerationJobs({ eventId });
   const run = await getStudioRun(runId);
   if (!run || run.event_id !== eventId) return new Response("not_found", { status: 404 });
   const queryCursor = Number(new URL(req.url).searchParams.get("after") ?? 0) || 0;

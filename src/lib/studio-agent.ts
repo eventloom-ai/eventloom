@@ -1,7 +1,7 @@
 import "server-only";
 
 import { generateOriginalSite } from "@/lib/agent/generate-document";
-import { env, openaiResponsesOptions } from "@/lib/env";
+import { AI_REQUEST_TIMEOUT_MS, env, openaiResponsesOptions } from "@/lib/env";
 import { refundBuildCredit } from "@/lib/payments/billing";
 import { applyEventDetailsPatch, applySiteOperations, type SiteOperation } from "@/lib/site-document-operations";
 import { findSiteNode, type SiteDocument } from "@/lib/site-document";
@@ -21,6 +21,8 @@ type AgentEdit = {
   operations: SiteOperation[];
   eventPatch: Partial<EventConfig>;
 };
+
+const styleKeys = ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden", "texture", "letterSpacing", "italic", "opacity", "border", "justify", "rotate", "offset"];
 
 const editSchema = {
   type: "object",
@@ -52,6 +54,7 @@ const editSchema = {
           url: { type: ["string", "null"] },
           alt: { type: ["string", "null"] },
           beforeNodeId: { type: ["string", "null"] },
+          removeStyleKeys: { type: ["array", "null"], items: { type: "string", enum: styleKeys } },
           style: {
             type: ["object", "null"], additionalProperties: false,
             properties: {
@@ -66,7 +69,7 @@ const editSchema = {
               justify: { type: ["string", "null"], enum: ["start", "center", "end", null] },
               rotate: { type: ["string", "null"], enum: ["none", "left", "right", null] }, offset: { type: ["string", "null"], enum: ["none", "raised", "lowered", null] },
             },
-            required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden", "texture", "letterSpacing", "italic", "opacity", "border", "justify", "rotate", "offset"],
+            required: styleKeys,
           },
           theme: {
             type: ["object", "null"], additionalProperties: false,
@@ -78,7 +81,7 @@ const editSchema = {
             required: ["text", "surface", "accent", "muted", "display", "body", "radius", "motion"],
           },
         },
-        required: ["op", "nodeId", "content", "url", "alt", "beforeNodeId", "style", "theme"],
+        required: ["op", "nodeId", "content", "url", "alt", "beforeNodeId", "removeStyleKeys", "style", "theme"],
       },
     },
   },
@@ -100,9 +103,11 @@ export function normalizeModelEdit(raw: Record<string, unknown>): AgentEdit {
     const op = String(operation.op ?? "");
     const nodeId = typeof operation.nodeId === "string" ? operation.nodeId : "";
     if (op === "replace_text" && nodeId && typeof operation.content === "string") return [{ op, nodeId, content: operation.content } satisfies SiteOperation];
-    if (op === "update_style" && nodeId && operation.style && typeof operation.style === "object") {
-      const style = Object.fromEntries(Object.entries(operation.style as Record<string, unknown>).filter(([, value]) => value !== undefined));
-      return [{ op, nodeId, style } as SiteOperation];
+    if (op === "update_style" && nodeId) {
+      // The strict schema makes the model send every style key, so null means "unchanged"; removals must be explicit.
+      const style: Record<string, unknown> = Object.fromEntries(Object.entries(operation.style && typeof operation.style === "object" ? operation.style as Record<string, unknown> : {}).filter(([key, value]) => styleKeys.includes(key) && value !== undefined && value !== null));
+      if (Array.isArray(operation.removeStyleKeys)) for (const key of operation.removeStyleKeys) if (typeof key === "string" && styleKeys.includes(key) && !(key in style)) style[key] = null;
+      return Object.keys(style).length ? [{ op, nodeId, style } as SiteOperation] : [];
     }
     if (op === "set_image" && nodeId && typeof operation.url === "string") return [{ op, nodeId, url: operation.url, ...(typeof operation.alt === "string" ? { alt: operation.alt } : {}) } satisfies SiteOperation];
     if (op === "remove_node" && nodeId) return [{ op, nodeId } satisfies SiteOperation];
@@ -142,11 +147,12 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
     body: JSON.stringify({
       ...openaiResponsesOptions(),
       input: [
-        { role: "system", content: "You are Eventloom's visual editing agent. Make the smallest safe set of changes that satisfies the request. Preserve all unrelated nodes and event facts. Never invent names, dates, times, venues, addresses, or URLs. Use only node IDs that exist. Prefer updating the selected nodes when selection is present. Return concise user-facing copy." },
+        { role: "system", content: "You are Eventloom's visual editing agent. Make the smallest safe set of changes that satisfies the request. Preserve all unrelated nodes and event facts. Never invent names, dates, times, venues, addresses, or URLs. Use only node IDs that exist. Prefer updating the selected nodes when selection is present. In update_style, set every style key you are not changing to null; to clear an existing style value, list its key in removeStyleKeys. Return concise user-facing copy." },
         { role: "user", content: JSON.stringify({ request: prompt, selectedNodeIds, event: config, document, recentConversation: messages.slice(-8).map((message) => ({ role: message.role, content: message.content })) }) },
       ],
       text: { format: { type: "json_schema", name: "eventloom_document_edit", strict: true, schema: editSchema } },
     }),
+    signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
   }).catch(() => null);
   if (!response?.ok) return fallbackEdit(prompt, document, selectedNodeIds);
   const data = await response.json().catch(() => null) as { id?: string; output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }> } | null;
@@ -160,11 +166,15 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
 }
 
 export async function executeStudioRun(input: { jobId: string; eventId: string; ownerId: string; prompt: string; selectedNodeIds: string[] }) {
+  // Once the provider has been called the credit is consumed, even if the run is cancelled or fails afterwards.
+  let providerCalled = false;
   try {
     const state = await loadStudioState(input.eventId, input.ownerId);
     if (!state) throw new Error("event_not_found");
     const run = await getStudioRun(input.jobId);
+    if (run?.cancel_requested) throw new Error("run_cancelled");
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "analyzing", message: run?.kind === "initial" ? "Designing your site from the brief…" : "Understanding your request…" });
+    providerCalled = Boolean(env.openaiApiKey());
     if (run?.kind === "initial") {
       const original = await generateOriginalSite(input.prompt, state.revision.config);
       const beforeCommit = await getStudioRun(input.jobId);
@@ -188,10 +198,10 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "applying", message: edit.summary });
     const config = Object.keys(edit.eventPatch).length ? applyEventDetailsPatch(state.revision.config, edit.eventPatch) : state.revision.config;
     const applied = edit.operations.length ? applySiteOperations(state.revision.document, edit.operations) : { document: state.revision.document, changedNodeIds: [] };
-    await appendRunEvent(input.jobId, input.eventId, "patch", { document: applied.document, config, changedNodeIds: applied.changedNodeIds, summary: edit.summary });
 
     const beforeCommit = await getStudioRun(input.jobId);
     if (beforeCommit?.cancel_requested) throw new Error("run_cancelled");
+    await appendRunEvent(input.jobId, input.eventId, "patch", { document: applied.document, config, changedNodeIds: applied.changedNodeIds, summary: edit.summary });
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "saving", message: "Validating and saving this version…" });
     const committed = await commitStudioRevision({ eventId: input.eventId, ownerId: input.ownerId, baseVersionId: state.revision.id, document: applied.document, config, source: "ai", summary: edit.summary, prompt: input.prompt });
     if (!committed.ok) throw new Error(committed.error);
@@ -203,6 +213,6 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
     const cancelled = message === "run_cancelled";
     await updateStudioRun(input.jobId, { status: "failed", error: message, progress_step: "error", progress_message: cancelled ? "Stopped" : "The edit could not be applied.", completed_at: new Date().toISOString() });
     await appendRunEvent(input.jobId, input.eventId, cancelled ? "cancelled" : "error", { message: cancelled ? "Stopped before saving changes." : message });
-    await refundBuildCredit(input.ownerId, input.eventId, input.jobId);
+    if (!providerCalled) await refundBuildCredit(input.ownerId, input.eventId, input.jobId);
   }
 }
