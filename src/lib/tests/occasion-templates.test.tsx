@@ -12,13 +12,15 @@ import {
   occasionTemplateHref,
   occasionTemplates,
   occasionWordCount,
-  sampleSite,
-  sampleThumbnailDocument,
+  sampleDesignStyle,
+  sampleDesignedSite,
+  sampleEventConfig,
+  sampleThumbnailSite,
   templatesIndexMetadata,
 } from "@/lib/occasion-templates";
+import { DESIGN_STYLES } from "@/lib/event-design/styles";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { seoLandingPages } from "@/lib/seo-landing-pages";
-import { siteDocumentSchema, walkSiteNodes } from "@/lib/site-document";
 
 const expectedSlugs = [
   "wedding", "engagement", "birthday", "baby-shower", "bridal-shower", "graduation", "anniversary",
@@ -111,19 +113,29 @@ describe("occasion template data", () => {
     }
   });
 
-  it("composes a valid, deterministic sample site for every style", () => {
+  it("lays out a deterministic designed sample for every style, each style on a page looking different", () => {
     for (const occasion of occasionTemplates) {
+      const seen = new Set<string>();
       occasion.styles.forEach((style, index) => {
-        const { config, document } = sampleSite(occasion, index);
-        expect(siteDocumentSchema.safeParse(document).success, `${occasion.slug}/${style.mood}`).toBe(true);
+        const config = sampleEventConfig(occasion, index);
         expect(config.theme.colors).toEqual(MOOD_PALETTES[style.mood]);
-        expect(walkSiteNodes(document).filter((node) => node.type === "rsvp")).toHaveLength(1);
-        expect(sampleSite(occasion, index)).toEqual({ config, document });
-        const thumbnail = sampleThumbnailDocument(document);
-        expect(thumbnail.nodes).toHaveLength(2);
-        expect(thumbnail.nodes[0].style?.minHeight).toBe("auto");
+        const design = sampleDesignedSite(occasion, index);
+        const { styleKey, paletteKey } = sampleDesignStyle(occasion, index);
+        expect(design.styleKey).toBe(styleKey);
+        expect(DESIGN_STYLES[styleKey].palettes.map((palette) => palette.key), `${occasion.slug}/${style.mood}`).toContain(paletteKey);
+        expect(design.sections.filter((section) => section.kind === "rsvp")).toHaveLength(1);
+        expect(design.sections[0].kind).toBe("hero");
+        expect(sampleDesignedSite(occasion, index)).toEqual(design);
+        expect(sampleThumbnailSite(design).sections.map((section) => section.kind)).toEqual(["hero", "details"]);
+        seen.add(`${styleKey}/${paletteKey}`);
       });
+      expect(seen.size, occasion.slug).toBe(occasion.styles.length);
     }
+    // Formal and corporate templates showcase the matching styles; a memorial is never playful.
+    expect(sampleDesignStyle(getOccasionTemplate("wedding")!, 1).styleKey).toBe("noir");
+    expect(sampleDesignStyle(getOccasionTemplate("corporate-event")!, 0).styleKey).toBe("minimal");
+    expect(sampleDesignStyle(getOccasionTemplate("birthday")!, 0).styleKey).toBe("playful");
+    getOccasionTemplate("memorial")!.styles.forEach((_, index) => expect(sampleDesignStyle(getOccasionTemplate("memorial")!, index).styleKey).not.toBe("playful"));
   });
 
   it("sets a canonical URL and social metadata per page, and lists every page in the sitemap", () => {
@@ -151,6 +163,9 @@ describe("template pages", () => {
     expect(html).toContain(occasion.sample.title);
     expect(html).toContain("Sample form. Guests can reply once the event is published.");
     expect(html).not.toContain("<form");
+    // The sample renders through the designed section library, in the style picked for this template.
+    expect(html).toContain(`data-event-style="${sampleDesignStyle(occasion, 0).styleKey}"`);
+    expect(html).not.toContain("eventloom-site-document");
     expect(html).toContain(`href="${escapeHtml(occasionTemplateHref(occasion))}"`);
     for (const related of occasion.related) expect(html).toContain(`href="${occasionPath(related)}"`);
 
@@ -170,5 +185,7 @@ describe("template pages", () => {
     const list = jsonLdBlocks(html).find((block) => block["@type"] === "ItemList") as { itemListElement: unknown[] };
     expect(list.itemListElement).toHaveLength(occasionTemplates.length);
     expect(html).not.toContain("<main class=\"eventloom-site-document\"");
+    expect(html.match(/data-event-style="/g)).toHaveLength(occasionTemplates.length);
+    expect(html.match(/<h1[ >]/g)).toHaveLength(1);
   });
 });
