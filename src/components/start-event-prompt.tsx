@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronDown, Mic, Plus } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { eventDraftEntryPath } from "@/lib/event-entry";
+import { composeLandingBrief, eventDraftEntryPath } from "@/lib/event-entry";
 
 const eventTypes = [
   { value: "other", label: "Event", placeholder: "Ask Eventloom to create an event site…" },
@@ -155,14 +155,8 @@ export function StartEventPrompt({
       setExpanded(true);
       return;
     }
-    const details = [
-      date ? `The event date is ${date}.` : "",
-      location.trim() ? `It will be held at ${location.trim()}.` : "",
-    ].filter(Boolean).join(" ");
-    const enrichedDescription = details ? `${description} ${details}` : description;
-    const typedBrief = eventType === "other" ? enrichedDescription : `${selectedEventType.label} event. ${enrichedDescription}`;
     router.push(eventDraftEntryPath({
-      brief: typedBrief,
+      brief: composeLandingBrief({ description, eventTypeLabel: eventType === "other" ? undefined : selectedEventType.label, date, location }),
       authenticated,
       authConfigured,
       signupEnabled,
