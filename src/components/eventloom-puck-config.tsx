@@ -2,6 +2,8 @@ import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import type { Config, PuckContext } from "@puckeditor/core";
 import { RsvpForm } from "@/components/rsvp-form";
+import { imageUrlPuckField, legacyGalleryPuckField } from "@/components/studio-photo-fields";
+import { rsvpDeadlinePuckField, rsvpQuestionsPuckField } from "@/components/studio-rsvp-fields";
 import { siteBindingValue, siteDocumentShellStyle, siteStyleToCss } from "@/components/site-document-renderer";
 import { puckPropsToSiteStyle } from "@/lib/puck-document";
 import type { SiteDocument, SiteTextBinding } from "@/lib/site-document";
@@ -14,6 +16,8 @@ type RenderContext = {
   rsvpOpen: boolean;
   formToken?: string;
   turnstileSiteKey?: string;
+  /** Lets image and gallery blocks upload photos; without it they take a URL. */
+  eventId?: string;
 };
 
 function currentConfig(puck: PuckContext, fallback: EventConfig) {
@@ -103,7 +107,8 @@ export function createEventloomPuckConfig(context: RenderContext): Config {
         eventDate: { type: "text", label: "Date and time" },
         venueName: { type: "text", label: "Venue" },
         venueAddress: { type: "text", label: "Venue address" },
-        rsvpDeadline: { type: "text", label: "RSVP deadline" },
+        rsvpDeadline: rsvpDeadlinePuckField(),
+        rsvpFields: rsvpQuestionsPuckField(),
         schedule: {
           type: "array",
           label: "Schedule",
@@ -193,7 +198,7 @@ export function createEventloomPuckConfig(context: RenderContext): Config {
       },
       Image: {
         label: "Image",
-        fields: { url: { type: "text", label: "Image URL" }, alt: { type: "text", label: "Description" }, fit: { ...select(["cover", "contain"]), label: "Fit" }, width: commonStyleFields.width, radius: commonStyleFields.radius },
+        fields: { url: context.eventId ? imageUrlPuckField(context.eventId) : { type: "text", label: "Image URL" }, alt: { type: "text", label: "Description" }, fit: { ...select(["cover", "contain"]), label: "Fit" }, width: commonStyleFields.width, radius: commonStyleFields.radius },
         defaultProps: { url: "", alt: "Event image", fit: "cover", width: "wide", radius: "large" },
         render: ({ url, alt, fit, ...props }) => <figure style={{ overflow: "hidden", aspectRatio: "16 / 10", position: "relative", ...componentStyle(props, document) }}>{url ? <Image unoptimized fill sizes="(max-width: 768px) 100vw, 1200px" src={url} alt={alt || "Event image"} style={{ objectFit: fit || "cover" }} /> : <div style={{ display: "grid", minHeight: "18rem", placeItems: "center", background: "color-mix(in srgb, currentColor 8%, transparent)" }}>Choose an image</div>}</figure>,
       },
@@ -206,7 +211,7 @@ export function createEventloomPuckConfig(context: RenderContext): Config {
       Divider: { label: "Divider", fields: { dividerVariant: { ...select(["line", "ornament", "dot"]), label: "Style" } }, defaultProps: { dividerVariant: "line" }, render: (props) => <hr style={{ border: 0, borderTop: props.dividerVariant === "thick" ? "2px solid currentColor" : "1px solid currentColor", opacity: props.dividerVariant === "dot" ? 0.45 : 0.2, ...componentStyle(props, document) }} /> },
       Gallery: {
         label: "Gallery",
-        fields: { images: { type: "array", label: "Photos", arrayFields: { id: { type: "text", label: "ID" }, url: { type: "text", label: "Image URL" }, alt: { type: "text", label: "Description" } }, defaultItemProps: (index: number) => ({ id: `gallery_${index}`, url: "", alt: "Event photo" }), max: 12 } },
+        fields: { images: context.eventId ? legacyGalleryPuckField(context.eventId, 12) : { type: "array", label: "Photos", arrayFields: { id: { type: "text", label: "ID" }, url: { type: "text", label: "Image URL" }, alt: { type: "text", label: "Description" } }, defaultItemProps: (index: number) => ({ id: `gallery_${index}`, url: "", alt: "Event photo" }), max: 12 } },
         defaultProps: { images: [] },
         render: ({ images }) => <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(13rem,1fr))", gap: "1rem" }}>{images?.filter((image: { url?: string }) => image.url).map((image: { id?: string; url: string; alt?: string }, index: number) => <div key={image.id || index} style={{ aspectRatio: "4 / 5", position: "relative", overflow: "hidden", borderRadius: "1rem" }}><Image unoptimized fill sizes="(max-width: 768px) 50vw, 30vw" src={image.url} alt={image.alt || "Event photo"} style={{ objectFit: "cover" }} /></div>)}</div>,
       },

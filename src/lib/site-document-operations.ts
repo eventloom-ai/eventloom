@@ -27,6 +27,12 @@ const stylePatchSchema = z.object({
   offset: z.enum(["none", "raised", "lowered"]).nullable().optional(),
 }).strict();
 
+/** The most photos a page keeps besides its cover. */
+export const MAX_GALLERY_PHOTOS = 12;
+/** Stored photos (/api/assets/<id>), other same-site paths or https links; never data: or other schemes. */
+export const isEventPhotoUrl = (value: unknown): value is string => typeof value === "string" && value.length <= 2048 && (/^\/(?!\/)[^\s\\]*$/.test(value) || /^https:\/\/[^\s]+$/i.test(value));
+export const eventPhotoUrlSchema = z.string().refine(isEventPhotoUrl, "unsafe_image_url");
+
 export const siteOperationSchema = z.discriminatedUnion("op", [
   z.object({ op: z.literal("replace_text"), nodeId: z.string(), content: z.string().max(4000) }).strict(),
   z.object({ op: z.literal("update_style"), nodeId: z.string(), style: stylePatchSchema }).strict(),
@@ -48,6 +54,10 @@ export const eventDetailsPatchSchema = z.object({
   rsvpDeadline: z.string().max(180).optional(),
   schedule: z.array(z.object({ title: z.string().min(1).max(180), time: z.string().min(1).max(120), location: z.string().max(180).optional(), description: z.string().max(600).optional() }).strict()).max(30).optional(),
   rsvpFields: z.array(z.enum(["name", "attendance", "party_size", "guest_names", "email", "phone", "meal_preference", "note"])).min(2).max(8).optional(),
+  /** Photos are uploaded through /api/events/<id>/assets; "" removes the cover photo. */
+  heroImageUrl: z.union([z.literal(""), eventPhotoUrlSchema]).optional(),
+  galleryImageUrls: z.array(eventPhotoUrlSchema).max(MAX_GALLERY_PHOTOS).optional(),
+  imageAlts: z.record(eventPhotoUrlSchema, z.string().trim().max(300)).refine((alts) => Object.keys(alts).length <= MAX_GALLERY_PHOTOS + 1, "too_many_alts").optional(),
 }).strict();
 
 type NodeContainer = { nodes: SiteNode[]; index: number };
@@ -129,6 +139,19 @@ export function applySiteOperations(input: SiteDocument, rawOperations: unknown)
   return { document: siteDocumentSchema.parse(document), changedNodeIds: [...changedNodeIds] };
 }
 
-export function applyEventDetailsPatch(config: EventConfig, rawPatch: unknown) {
-  return { ...config, ...eventDetailsPatchSchema.parse(rawPatch) };
+export function applyEventDetailsPatch(config: EventConfig, rawPatch: unknown): EventConfig {
+  const { heroImageUrl, imageAlts, ...patch } = eventDetailsPatchSchema.parse(rawPatch);
+  const next: EventConfig = { ...config, ...patch };
+  if (heroImageUrl !== undefined) {
+    if (heroImageUrl) next.heroImageUrl = heroImageUrl;
+    else delete next.heroImageUrl;
+  }
+  if (imageAlts !== undefined) {
+    // Only descriptions of photos the page still shows are kept.
+    const shown = new Set([next.heroImageUrl, ...(next.galleryImageUrls ?? [])].filter(Boolean));
+    const kept = Object.fromEntries(Object.entries(imageAlts).filter(([url, alt]) => alt && shown.has(url)));
+    if (Object.keys(kept).length) next.imageAlts = kept;
+    else delete next.imageAlts;
+  }
+  return next;
 }

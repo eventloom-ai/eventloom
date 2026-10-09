@@ -114,9 +114,20 @@ function renderedKinds(config: EventConfig, design: Pick<EventDesign, "styleKey"
   return designEventSite(config, design.styleKey, design.content, { paletteKey: design.paletteKey, sections: design.sections }).sections.map((section) => section.kind);
 }
 
-/** Root props for the event details, the same fields the legacy studio edits (see puck-document.ts). */
+/** The page's photos as the studio edits them: the cover photo and the gallery, each with its description. */
+export function eventPhotoProps(config: EventConfig) {
+  const photo = (url: string) => ({ url, alt: config.imageAlts?.[url] ?? "" });
+  return {
+    coverPhoto: config.heroImageUrl ? photo(config.heroImageUrl) : null,
+    galleryPhotos: (config.galleryImageUrls ?? []).filter(Boolean).map(photo),
+  };
+}
+
+/** Root props for the event details, the same fields the legacy studio edits (see puck-document.ts), plus photos. */
 export function eventRootProps(config: EventConfig): Props {
   return {
+    ...eventPhotoProps(config),
+    rsvpFields: [...config.rsvpFields],
     eventTitle: config.title,
     eventSubtitle: config.subtitle,
     eventDate: config.date,
@@ -152,11 +163,23 @@ export function puckDesignDataToEventPatch(data: Data) {
 }
 
 /**
+ * Sections the page now renders that the canvas doesn't show yet: a details edit made them appear (a third gallery
+ * photo, a second schedule item). The studio rebuilds the canvas so they can be edited. Sections on the canvas that
+ * don't render (an empty story being written) are left alone.
+ */
+export function sectionsMissingFromCanvas(data: Data, config: EventConfig, design: EventDesign): SectionKey[] {
+  const canvas = new Set(data.content.map((component) => SECTION_FOR_COMPONENT[component.type]).filter(Boolean));
+  return renderedKinds(config, design).filter((kind) => !canvas.has(kind));
+}
+
+/**
  * Puck data → the design to store. `base` is the current design: copy of sections that are not on the canvas is kept,
  * a section removed from the canvas is hidden (and shown again when re-added), and a style change resets the
  * per-section variant and tone overrides (they belong to the old style) and maps the palette to the new style.
+ * `canvasConfig` is the config the canvas was built from; when a details edit makes a section appear (a second
+ * schedule item, a third gallery photo) the section is new, not removed by the host, so it is not hidden.
  */
-export function puckDataToDesign(data: Data, base: EventDesign, config: EventConfig): EventDesign {
+export function puckDataToDesign(data: Data, base: EventDesign, config: EventConfig, canvasConfig: EventConfig = config): EventDesign {
   const root = rootProps(data);
   const styleKey = typeof root.styleKey === "string" && isStyleKey(root.styleKey) ? root.styleKey : base.styleKey;
   const style = DESIGN_STYLES[styleKey];
@@ -190,7 +213,7 @@ export function puckDataToDesign(data: Data, base: EventDesign, config: EventCon
   }
 
   // Hidden: sections that were on the page and are no longer on the canvas, plus sections already hidden and still absent.
-  const wasRendered = new Set(renderedKinds(config, base));
+  const wasRendered = new Set(renderedKinds(canvasConfig, base));
   const hidden = SECTION_KEYS.filter((kind) => kind !== "hero" && kind !== "rsvp" && !seen.has(kind) && (wasRendered.has(kind) || base.sections?.hidden?.includes(kind)));
 
   const sectionsWithoutOrder: EventDesignSections = {

@@ -29,14 +29,6 @@ async function processEventImageBuffer(file: File): Promise<{ output: Buffer; me
   }
 }
 
-// Demo mode has no Supabase storage backend, so uploaded images are inlined as data URIs
-// and held only in the client's in-memory document state instead of being served back by id.
-export async function processEventImageAsDataUrl(file: File): Promise<{ id: string; url: string } | { error: string }> {
-  const processed = await processEventImageBuffer(file);
-  if ("error" in processed) return processed;
-  return { id: crypto.randomUUID(), url: `data:image/webp;base64,${processed.output.toString("base64")}` };
-}
-
 // Demo mode (no Supabase): keep the processed image in the in-memory demo store and serve it by id from
 // /api/assets/<id>, so demo events get the same kind of image URL as real ones.
 export async function storeDemoEventImage(file: File): Promise<{ id: string; url: string } | { error: string }> {

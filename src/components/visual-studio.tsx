@@ -8,11 +8,12 @@ import { createDesignPuckConfig, type DesignPuckMetadata } from "@/components/ev
 import { createEventloomPuckConfig } from "@/components/eventloom-puck-config";
 import { StudioChat } from "@/components/studio-chat";
 import { StudioDrawer } from "@/components/studio-drawer";
+import { photoUploadsInFlight } from "@/components/studio-photo-fields";
 import { StudioToolbar } from "@/components/studio-toolbar";
 import { creatorErrorMessage } from "@/lib/creator-errors";
 import { designEventSite } from "@/lib/event-design/design-event-site";
 import { readEventDesign, type EventDesign } from "@/lib/event-design/schema";
-import { designToPuckData, puckDataToDesign } from "@/lib/puck-design";
+import { designToPuckData, puckDataToDesign, sectionsMissingFromCanvas } from "@/lib/puck-design";
 import { puckDataToEventPatch, puckDataToSiteDocument, selectedPuckNodeId, siteDocumentToPuckData } from "@/lib/puck-document";
 import type { StudioState } from "@/lib/studio-store";
 import type { BuilderMessage, EventConfig, SiteRevision } from "@/lib/types";
@@ -78,11 +79,12 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
   const activeSaveRef = useRef<Promise<void> | null>(null);
   const activeRunRef = useRef<string | null>(initialState.activeRun?.id ?? null);
 
-  const puckConfig = useMemo(() => designed ? createDesignPuckConfig() : createEventloomPuckConfig({
+  const puckConfig = useMemo(() => designed ? createDesignPuckConfig({ eventId: event.id }) : createEventloomPuckConfig({
     document: revision.document,
     config: event.config,
     status: event.status,
     rsvpOpen: false,
+    eventId: event.id,
   // Puck treats a new config identity as a new editing session. Live event data
   // is supplied through metadata, so autosaves must not rebuild this config; only
   // switching between the legacy and the designed editor does.
@@ -164,11 +166,14 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
       const currentDesign = designRef.current;
       if (currentDesign) {
         const liveConfig = { ...event.config, ...eventPatch };
-        const nextDesign = puckDataToDesign(data, currentDesign, liveConfig);
+        // The canvas was built from the config before this edit; a section the edit makes appear isn't "removed".
+        const nextDesign = puckDataToDesign(data, currentDesign, liveConfig, event.config);
         queuedEditRef.current = { design: nextDesign, eventPatch };
         setCurrentDesign(nextDesign);
-        if (nextDesign.styleKey !== currentDesign.styleKey) {
-          // A new style brings its own layouts and palettes: rebuild the canvas so its selects match.
+        // A new style brings its own layouts and palettes, and a details edit can make a section appear (a third
+        // gallery photo, a second schedule item): rebuild the canvas so it matches. Never mid-upload, or it'd be lost.
+        const sectionAppeared = !photoUploadsInFlight() && sectionsMissingFromCanvas(data, liveConfig, nextDesign).length > 0;
+        if (nextDesign.styleKey !== currentDesign.styleKey || sectionAppeared) {
           setEditorData(designToPuckData(liveConfig, nextDesign));
           setEditorKey((current) => current + 1);
         } else setEditorData(data);
