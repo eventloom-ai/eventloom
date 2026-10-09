@@ -5,6 +5,14 @@ import { env, openaiResponsesOptions } from "@/lib/env";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt, stripVisualDirection } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
+
+const PLACEHOLDER = /\[[^\]]{1,40}\]|\{[^}]{1,40}\}|<[^>]{1,40}>/;
+
+// Guest-facing copy from the planner: drop fill-in placeholders ("[Name]") and echoed styling instructions.
+function guestText(value: string | undefined) {
+  if (!value || PLACEHOLDER.test(value)) return "";
+  return stripVisualDirection(value);
+}
 import type { EventConfig, EventSiteTemplate } from "@/lib/types";
 
 type GeneratedSitePlan = {
@@ -170,8 +178,9 @@ export function groundConfigInPrompt(config: EventConfig, prompt: string): Event
   const isWedding = /\bwedding\b/i.test(prompt);
   const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
   const schedule = config.schedule.map((item, index) => {
-    const time = hasTime || promptSupportsFact(item.time, prompt) ? item.time : "Time to be announced";
-    return { ...item, description: item.description ? stripVisualDirection(item.description) : item.description, time: !hasSeparateHalls && index === 0 && facts.time && TBA_TIME.test(time) ? facts.time : time };
+    const rawTime = guestText(item.time);
+    const time = rawTime && (hasTime || promptSupportsFact(rawTime, prompt)) ? rawTime : "Time to be announced";
+    return { ...item, title: guestText(item.title) || "Celebration", location: guestText(item.location) || undefined, description: guestText(item.description) || undefined, time: !hasSeparateHalls && index === 0 && facts.time && TBA_TIME.test(time) ? facts.time : time };
   });
 
   if (hasSeparateHalls && !schedule.some((item) => /men'?s|women'?s/i.test(`${item.title} ${item.location ?? ""}`))) {
@@ -181,8 +190,10 @@ export function groundConfigInPrompt(config: EventConfig, prompt: string): Event
     );
   }
 
-  const titleFromPrompt = promptSupportsFact(config.title, prompt);
-  const subtitle = stripVisualDirection(config.subtitle);
+  // Template briefs describe what to include ("the name and age being celebrated"); the model sometimes answers with
+  // fill-in placeholders like "[Name]", which must never reach guests.
+  const titleFromPrompt = !PLACEHOLDER.test(config.title) && promptSupportsFact(config.title, prompt);
+  const subtitle = guestText(config.subtitle);
   const genericSubtitle = !subtitle || /custom event page that helps guests reply/i.test(subtitle);
   return {
     ...config,
@@ -191,7 +202,9 @@ export function groundConfigInPrompt(config: EventConfig, prompt: string): Event
     date: hasDate || promptSupportsFact(config.date, prompt) ? config.date : "Date to be announced",
     venueName: hasVenue ? config.venueName : "Venue to be announced",
     venueAddress: hasVenue ? config.venueAddress : undefined,
-    hallInfo: hasSeparateHalls ? "Separate men's and women's hall details will be shared with guests." : config.hallInfo,
+    hallInfo: hasSeparateHalls ? "Separate men's and women's hall details will be shared with guests." : guestText(config.hallInfo) || undefined,
+    directionsLabel: guestText(config.directionsLabel) || undefined,
+    rsvpDeadline: guestText(config.rsvpDeadline) || undefined,
     schedule,
   };
 }

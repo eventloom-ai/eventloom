@@ -81,7 +81,7 @@ export function groundDesignContent(raw: RawContent, enrichedPrompt: string, con
   const facts = `${prompt}\n${config.title}\n${config.subtitle}\n${config.date}\n${config.venueName}\n${config.venueAddress ?? ""}\n${config.rsvpDeadline ?? ""}\n${config.schedule.map((item) => `${item.title} ${item.time} ${item.location ?? ""} ${item.description ?? ""}`).join("\n")}`;
   const copy = (value: unknown, max: number) => {
     const text = stripVisualDirection(clean(value, max) ?? "");
-    return text && numbersGrounded(text, facts) ? text : undefined;
+    return text && !/\[[^\]]{1,40}\]|\{[^}]{1,40}\}/.test(text) && numbersGrounded(text, facts) ? text : undefined;
   };
   const known = `${config.title} ${config.venueName} ${config.venueAddress ?? ""} ${config.eventType}`;
   const content: EventDesignContent = {};

@@ -124,14 +124,26 @@ export function paletteForMood(mood: string): string[] | null {
 // ("…composed in a cinematic midnight editorial style."). Strip any clause that names a direction.
 const DIRECTION_LABELS = Object.values(VISUAL_DIRECTIONS).map((direction) => direction.split(":")[0]!.trim().toLowerCase());
 
+// Palette instructions ("Use the sunset color palette") and palette words used as adjectives ("sunset-hued") are styling, not event facts.
+const PALETTE_WORDS = /\b(?:blush|navy|gold|lavender|forest|sunset|monochrome)(?:[- ]hued|[- ]toned| hues?| tones?| colou?r palette| palette)\b|\bcolou?r palette\b/;
+
+// Two-word openings of each direction's descriptors ("lively geometry", "layered color") catch paraphrased echoes.
+const DIRECTION_PHRASES = Object.values(VISUAL_DIRECTIONS).flatMap((direction) => (direction.split(":")[1] ?? "").split(/,\s*(?:and\s+)?/).map((phrase) => phrase.trim().toLowerCase().split(/\s+/).slice(0, 2).join(" ")).filter((phrase) => phrase.includes(" ")));
+
+function isDirectionText(lower: string) {
+  return /visual direction/.test(lower) || PALETTE_WORDS.test(lower) || DIRECTION_LABELS.some((label) => lower.includes(label)) || DIRECTION_PHRASES.filter((phrase) => lower.includes(phrase)).length >= 2;
+}
+
 export function stripVisualDirection(text: string) {
   if (!text) return text;
   const sentences = text.match(/[^.!?]+[.!?]*\s*/g) ?? [text];
   const kept = sentences.map((sentence) => {
     const lower = sentence.toLowerCase();
-    if (!/visual direction/.test(lower) && !DIRECTION_LABELS.some((label) => lower.includes(label))) return sentence;
+    if (!isDirectionText(lower)) return sentence;
+    // Keep only the clean opening clauses; anything after the first styling clause is part of the echo.
     const clauses = sentence.split(/,\s*/);
-    const clean = clauses.filter((clause) => { const c = clause.toLowerCase(); return !/visual direction/.test(c) && !DIRECTION_LABELS.some((label) => c.includes(label)); });
+    const firstEcho = clauses.findIndex((clause) => isDirectionText(clause.toLowerCase()));
+    const clean = clauses.slice(0, firstEcho);
     if (!clean.length) return "";
     const joined = clean.join(", ").trim();
     return /[.!?]$/.test(joined) ? `${joined} ` : `${joined}. `;

@@ -67,5 +67,18 @@ describe("stripVisualDirection", () => {
     expect(stripVisualDirection("A full-day gathering for the product and engineering team, composed in a cinematic midnight editorial style.")).toBe("A full-day gathering for the product and engineering team.");
     expect(stripVisualDirection("Join us for dinner. Visual direction (non-negotiable): soft romantic editorial: blush layers. Bring a smile!")).toBe("Join us for dinner. Bring a smile!");
     expect(stripVisualDirection("An evening rooftop dinner celebrating Layla's 30th.")).toBe("An evening rooftop dinner celebrating Layla's 30th.");
+    expect(stripVisualDirection("A joyful sunset-hued celebration")).toBe("");
+    expect(stripVisualDirection("A celebration with saturated sunset hues, bold shapes, and lively energy.")).toBe("");
+    expect(stripVisualDirection("Tacos and karaoke. Use the sunset color palette.")).toBe("Tacos and karaoke.");
+    expect(stripVisualDirection("Dinner at the Gold Coast Club.")).toBe("Dinner at the Gold Coast Club.");
+  });
+});
+
+describe("template placeholders", () => {
+  it("never keeps fill-in placeholders in titles or subtitles", () => {
+    const brief = "Birthday event. A birthday party website with the name and age being celebrated. Use the sunset color palette.";
+    const grounded = groundConfigInPrompt({ ...defaultEventConfig(brief), eventType: "birthday", title: "Celebrating [Name]'s [Age]th Birthday", subtitle: "A joyful sunset-hued celebration" }, brief);
+    expect(grounded.title).not.toMatch(/\[/);
+    expect(grounded.subtitle).not.toMatch(/sunset|\[/i);
   });
 });
