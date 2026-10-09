@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { SiteDocumentRenderer } from "@/components/site-document-renderer";
 import { defaultEventConfig } from "@/lib/ai/generator";
-import type { SiteDocument } from "@/lib/site-document";
+import { composeSiteDocument, type SiteDocument } from "@/lib/site-document";
+import type { RsvpField } from "@/lib/types";
 
 vi.mock("next/image", () => ({ default: () => null }));
 vi.mock("@/components/rsvp-form", () => ({ RsvpForm: () => null }));
@@ -130,5 +133,25 @@ describe("site document renderer", () => {
     const rotated: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme: baseTheme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "txt_a", type: "text", variant: "body", content: "Tilted", style: { rotate: "left", offset: "raised" } }] }] };
     const rotatedHtml = renderToStaticMarkup(<SiteDocumentRenderer document={rotated} config={config} status="draft" rsvpOpen={false} />);
     expect(rotatedHtml).toContain("transform:rotate(-2.5deg) translateY(-0.6rem)");
+  });
+
+  it("renders a read-only sample with a disabled RSVP look-alike and no live links", () => {
+    const config = { ...defaultEventConfig("Wedding event"), title: "Maya & Theo", venueName: "Orchard House", rsvpFields: ["name", "attendance", "meal_preference", "note"] satisfies RsvpField[] };
+    let n = 0;
+    const document = composeSiteDocument(config, "romantic garden wedding", (prefix) => `${prefix}_${n++}`);
+    const html = renderToStaticMarkup(<SiteDocumentRenderer document={document} config={config} status="draft" rsvpOpen={false} readOnly />);
+
+    expect(html.startsWith("<div")).toBe(true);
+    expect(html).not.toContain("<main");
+    expect(html).not.toContain("<form");
+    expect(html).not.toContain("google.com/maps");
+    expect(html).toContain("Sample form. Guests can reply once the event is published.");
+    expect(html).toContain("Meal preference");
+    expect(html.match(/<input disabled=""/g)?.length).toBe(4);
+  });
+
+  it("keeps the static view free of client components so read-only pages ship no reveal or RSVP JavaScript", () => {
+    const source = readFileSync(path.resolve(__dirname, "../../components/site-document-view.tsx"), "utf8");
+    expect(source).not.toMatch(/@\/components\/(?:rsvp-form|site-reveal)|framer-motion|"use client"/);
   });
 });

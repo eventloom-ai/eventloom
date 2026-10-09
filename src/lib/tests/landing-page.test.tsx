@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { LandingPage } from "@/components/landing-page";
+import { seoLandingPages } from "@/lib/seo-landing-pages";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -15,6 +16,14 @@ describe("landing page", () => {
     }
     expect(html).not.toContain("/demo-wedding");
     expect(html).toContain('aria-controls="landing-mobile-navigation"');
+  });
+
+  it("links every SEO landing page from the use cases section", () => {
+    const html = renderToStaticMarkup(<LandingPage authConfigured signupEnabled />);
+
+    for (const page of Object.values(seoLandingPages)) expect(html).toContain(`href="/${page.slug}"`);
+    expect(html).toContain('id="use-cases"');
+    expect(html).toContain('href="/templates"');
   });
 
   it("adapts account and creation calls to the active auth state", () => {

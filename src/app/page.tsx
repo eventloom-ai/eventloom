@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { LandingPage } from "@/components/landing-page";
-import { publicSignupEnabled } from "@/lib/env";
+import { JsonLd } from "@/components/json-ld";
+import { frequentlyAsked, LandingPage } from "@/components/landing-page";
+import { appUrl, publicSignupEnabled } from "@/lib/env";
+import { absoluteUrl, faqPageJsonLd, softwareApplicationJsonLd } from "@/lib/structured-data";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getServerUser } from "@/lib/supabase/server";
 
@@ -24,11 +26,15 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const user = await getServerUser();
+  const siteUrl = appUrl();
   return (
-    <LandingPage
-      authenticated={Boolean(user)}
-      authConfigured={hasSupabasePublicEnv()}
-      signupEnabled={publicSignupEnabled()}
-    />
+    <>
+      <JsonLd data={[softwareApplicationJsonLd(siteUrl), faqPageJsonLd(frequentlyAsked, absoluteUrl(siteUrl))]} />
+      <LandingPage
+        authenticated={Boolean(user)}
+        authConfigured={hasSupabasePublicEnv()}
+        signupEnabled={publicSignupEnabled()}
+      />
+    </>
   );
 }
