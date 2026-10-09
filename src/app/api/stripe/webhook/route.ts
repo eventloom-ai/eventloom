@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { provisionPurchasedDomain, type ProvisionedDomain } from "@/lib/domains/provision";
+import { domainProvisioningStore, provisionPurchasedDomain, type ProvisionedDomain } from "@/lib/domains/provision";
 import { env, isProductionDeployment } from "@/lib/env";
 import { AI_LAUNCH_BONUS_CENTS, LAUNCH_PRICE_CENTS } from "@/lib/payments/billing";
 import { loadLaunchOrderForProvisioning, verifyLaunchFulfillment } from "@/lib/payments/fulfillment";
@@ -118,7 +118,8 @@ export async function processVerifiedStripeEvent(event: Stripe.Event, requestId:
 
   let provisionedDomain: ProvisionedDomain | null = null;
   if (launchOrder.domain) {
-    const provisioned = await provisionPurchasedDomain(launchOrder.domain, launchOrder.registrant!);
+    // Stripe retries this webhook until fulfillment succeeds; the store lets a retry resume after the registration step.
+    const provisioned = await provisionPurchasedDomain(launchOrder.domain, launchOrder.registrant!, domainProvisioningStore(launchOrder.client, orderId, launchOrder.domain));
     if (!provisioned.ok) {
       await markFulfillment({ eventRowId: storedEvent.eventRowId, jobId: fulfillmentJobId, state: "retry", errorCode: provisioned.error.slice(0, 120) });
       logPaymentEvent("error", "domain_provisioning_failed", {

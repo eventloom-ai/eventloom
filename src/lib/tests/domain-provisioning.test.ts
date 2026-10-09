@@ -23,7 +23,7 @@ vi.mock("@/lib/env", () => ({
   domainPriceCapUsd: () => 15,
 }));
 
-import { provisionPurchasedDomain } from "@/lib/domains/provision";
+import { domainProvisioningStore, provisionPurchasedDomain, type DomainProvisioningStore, type ProvisionedDomain } from "@/lib/domains/provision";
 
 const quote = {
   domain: "mira-adam.com",
@@ -62,12 +62,16 @@ describe("paid domain provisioning", () => {
     expect(mocks.addToVercel.mock.invocationCallOrder[0]).toBeLessThan(mocks.ensureVercelDns.mock.invocationCallOrder[0]);
   });
 
-  it("does not register a domain whose fresh price exceeds the allowance", async () => {
+  it("does not re-apply the price cap after payment, but holds an anomalous price for review", async () => {
     mocks.check.mockResolvedValue([{ ...quote, registrationCost: 16 }]);
+    await expect(provisionPurchasedDomain("mira-adam.com", registrant)).resolves.toMatchObject({ ok: true, provisioned: { registrationCost: 16 } });
 
-    await expect(provisionPurchasedDomain("mira-adam.com", registrant)).resolves.toEqual({ ok: false, error: "domain_over_cap" });
+    mocks.register.mockClear();
+    mocks.check.mockResolvedValue([{ ...quote, registrationCost: 31 }]);
+    await expect(provisionPurchasedDomain("mira-adam.com", registrant)).resolves.toEqual({ ok: false, error: "domain_price_anomaly" });
+    mocks.check.mockResolvedValue([{ ...quote, premium: true }]);
+    await expect(provisionPurchasedDomain("mira-adam.com", registrant)).resolves.toEqual({ ok: false, error: "domain_premium" });
     expect(mocks.register).not.toHaveBeenCalled();
-    expect(mocks.addToVercel).not.toHaveBeenCalled();
   });
 
   it("does not attach a domain when registration is still pending", async () => {
@@ -75,5 +79,54 @@ describe("paid domain provisioning", () => {
 
     await expect(provisionPurchasedDomain("mira-adam.com", registrant)).resolves.toEqual({ ok: false, error: "opensrs_registration_pending" });
     expect(mocks.addToVercel).not.toHaveBeenCalled();
+  });
+
+  it("resumes a retry after the registration step instead of re-checking or buying the domain twice", async () => {
+    let saved: ProvisionedDomain | null = null;
+    const store: DomainProvisioningStore = { loadRegistration: async () => saved, recordRegistration: vi.fn(async (registration) => { saved = registration; return true; }) };
+    mocks.addToVercel.mockResolvedValueOnce({ ok: false, error: "vercel_domain_failed_500" });
+
+    await expect(provisionPurchasedDomain("mira-adam.com", registrant, store)).resolves.toEqual({ ok: false, error: "vercel_domain_failed_500" });
+    expect(store.recordRegistration).toHaveBeenCalledWith({ domain: "mira-adam.com", providerId: "mira-adam.com", registrationCost: 12, renewalCost: 12 });
+
+    // The domain is ours now: availability would read as taken and the price may have moved.
+    mocks.check.mockResolvedValue([{ ...quote, available: false, registrationCost: 40 }]);
+    await expect(provisionPurchasedDomain("mira-adam.com", registrant, store)).resolves.toEqual({ ok: true, provisioned: { domain: "mira-adam.com", providerId: "mira-adam.com", registrationCost: 12, renewalCost: 12 } });
+    expect(mocks.check).toHaveBeenCalledTimes(1);
+    expect(mocks.register).toHaveBeenCalledTimes(1);
+    expect(mocks.ensureVercelDns).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops without registering when saved progress cannot be read, and continues when it cannot be written", async () => {
+    const unreadable: DomainProvisioningStore = { loadRegistration: async () => { throw new Error("domain_state_unavailable"); }, recordRegistration: vi.fn() };
+    await expect(provisionPurchasedDomain("mira-adam.com", registrant, unreadable)).resolves.toEqual({ ok: false, error: "domain_state_unavailable" });
+    expect(mocks.check).not.toHaveBeenCalled();
+    expect(mocks.register).not.toHaveBeenCalled();
+
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const unwritable: DomainProvisioningStore = { loadRegistration: async () => null, recordRegistration: async () => false };
+    await expect(provisionPurchasedDomain("mira-adam.com", registrant, unwritable)).resolves.toMatchObject({ ok: true });
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining("domain_registration_record_failed"));
+    consoleError.mockRestore();
+  });
+
+  it("persists progress on the order's claimed domains row", async () => {
+    const calls: Array<[string, unknown[]]> = [];
+    let row: Record<string, unknown> | null = { provider_id: "dom-1", registration_cost_usd: "12.00", renewal_cost_usd: 14 };
+    const builder: Record<string, (...args: unknown[]) => unknown> = {};
+    for (const method of ["select", "update", "eq"]) builder[method] = (...args: unknown[]) => { calls.push([method, args]); return builder; };
+    builder.maybeSingle = async () => ({ data: row, error: null });
+    builder.then = (resolve: unknown) => (resolve as (value: unknown) => void)({ error: null });
+    const store = domainProvisioningStore({ from: () => builder } as never, "order-1", "mira-adam.com");
+
+    await expect(store.loadRegistration()).resolves.toEqual({ domain: "mira-adam.com", providerId: "dom-1", registrationCost: 12, renewalCost: 14 });
+    row = { provider_id: "dom-1", registration_cost_usd: null, renewal_cost_usd: null };
+    await expect(store.loadRegistration()).rejects.toThrow("domain_state_incomplete");
+    row = null;
+    await expect(store.loadRegistration()).resolves.toBeNull();
+
+    await expect(store.recordRegistration({ domain: "mira-adam.com", providerId: "dom-2", registrationCost: 12, renewalCost: 12 })).resolves.toBe(true);
+    expect(calls).toContainEqual(["update", [expect.objectContaining({ status: "registered", provider_id: "dom-2", registration_cost_usd: 12 })]]);
+    expect(calls.filter(([method]) => method === "eq").map(([, args]) => args)).toContainEqual(["order_id", "order-1"]);
   });
 });
