@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
     // Demo mode keeps the processed photo in the in-memory demo store and serves it from /api/assets/<id>,
     // so it saves like a stored photo (a data: URL is rejected by the page schemas).
     const result = await storeDemoEventImage(file);
-    if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.error === "invalid_image" ? 400 : 500 });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: uploadErrorStatus(result.error) });
     return NextResponse.json(result);
   }
 
@@ -33,6 +33,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   const file = form.get("image");
   if (!(file instanceof File)) return NextResponse.json({ error: "invalid_image" }, { status: 400 });
   const result = await processAndStoreEventImage(client, eventId, file);
-  if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.error === "invalid_image" ? 400 : 500 });
+  if ("error" in result) return NextResponse.json({ error: result.error }, { status: uploadErrorStatus(result.error) });
   return NextResponse.json(result);
+}
+
+function uploadErrorStatus(error: string) {
+  if (error === "invalid_image") return 400;
+  return error === "content_not_allowed" ? 422 : 500;
 }

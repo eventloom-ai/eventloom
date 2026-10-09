@@ -3,6 +3,7 @@ import { loginUrlForProtectedRequest } from "@/lib/auth/redirect";
 import { isSupabaseConfigured, rootDomain } from "@/lib/env";
 import { refreshSupabaseSession } from "@/lib/supabase/middleware";
 import { isPublicStaticPath } from "@/lib/public-paths";
+import { suspendedEventResponse } from "@/lib/safety/suspension-gate";
 import { normalizeHost, slugFromHost } from "@/lib/tenancy";
 
 const authRoutes = ["/login", "/signup", "/auth"];
@@ -67,6 +68,9 @@ export async function proxy(req: NextRequest) {
   }
 
   const hostTenant = slugFromHost(host, rootDomain());
+  // Suspended events answer 410 on every host (the page itself also refuses to render them).
+  const suspended = await suspendedEventResponse(hostTenant, pathname);
+  if (suspended) return secureResponse(suspended, csp);
   if (!hostTenant && isPublicStaticPath(pathname)) return secureResponse(NextResponse.next(), staticPolicy(), true);
   if (!hostTenant) return secureResponse(NextResponse.next({ request: { headers: requestHeaders } }), csp);
   const url = req.nextUrl.clone();

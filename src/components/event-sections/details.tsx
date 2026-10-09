@@ -1,4 +1,5 @@
 import type { DesignedSection, DetailsProps } from "@/lib/event-design/types";
+import { OUTBOUND_LINK_REL } from "@/lib/safety/links";
 import s from "./event-sections.module.css";
 import { Arrow, Ornament, SectionHeader, SectionShell, cx } from "./shell";
 import type { SectionContext } from "./theme";
@@ -45,7 +46,7 @@ function Where({ props, centered = false }: { props: DetailsProps; centered?: bo
       <p className={cx(s.display, s.h3, "mt-4 max-w-[20ch]")}>{props.venueName}</p>
       {props.venueAddress ? <p className={cx(s.muted, "mt-3 max-w-[28ch] text-[1rem] leading-relaxed")}>{props.venueAddress}</p> : null}
       {props.mapUrl ? (
-        <a href={props.mapUrl} target="_blank" rel="noreferrer" className={cx(s.link, s.label, "mt-5 inline-flex items-center gap-2 !text-[var(--ev-ink)]")}>
+        <a href={props.mapUrl} target="_blank" rel={OUTBOUND_LINK_REL} className={cx(s.link, s.label, "mt-5 inline-flex items-center gap-2 !text-[var(--ev-ink)]")}>
           Get directions <Arrow />
         </a>
       ) : null}

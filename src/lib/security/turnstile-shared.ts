@@ -4,6 +4,7 @@ export const TURNSTILE_ACTIONS = {
   productFeedback: "product_feedback",
   privacyRequest: "privacy_request",
   publicRsvp: "public_rsvp",
+  abuseReport: "abuse_report",
 } as const;
 
 export type TurnstileAction =

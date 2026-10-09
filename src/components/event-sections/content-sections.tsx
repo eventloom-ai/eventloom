@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import type { DesignedSection } from "@/lib/event-design/types";
+import { OUTBOUND_LINK_REL } from "@/lib/safety/links";
 import s from "./event-sections.module.css";
 import { Arrow, Ornament, SectionHeader, SectionShell, cx, isCentered } from "./shell";
 import type { SectionContext } from "./theme";
@@ -177,7 +178,7 @@ export function TravelSection({ section, ctx }: { section: Of<"travel">; ctx: Se
                 <p className={cx(s.muted, "mt-2 max-w-[52ch] text-[1rem] leading-relaxed [text-wrap:pretty]")}>{item.body}</p>
               </div>
               {item.href ? (
-                <a href={item.href} target="_blank" rel="noreferrer" className={cx(s.button, s.buttonGhost, "!min-h-[2.9rem] self-start !px-5 sm:self-center")}>
+                <a href={item.href} target="_blank" rel={OUTBOUND_LINK_REL} className={cx(s.button, s.buttonGhost, "!min-h-[2.9rem] self-start !px-5 sm:self-center")}>
                   {item.linkLabel ?? "Details"} <Arrow />
                 </a>
               ) : null}

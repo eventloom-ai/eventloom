@@ -27,6 +27,9 @@ vi.mock("@/lib/env", async (importOriginal) => {
   return { ...actual, openaiResponsesOptions: () => ({ model: "test-model" }), env: { ...actual.env, openaiApiKey: () => mocks.key } };
 });
 
+// Moderation has its own tests (safety-moderation.test.ts); here only the edit call may reach the mocked fetch.
+vi.mock("@/lib/safety/moderation", () => ({ moderateText: async () => ({ status: "allowed" }), isBlocked: () => false }));
+
 import { POST } from "@/app/api/events/[eventId]/studio/messages/route";
 
 const wedding = DESIGN_SAMPLES.find((sample) => sample.key === "wedding")!;

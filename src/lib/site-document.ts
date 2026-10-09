@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { coupleTitleLines } from "@/lib/couple-title";
+import { isSafeGuestHref } from "@/lib/safety/links";
 import type { EventConfig } from "@/lib/types";
 
 export const siteNodeTypes = [
@@ -152,7 +153,8 @@ export const siteDocumentSchema: z.ZodType<SiteDocument> = z.object({
   const ids = new Set<string>();
   let count = 0;
   let hasRsvp = false;
-  const safeUrl = (value: string) => value.startsWith("/") || value.startsWith("#") || /^https:\/\//i.test(value);
+  // Same-page anchors, same-site paths (not "//host") and https only; see src/lib/safety/links.ts.
+  const safeUrl = isSafeGuestHref;
   const visit = (nodes: SiteNode[], depth: number) => {
     if (depth > 8) context.addIssue({ code: "custom", message: "Site document nesting is too deep." });
     for (const node of nodes) {

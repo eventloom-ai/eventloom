@@ -58,3 +58,8 @@ below (ideally one who also covers US/EU consumer and privacy questions). Changi
 2. `/api/health/ready` now expects five active documents at the new version: terms, privacy, refunds,
    acceptable-use, domains.
 3. Every existing creator sees "We've updated our terms" on their dashboard and must accept before publishing.
+
+## Next legal revision (batch with lawyer edits)
+- State a retention period for abuse reports and takedown records (suggest 2 years after the report is closed; reporter emails deleted after 12 months).
+- Mention that rate-limit records are deleted after 2 days (the Privacy Policy currently allows up to 30).
+- Decide whether the $20 is ever refunded after a takedown (current Refund Policy: no refund for pages suspended for breaking the rules).

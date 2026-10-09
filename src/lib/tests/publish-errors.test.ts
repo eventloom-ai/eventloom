@@ -31,4 +31,13 @@ describe("publish error guidance", () => {
       `/login?next=${encodeURIComponent(`/app/events/${eventId}/studio`)}`,
     );
   });
+
+  it("explains safety holds without exposing internal codes", () => {
+    for (const code of ["content_not_allowed", "content_needs_review", "event_suspended"]) {
+      const result = publishErrorPresentation(code, eventId);
+      expect(result.message, code).not.toContain(code);
+      expect(result.message, code).not.toMatch(/secure checkout/);
+      expect(result.actionHref, code).toBeTruthy();
+    }
+  });
 });

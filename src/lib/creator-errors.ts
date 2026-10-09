@@ -32,6 +32,12 @@ export function creatorErrorMessage(code: string | null | undefined, fallback = 
       return "One change is still finishing. Wait for it to complete, then send the next request.";
     case "not_found":
       return "This event is no longer available here. Return to My events and open it again.";
+    case "content_not_allowed":
+      return "That request includes content Eventloom can’t host under its Acceptable Use Policy. Nothing was charged—please change it and try again.";
+    case "content_needs_review":
+      return "This page asks guests for sensitive information or links to a sign-in page. Remove that, or contact support if this is a mistake.";
+    case "event_suspended":
+      return "This event has been suspended for a policy review. Contact support to appeal.";
     case "invalid_image":
       return "Use a PNG, JPEG, or WebP image smaller than 10 MB.";
     case "upload_failed":

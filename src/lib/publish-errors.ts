@@ -84,6 +84,24 @@ export function publishErrorPresentation(code: string, eventId: string, retryAft
         actionLabel: "Contact support",
         actionHref: "/contact",
       };
+    case "content_not_allowed":
+      return {
+        message: "Your page includes content Eventloom can’t publish under its Acceptable Use Policy. Edit the flagged text, then try again. Nothing was charged.",
+        actionLabel: "Read the policy",
+        actionHref: "/legal/acceptable-use",
+      };
+    case "content_needs_review":
+      return {
+        message: "Your page asks guests for passwords, card or bank details, or wallet phrases, mentions a well-known company’s account security, or links to a sign-in page. Remove that, or contact support if this is a mistake. Nothing was charged.",
+        actionLabel: "Contact support",
+        actionHref: "/contact",
+      };
+    case "event_suspended":
+      return {
+        message: "This event is suspended while it is reviewed under the Acceptable Use Policy, so it can’t be published. Contact support to appeal.",
+        actionLabel: "Contact support",
+        actionHref: "/contact",
+      };
     case "publish_failed":
       return {
         message: "Publishing didn’t finish, but your draft is safe. Please try again.",

@@ -13,6 +13,7 @@ import { domainRegistrantSchema } from "@/lib/domains/registrant";
 import { clientIpHash } from "@/lib/security/request";
 import { hasCompleteEventPrivacyNotice } from "@/lib/privacy/event-privacy";
 import { syncEventRsvpDeadline } from "@/lib/rsvp-deadline-sync";
+import { checkPublishSafety } from "@/lib/safety/publish-check";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   if (!(await hasCreatorLegalOnboarding(auth.user.id))) return NextResponse.json({ error: "legal_onboarding_required" }, { status: 403 });
   if (!(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (!(await hasCompleteEventPrivacyNotice(eventId))) return NextResponse.json({ error: "event_privacy_notice_required" }, { status: 409 });
+  // Before both the direct publish and checkout (whose webhook publishes this same draft version).
+  const safety = await checkPublishSafety(eventId);
+  if (!safety.ok) return NextResponse.json({ error: safety.error }, { status: safety.status });
 
   const platformAdmin = await isPlatformAdmin(user.id);
   const client = serviceSupabase();

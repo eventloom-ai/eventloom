@@ -5,8 +5,9 @@ import { progressForStep } from "@/lib/agent/build-progress";
 import { createEventRecord, createGenerationJob, finishGenerationJob, placeholderEventConfig, updateGenerationJobProgress } from "@/lib/agent/tools";
 import { aiDeadline } from "@/lib/ai/deadline";
 import type { ImageInput } from "@/lib/ai/generator";
-import { processAndStoreEventImage, storeDemoEventImage } from "@/lib/event-assets";
+import { checkEventImageContent, processAndStoreEventImage, storeDemoEventImage } from "@/lib/event-assets";
 import { isEventOwner, refundBuildCredit, reserveBuildCredit } from "@/lib/payments/billing";
+import { combineVerdicts, isBlocked, moderateText, type ModerationVerdict } from "@/lib/safety/moderation";
 import { reapStaleGenerationJobs } from "@/lib/studio-store";
 import { serviceSupabase } from "@/lib/supabase/server";
 
@@ -16,17 +17,32 @@ export type StartBuildResult =
 
 // Store reference photos as private event assets so the site document gets an /api/assets URL
 // instead of an inline data URL (which the document schema rejects). Unstorable images keep their data URL.
-export async function storeReferenceImages(eventId: string | null, images: ImageInput[]): Promise<ImageInput[]> {
+export async function storeReferenceImages(eventId: string | null, images: ImageInput[], options: { alreadyModerated?: boolean } = {}): Promise<ImageInput[]> {
   const client = serviceSupabase();
   if (!images.length) return images;
-  return Promise.all(images.map(async (image) => {
+  const stored = await Promise.all(images.map(async (image) => {
     const match = /^data:([^;,]+);base64,(.+)$/.exec(image.dataUrl);
     if (!match) return image;
     const file = new File([Buffer.from(match[2], "base64")], image.name || "reference", { type: match[1] });
     // Demo mode has no storage; its in-memory asset store serves the same /api/assets/<id> URLs.
-    const stored = client && eventId ? await processAndStoreEventImage(client, eventId, file) : client ? { error: "no_event" } : await storeDemoEventImage(file);
+    const stored = client && eventId ? await processAndStoreEventImage(client, eventId, file, options) : client ? { error: "no_event" } : await storeDemoEventImage(file, options);
+    if ("error" in stored && stored.error === "content_not_allowed") return null;
     return "url" in stored ? { ...image, storedUrl: stored.url } : image;
   }));
+  // A photo moderation blocked is dropped entirely: never sent to the generator, stored, or shown.
+  return stored.filter((image): image is ImageInput => image !== null);
+}
+
+/** The brief and every reference photo (resized as it would be stored), checked in parallel. */
+export async function moderateBuildInput(prompt: string, images: ImageInput[], eventId: string | null): Promise<ModerationVerdict> {
+  const context = { surface: "build_brief" as const, eventId };
+  const imageVerdicts = images.map(async (image): Promise<ModerationVerdict> => {
+    const match = /^data:([^;,]+);base64,(.+)$/.exec(image.dataUrl);
+    if (!match) return { status: "allowed" };
+    const file = new File([Buffer.from(match[2], "base64")], image.name || "reference", { type: match[1] });
+    return (await checkEventImageContent(file, eventId)) === "blocked" ? { status: "blocked", categories: ["image"] } : { status: "allowed" };
+  });
+  return combineVerdicts(await Promise.all([moderateText(prompt, context), ...imageVerdicts]));
 }
 
 export async function startBuildJob(
@@ -48,6 +64,11 @@ export async function startBuildJob(
   if (ownerId) {
     // A dead worker leaves its job "running", which blocks new builds on the event until the daily cron.
     await reapStaleGenerationJobs(parsed.existingEventId ? { eventId: parsed.existingEventId } : { ownerId });
+  }
+
+  // Moderate before any job, credit or event exists, so a blocked brief or photo costs nothing.
+  if (isBlocked(await moderateBuildInput(parsed.prompt, parsed.images, parsed.existingEventId ?? null))) {
+    return { ok: false, error: "content_not_allowed", status: 422 };
   }
 
   const prompt = enrichPromptWithTheme(parsed.prompt, parsed.themeOverrides);
@@ -92,7 +113,7 @@ export async function startBuildJob(
     await updateGenerationJobProgress(jobId, { step: "started", message: "Starting your site build…", progressPercent: progressForStep("started"), eventId: placeholderEventId }, ownerId);
   }
 
-  const images = ownerId && placeholderEventId ? await storeReferenceImages(placeholderEventId, parsed.images) : serviceSupabase() ? parsed.images : await storeReferenceImages(null, parsed.images);
+  const images = ownerId && placeholderEventId ? await storeReferenceImages(placeholderEventId, parsed.images, { alreadyModerated: true }) : serviceSupabase() ? parsed.images : await storeReferenceImages(null, parsed.images, { alreadyModerated: true });
 
   const buildInput = {
     jobId,

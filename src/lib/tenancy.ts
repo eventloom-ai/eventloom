@@ -51,6 +51,7 @@ type EventRow = {
   draft_version_id?: string | null;
   published_version_id?: string | null;
   rsvp_deadline_at?: string | null;
+  suspended_at?: string | null;
 };
 
 export async function resolveEventBySlug(slug: string): Promise<EventRecord | null> {
@@ -59,11 +60,11 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
     return getLocalDemoEventBySlug(slug);
   }
 
-  const { data: event, error } = await client
-    .from("events")
-    .select("id, owner_id, slug, status, rsvp_open, rsvp_deadline_at, config, draft_version_id, published_version_id")
-    .eq("slug", slug)
-    .maybeSingle();
+  const columns = "id, owner_id, slug, status, rsvp_open, rsvp_deadline_at, config, draft_version_id, published_version_id";
+  let result = await client.from("events").select(`${columns}, suspended_at`).eq("slug", slug).maybeSingle();
+  // 42703: the suspension migration is not applied yet; serve pages exactly as before it.
+  if (result.error?.code === "42703") result = await client.from("events").select(columns).eq("slug", slug).maybeSingle();
+  const { data: event, error } = result;
 
   if (error || !event) {
     return null;
@@ -71,6 +72,8 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
 
   const row = event as EventRow;
   if (row.status !== "published") return null;
+  // A suspended event is unavailable to guests on every host: no page, metadata, share card, or RSVPs.
+  if (row.suspended_at) return null;
   if (row.status === "published") {
     const { data: entitlement } = await client
       .from("event_entitlements")
