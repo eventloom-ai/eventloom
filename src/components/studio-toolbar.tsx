@@ -5,6 +5,8 @@ import { ChevronLeft, Eye, Globe2, History, Laptop, Loader2, MessageSquareText, 
 import Link from "next/link";
 import { requestFeedbackDialog } from "@/lib/feedback";
 import { publishErrorPresentation } from "@/lib/publish-errors";
+import { LEGAL_VERSION } from "@/lib/legal-version";
+import { REFUND_RSVP_LIMIT, REFUND_WINDOW_DAYS } from "@/lib/payments/refund-policy";
 
 type StudioToolbarProps = {
   eventId: string;
@@ -50,7 +52,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
       const response = await fetch(`/api/events/${eventId}/publish`, {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: requestedDomain || null, registrant: requestedDomain ? registrant : undefined, legalAccepted: launchTermsAccepted && (!requestedDomain || domainTermsAccepted), legalVersion: "2026-07-22-beta" }),
+        body: JSON.stringify({ domain: requestedDomain || null, registrant: requestedDomain ? registrant : undefined, legalAccepted: launchTermsAccepted && (!requestedDomain || domainTermsAccepted), legalVersion: LEGAL_VERSION }),
       });
       const payload = await response.json().catch(() => null) as { error?: string; checkout_url?: string } | null;
       if (!response.ok) {
@@ -232,11 +234,15 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
                       />
                       <span>
                         I am 18 or older and accept the{" "}
-                        <Link className="font-medium text-white underline underline-offset-2" href="/legal/terms" target="_blank">Terms</Link>
+                        <Link className="font-medium text-white underline underline-offset-2" href="/legal/terms" target="_blank">Terms</Link>,{" "}
+                        <Link className="font-medium text-white underline underline-offset-2" href="/legal/refunds" target="_blank">Refund Policy</Link>
                         {" "}and{" "}
                         <Link className="font-medium text-white underline underline-offset-2" href="/legal/privacy" target="_blank">Privacy Policy</Link>.
                       </span>
                     </label>
+                    <p className="mt-2 pl-7 text-xs leading-5 text-white/45">
+                      One-time payment, no subscription or automatic renewal. Full refund within {REFUND_WINDOW_DAYS} days if fewer than {REFUND_RSVP_LIMIT} guests have replied and your event hasn&apos;t ended.
+                    </p>
 
                     <button
                       type="button"

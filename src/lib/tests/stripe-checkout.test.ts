@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { LEGAL_VERSION } from "@/lib/legal-version";
 
 const mocks = vi.hoisted(() => ({
   client: null as unknown,
@@ -80,7 +81,7 @@ function createClient() {
         if (table === "orders" && operation === "select") Object.assign(builder, { then: (resolve: (value: unknown) => void) => resolve({ data: mocks.pendingOrders, error: null }) });
         return builder;
       });
-      builder.in.mockImplementation((_column, values: string[]) => Promise.resolve({ data: values.map((document_key) => ({ id: `doc-${document_key}`, document_key, version: "2026-07-22-beta" })), error: null }));
+      builder.in.mockImplementation((_column, values: string[]) => Promise.resolve({ data: values.map((document_key) => ({ id: `doc-${document_key}`, document_key, version: LEGAL_VERSION })), error: null }));
       builder.delete.mockReturnValue(builder);
       builder.eq.mockImplementation((column: string, value: string) => {
         if (operation === "update" && (mocks.updatedOrder as { status?: string } | null)?.status === "cancelled") {
@@ -133,7 +134,7 @@ describe("Stripe launch checkout", () => {
     mocks.deleteRegistrant.mockReset().mockResolvedValue(undefined);
   });
 
-  const acceptance = { version: "2026-07-22-beta", ipHash: "hash", userAgentClass: "desktop" };
+  const acceptance = { version: LEGAL_VERSION, ipHash: "hash", userAgentClass: "desktop" };
   const registrant = { firstName: "Mira", lastName: "Hadi", organization: "", email: "mira@example.com", phone: "+14165550123", address1: "1 King St", address2: "", city: "Toronto", state: "ON", postalCode: "M5V1A1", country: "CA" as const };
 
   it("creates a server-owned order and matching one-time Checkout Session", async () => {
@@ -223,6 +224,38 @@ describe("Stripe launch checkout", () => {
     mocks.pendingOrders = [{ id: "order_old", provider_reference: "cs_old" }];
     mocks.sessionRetrieve.mockResolvedValue({ id: "cs_old", status: "complete" });
     await expect(createLaunchCheckoutSession({ eventId, ownerId, acceptance })).resolves.toEqual({ ok: false, error: "payment_in_progress" });
+    expect(mocks.sessionCreate).not.toHaveBeenCalled();
+  });
+  it("records acceptance of the Terms, Refund Policy and Privacy Policy and links them on Stripe Checkout", async () => {
+    const result = await createLaunchCheckoutSession({ eventId, ownerId, customerEmail: "owner@example.com", acceptance });
+    expect(result.ok).toBe(true);
+
+    const client = mocks.client as { from: ReturnType<typeof vi.fn> };
+    const legalBuilder = client.from.mock.calls.map((call, index) => ({ table: call[0], builder: client.from.mock.results[index].value })).find((entry) => entry.table === "legal_documents")!.builder;
+    expect(legalBuilder.eq).toHaveBeenCalledWith("version", LEGAL_VERSION);
+    expect(legalBuilder.in).toHaveBeenCalledWith("document_key", ["terms", "privacy", "refunds"]);
+    const acceptanceInsert = client.from.mock.calls.map((call, index) => ({ table: call[0], builder: client.from.mock.results[index].value })).find((entry) => entry.table === "legal_acceptances")!.builder;
+    expect(acceptanceInsert.insert.mock.calls[0][0].map((row: { document_id: string }) => row.document_id).sort()).toEqual(["doc-privacy", "doc-refunds", "doc-terms"]);
+
+    const params = mocks.sessionCreate.mock.calls[0][0];
+    expect(params.consent_collection).toEqual({ terms_of_service: "required" });
+    expect(params.custom_text.terms_of_service_acceptance.message).toContain("[Refund Policy](https://eventloom-beta.vercel.app/legal/refunds)");
+    expect(params.custom_text.terms_of_service_acceptance.message).toContain("[Terms](https://eventloom-beta.vercel.app/legal/terms)");
+    expect(params.custom_text.terms_of_service_acceptance.message).toContain("[Privacy Policy](https://eventloom-beta.vercel.app/legal/privacy)");
+    expect(params.custom_text.submit.message).toMatch(/no automatic renewal.*Full refund within 14 days if fewer than 5 guests/);
+    for (const field of ["terms_of_service_acceptance", "submit"]) expect(params.custom_text[field].message.length).toBeLessThanOrEqual(1200);
+  });
+
+  it("refuses checkout when the refund policy is not active for the accepted version", async () => {
+    const client = mocks.client as { from: ReturnType<typeof vi.fn> };
+    const original = client.from.getMockImplementation() as (table: string) => { in: ReturnType<typeof vi.fn> };
+    client.from.mockImplementation((table: string) => {
+      const builder = original(table);
+      if (table === "legal_documents") builder.in.mockImplementation((_column: string, values: string[]) => Promise.resolve({ data: values.filter((key) => key !== "refunds").map((document_key) => ({ id: `doc-${document_key}`, document_key, version: LEGAL_VERSION })), error: null }));
+      return builder;
+    });
+
+    await expect(createLaunchCheckoutSession({ eventId, ownerId, acceptance })).resolves.toEqual({ ok: false, error: "legal_documents_not_ready" });
     expect(mocks.sessionCreate).not.toHaveBeenCalled();
   });
 });

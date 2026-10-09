@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { COMPARE_PATH, comparePath, competitors, GUIDE_PATH } from "@/lib/comparisons";
 import { appUrl } from "@/lib/env";
+import { legalDocuments } from "@/lib/legal-documents";
 import { occasionPath, occasionTemplates, TEMPLATES_PATH } from "@/lib/occasion-templates";
 
 const publicRoutes = [
@@ -18,15 +19,7 @@ const publicRoutes = [
   GUIDE_PATH,
   "/contact",
   "/legal",
-  "/legal/terms",
-  "/legal/privacy",
-  "/legal/domains",
-  "/legal/acceptable-use",
-  "/legal/dpa",
-  "/legal/subprocessors",
-  "/legal/cookies",
-  "/legal/accessibility",
-  "/legal/security",
+  ...legalDocuments.map((document) => `/legal/${document.slug}`),
   "/privacy/request",
   "/ip",
 ];
