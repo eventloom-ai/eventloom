@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { SiteDocumentRenderer } from "@/components/site-document-renderer";
 import { defaultEventConfig } from "@/lib/ai/generator";
-import { coupleTitleLines } from "@/lib/couple-title";
+import { coupleTitleLines, eventInitials } from "@/lib/couple-title";
 import { composeSiteDocument, walkSiteNodes, type SiteDocument, type SiteNode } from "@/lib/site-document";
 
 vi.mock("next/image", () => ({ default: () => null }));
@@ -17,6 +17,18 @@ describe("couple titles", () => {
     expect(coupleTitleLines("Maya and Adam", "Engagement party")).toEqual(["Maya", "Adam"]);
     expect(coupleTitleLines("Rock and Roll Night", "birthday")).toBeNull();
     expect(coupleTitleLines("Food & Drinks", "event")).toBeNull();
+  });
+
+  it("only gives couple-type events a two-letter monogram", () => {
+    expect(eventInitials("Amina & Kareem", "wedding")).toBe("A & K");
+    expect(eventInitials("maya and adam", "engagement")).toBe("M & A");
+    expect(eventInitials("Rock and Roll Night", "birthday")).toBe("R");
+    expect(eventInitials("Food & Drinks", "event")).toBe("F");
+    expect(eventInitials("", "event")).toBe("");
+    const document: SiteDocument = { schemaVersion: 2, locale: "en", direction: "auto", theme, nodes: [{ id: "sec_a", type: "section", children: [{ id: "txt_initials", type: "text", variant: "eyebrow", binding: "event.initials" }] }] };
+    const party = { ...defaultEventConfig("Rock and Roll Night"), title: "Rock and Roll Night", eventType: "birthday" };
+    const html = renderToStaticMarkup(<SiteDocumentRenderer document={document} config={party} status="draft" rsvpOpen={false} />);
+    expect(html).not.toContain("R &amp; R");
   });
 
   it("binds the composed title instead of freezing a split copy, so non-couple titles stay on one line", () => {
