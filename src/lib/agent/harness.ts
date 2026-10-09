@@ -6,13 +6,14 @@ import type { BuildProgressEvent, BuildProgressReporter } from "@/lib/agent/prog
 import { applyImagesToConfig } from "@/lib/agent/parse-build-form";
 import { getAgentRuntime } from "@/lib/agent/runtime";
 import { saveLocalDemoEvent } from "@/lib/local-demo-store";
-import { refundBuildCredit } from "@/lib/payments/billing";
+import { settleBuildCredit } from "@/lib/payments/ai-credit-rule";
 import { composeSiteDocument } from "@/lib/site-document";
 import { seedInitialRevision } from "@/lib/studio-store";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
 import {
   createEventRecord,
+  discardPlaceholderEvent,
   finishGenerationJob,
   getEventRecord,
   previewUrls,
@@ -92,12 +93,23 @@ async function quietly(task: () => unknown) {
   }
 }
 
-// A failed build delivered no site, so its credit goes back (refunds are idempotent per job).
+// A failed build delivered no site, so its credit goes back (refunds are idempotent per job), and the empty
+// placeholder draft of a first build is removed so it doesn't linger in the dashboard or hold the slug.
 async function failBuild(input: BuildSiteInput, message: string, runtime: ReturnType<typeof getAgentRuntime>): Promise<BuildSiteResult> {
+  const placeholderToDiscard = input.ownerId && input.placeholderEventId && !input.existingEventId ? input.placeholderEventId : null;
   await quietly(() => finishGenerationJob(input.jobId, "failed", message, input.ownerId));
-  if (input.ownerId) await quietly(() => refundBuildCredit(input.ownerId!, input.placeholderEventId ?? input.existingEventId ?? null, input.jobId));
+  // A ledger row pointing at the placeholder would block deleting it, so that refund is recorded without an event.
+  const refundEventId = placeholderToDiscard ? null : input.placeholderEventId ?? input.existingEventId ?? null;
+  if (input.ownerId) await quietly(() => settleBuildCredit(input.ownerId!, refundEventId, input.jobId, { status: "failed", aiResultShown: false }));
   await quietly(() => report(input, { step: "error", message, progressPercent: 0 }));
+  if (placeholderToDiscard) await quietly(() => discardPlaceholderEvent(placeholderToDiscard, input.ownerId!));
   return { ok: false, error: message, runtime };
+}
+
+// The credit pays for AI work: a build where the planner and the art director both fell back to deterministic
+// output delivered a site but no AI result, so its credit goes back too.
+async function settleDeliveredBuild(input: BuildSiteInput, eventId: string | null, aiGenerated: boolean) {
+  if (input.ownerId) await quietly(() => settleBuildCredit(input.ownerId!, eventId, input.jobId, { status: "succeeded", aiGenerated }));
 }
 
 export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSiteResult> {
@@ -166,6 +178,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
         progressPercent: 100,
       });
       await finishGenerationJob(input.jobId, "succeeded", undefined, input.ownerId);
+      await settleDeliveredBuild(input, null, plan.generated || art.generated);
       return {
         ok: true,
         mode: "demo",
@@ -249,6 +262,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
 
     await report(input, { step: "saving", phase: "finalizing", message: "Almost ready…", progressPercent: progressForStep("saving", "finalizing") });
     await finishGenerationJob(input.jobId, "succeeded", undefined, input.ownerId);
+    await settleDeliveredBuild(input, event.id, plan.generated || art.generated);
 
     const preview = previewUrls(event.slug);
     // The site is saved and the job succeeded; a lost progress update must not fail (and refund) a delivered build.

@@ -134,11 +134,12 @@ describe("studio assistant runs on designed events", () => {
     expect(mocks.refund).not.toHaveBeenCalled();
   });
 
-  it("falls back to the deterministic reading when the provider fails, and keeps the credit", async () => {
+  it("falls back to the deterministic reading when the provider fails, and refunds the credit", async () => {
     global.fetch = vi.fn(async () => ({ ok: false, json: async () => null })) as unknown as typeof fetch;
     await run("Use the sage palette");
     expect(mocks.commit.mock.calls[0][0].config.design).toMatchObject({ styleKey: "romantic", paletteKey: "sage" });
-    expect(mocks.refund).not.toHaveBeenCalled();
+    expect(mocks.events.at(-1)?.type).toBe("committed");
+    expect(mocks.refund).toHaveBeenCalledWith("owner-1", "event-1", "job-1");
   });
 
   it("refunds when no provider was called and the run fails", async () => {

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiDeadline } from "@/lib/ai/deadline";
-import { artDirectEvent } from "@/lib/agent/art-director";
+import { artDirectEvent, fallbackEventDesign } from "@/lib/agent/art-director";
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { createEventRecord } from "@/lib/agent/tools";
 import { processAndStoreEventImage } from "@/lib/event-assets";
-import { refundBuildCredit, reserveBuildCredit } from "@/lib/payments/billing";
+import { settleBuildCredit } from "@/lib/payments/ai-credit-rule";
+import { reserveBuildCredit } from "@/lib/payments/billing";
 import { promptTooLong } from "@/lib/prompt-limits";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
@@ -55,9 +56,8 @@ export async function POST(req: NextRequest) {
   const credit = runId ? await reserveBuildCredit(user.id, created.event.id) : null;
   const charged = Boolean(runId && credit?.ok);
   const original = charged ? await generateOriginalSite(prompt, planConfig, { deadline }).catch(() => null) : null;
-  const delivered = Boolean(original?.generated);
-  // The credit pays for an AI-designed site; a failed or fallback generation gives it back (idempotent per run).
-  if (charged && !delivered) await refundBuildCredit(user.id, created.event.id, runId!);
+  // Credit rule (ai-credit-rule.ts): the credit is kept only if a provider call produced part of the saved site.
+  let delivered = Boolean(original?.generated);
   const finishRun = (status: "succeeded" | "failed", error?: string) => runId
     ? updateStudioRun(runId, { status, error: error ?? null, progress_step: status === "succeeded" ? "done" : "error", progress_percent: status === "succeeded" ? 100 : 0, completed_at: new Date().toISOString() })
     : Promise.resolve();
@@ -65,7 +65,11 @@ export async function POST(req: NextRequest) {
   try {
     // New events render through the approved design system; the site document is kept as the legacy fallback.
     const baseConfig = original?.config ?? planConfig;
-    const art = await artDirectEvent({ prompt, config: baseConfig, hasPhotos: Boolean(baseConfig.heroImageUrl), deadline }).catch(() => null);
+    // Without a reserved credit there is no AI call: the deterministic design is used instead.
+    const art = charged
+      ? await artDirectEvent({ prompt, config: baseConfig, hasPhotos: Boolean(baseConfig.heroImageUrl), deadline }).catch(() => null)
+      : { design: fallbackEventDesign({ config: baseConfig, prompt }), generated: false };
+    delivered ||= Boolean(art?.generated);
     const designedConfig = art ? { ...baseConfig, design: art.design } : baseConfig;
     const revision = await seedInitialRevision(created.event, user.id, original
       ? { document: original.document, config: designedConfig, prompt, summary: original.summary }
@@ -80,9 +84,10 @@ export async function POST(req: NextRequest) {
     });
   } catch {
     await finishRun("failed", "studio_create_failed");
-    if (delivered) await refundBuildCredit(user.id, created.event.id, runId!);
+    if (charged) await settleBuildCredit(user.id, created.event.id, runId!, { status: "failed", aiResultShown: false });
     return NextResponse.json({ error: "studio_create_failed" }, { status: 500 });
   }
+  if (charged) await settleBuildCredit(user.id, created.event.id, runId!, { status: "succeeded", aiGenerated: delivered });
   await finishRun(delivered ? "succeeded" : "failed", delivered ? undefined : credit && !credit.ok ? credit.error : "ai_fallback");
   return NextResponse.json({ eventId: created.event.id, slug, ...(credit && !credit.ok ? { warning: credit.error } : {}) }, { status: 201 });
 }

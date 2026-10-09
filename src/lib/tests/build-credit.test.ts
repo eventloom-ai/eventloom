@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   original: vi.fn(),
   updateRun: vi.fn(),
   seed: vi.fn(async () => ({ id: "version-1" })),
+  artGenerated: false,
+  artDirect: vi.fn(),
 }));
 
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: vi.fn() }));
@@ -38,6 +40,11 @@ vi.mock("@/lib/studio-store", () => ({
   createBuilderMessage: vi.fn(),
 }));
 vi.mock("@/lib/agent/generate-document", () => ({ generateOriginalSite: mocks.original }));
+vi.mock("@/lib/agent/art-director", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/agent/art-director")>();
+  mocks.artDirect.mockImplementation(async () => ({ design: { version: 1, styleKey: "romantic", paletteKey: "sage", content: {} }, generated: mocks.artGenerated }));
+  return { ...actual, artDirectEvent: mocks.artDirect };
+});
 vi.mock("@/lib/supabase/server", () => ({ serviceSupabase: () => null, getServerUser: async () => ({ id: "owner-1" }) }));
 
 import { startBuildJob } from "@/lib/agent/start-build";
@@ -60,6 +67,7 @@ beforeEach(() => {
   mocks.runId = "run-1";
   mocks.credit = { ok: true, remainingCents: 450 };
   mocks.createEvent.mockResolvedValue({ event });
+  mocks.artGenerated = false;
 });
 
 describe("startBuildJob credit", () => {
@@ -123,6 +131,25 @@ describe("studio workspace credit", () => {
     const response = await createStudio(studioRequest());
     expect(response.status).toBe(500);
     expect(mocks.refund).toHaveBeenCalledWith("owner-1", "event-1", "run-1");
+  });
+
+  it("keeps the credit when the art director's AI design is used, even if the page document fell back", async () => {
+    mocks.original.mockResolvedValue({ document: {}, config: event.config, message: "Fallback", summary: "First", generated: false });
+    mocks.artGenerated = true;
+    expect((await createStudio(studioRequest())).status).toBe(201);
+    expect(mocks.refund).not.toHaveBeenCalled();
+    expect(mocks.updateRun).toHaveBeenCalledWith("run-1", expect.objectContaining({ status: "succeeded" }));
+  });
+
+  it("makes no AI call at all when no credit could be reserved", async () => {
+    mocks.credit = { ok: false, error: "ai_credit_limit_reached" };
+    const response = await createStudio(studioRequest());
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({ warning: "ai_credit_limit_reached" });
+    expect(mocks.original).not.toHaveBeenCalled();
+    expect(mocks.artDirect).not.toHaveBeenCalled();
+    expect(mocks.seed).toHaveBeenCalledWith(event, "owner-1", expect.objectContaining({ config: expect.objectContaining({ design: expect.objectContaining({ version: 1 }) }) }));
+    expect(mocks.refund).not.toHaveBeenCalled();
   });
 
   it("rejects an over-long prompt before creating the event", async () => {

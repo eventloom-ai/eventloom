@@ -7,7 +7,7 @@ import { SECTION_KEYS, SECTION_VARIANTS, readEventDesign, type EventDesign, type
 import { DESIGN_STYLES, STYLE_KEYS } from "@/lib/event-design/styles";
 import { env, openaiResponsesOptions } from "@/lib/env";
 import { sectionKindFromPuckId, sectionPuckId } from "@/lib/puck-design";
-import { refundBuildCredit } from "@/lib/payments/billing";
+import { settleBuildCredit } from "@/lib/payments/ai-credit-rule";
 import { applyEventDetailsPatch, applySiteOperations, type SiteOperation } from "@/lib/site-document-operations";
 import { findSiteNode, type SiteDocument } from "@/lib/site-document";
 import {
@@ -298,10 +298,10 @@ function designFacts(prompt: string, config: EventConfig, design: EventDesign) {
   return `${prompt}\n${JSON.stringify({ ...config, design: undefined })}\n${JSON.stringify(design.content)}`;
 }
 
-async function requestDesignEdit(prompt: string, config: EventConfig, design: EventDesign, messages: BuilderMessage[], selectedNodeIds: string[], deadline?: number): Promise<{ edit: DesignAgentEdit; responseId: string | null }> {
+async function requestDesignEdit(prompt: string, config: EventConfig, design: EventDesign, messages: BuilderMessage[], selectedNodeIds: string[], deadline?: number): Promise<{ edit: DesignAgentEdit; responseId: string | null; generated: boolean }> {
   const fallback = () => {
     const result = fallbackDesignPatch(prompt, design);
-    return { edit: { message: result.message, summary: result.summary, eventPatch: {}, designPatch: result.patch }, responseId: null };
+    return { edit: { message: result.message, summary: result.summary, eventPatch: {}, designPatch: result.patch }, responseId: null, generated: false };
   };
   const key = env.openaiApiKey();
   const timeoutMs = aiCallTimeoutMs(deadline);
@@ -326,24 +326,25 @@ async function requestDesignEdit(prompt: string, config: EventConfig, design: Ev
   const output = data?.output_text ?? data?.output?.flatMap((item) => item.content ?? []).map((content) => content.text).filter(Boolean).join("\n");
   if (!output) return fallback();
   try {
-    return { edit: normalizeDesignEdit(JSON.parse(output) as Record<string, unknown>, designFacts(prompt, config, design)), responseId: data?.id ?? null };
+    return { edit: normalizeDesignEdit(JSON.parse(output) as Record<string, unknown>, designFacts(prompt, config, design)), responseId: data?.id ?? null, generated: true };
   } catch {
     return fallback();
   }
 }
 
-type PreparedEdit = { message: string; summary: string; config: EventConfig; document: SiteDocument; changedNodeIds: string[]; responseId: string | null };
+// generated: the provider produced the edit (false for the deterministic fallback); decides the credit refund.
+type PreparedEdit = { message: string; summary: string; config: EventConfig; document: SiteDocument; changedNodeIds: string[]; responseId: string | null; generated: boolean };
 
 /** The edit to commit for a run: a design patch for designed events, site-document operations for legacy ones. */
 async function prepareEdit(input: { prompt: string; selectedNodeIds: string[]; deadline?: number }, revision: { config: EventConfig; document: SiteDocument }, messages: BuilderMessage[], assertNotCancelled: () => Promise<void>, onApplying: (summary: string) => Promise<unknown>): Promise<PreparedEdit> {
   const design = readEventDesign(revision.config);
   if (design) {
-    const { edit, responseId } = await requestDesignEdit(input.prompt, revision.config, design, messages, input.selectedNodeIds, input.deadline);
+    const { edit, responseId, generated } = await requestDesignEdit(input.prompt, revision.config, design, messages, input.selectedNodeIds, input.deadline);
     await assertNotCancelled();
     await onApplying(edit.summary);
     const patched = Object.keys(edit.eventPatch).length ? applyEventDetailsPatch(revision.config, edit.eventPatch) : revision.config;
     const config = { ...patched, design: applyDesignPatch(design, edit.designPatch) };
-    return { message: edit.message, summary: edit.summary, config, document: revision.document, changedNodeIds: sectionsTouchedBy(edit.designPatch).map(sectionPuckId), responseId };
+    return { message: edit.message, summary: edit.summary, config, document: revision.document, changedNodeIds: sectionsTouchedBy(edit.designPatch).map(sectionPuckId), responseId, generated };
   }
   const generated = await requestAgentEdit(input.prompt, revision.document, revision.config, messages, input.selectedNodeIds, input.deadline);
   const edit = "edit" in generated ? generated.edit : generated;
@@ -352,12 +353,14 @@ async function prepareEdit(input: { prompt: string; selectedNodeIds: string[]; d
   await onApplying(edit.summary);
   const config = Object.keys(edit.eventPatch).length ? applyEventDetailsPatch(revision.config, edit.eventPatch) : revision.config;
   const applied = edit.operations.length ? applySiteOperations(revision.document, edit.operations) : { document: revision.document, changedNodeIds: [] };
-  return { message: edit.message, summary: edit.summary, config, document: applied.document, changedNodeIds: applied.changedNodeIds, responseId };
+  return { message: edit.message, summary: edit.summary, config, document: applied.document, changedNodeIds: applied.changedNodeIds, responseId, generated: "edit" in generated };
 }
 
 export async function executeStudioRun(input: { jobId: string; eventId: string; ownerId: string; prompt: string; selectedNodeIds: string[]; deadline?: number }) {
-  // Once the provider has been called the credit is consumed, even if the run is cancelled or fails afterwards.
+  // Credit rule (ai-credit-rule.ts): kept only for an AI result; a cancel after the provider call keeps it (S4),
+  // and so does a failure after the AI patch was already streamed to the editor.
   let providerCalled = false;
+  let aiResultShown = false;
   try {
     const state = await loadStudioState(input.eventId, input.ownerId);
     if (!state) throw new Error("event_not_found");
@@ -371,11 +374,13 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
       if (beforeCommit?.cancel_requested) throw new Error("run_cancelled");
       await appendRunEvent(input.jobId, input.eventId, "status", { stage: "saving", message: original.summary });
       await appendRunEvent(input.jobId, input.eventId, "patch", { document: original.document, config: original.config, changedNodeIds: [], summary: original.summary });
+      aiResultShown = original.generated;
       const committed = await commitStudioRevision({ eventId: input.eventId, ownerId: input.ownerId, baseVersionId: state.revision.id, document: original.document, config: original.config, source: "ai", summary: original.summary, prompt: input.prompt });
       if (!committed.ok) throw new Error(committed.error);
       const assistant = await createBuilderMessage({ eventId: input.eventId, runId: input.jobId, role: "assistant", content: original.message, versionId: committed.revision.id, ownerId: input.ownerId });
       await updateStudioRun(input.jobId, { status: "succeeded", result_version_id: committed.revision.id, progress_step: "done", progress_percent: 100, progress_message: original.summary, completed_at: new Date().toISOString() });
       await appendRunEvent(input.jobId, input.eventId, "committed", { revision: committed.revision, message: assistant, changedNodeIds: [], summary: original.summary });
+      await settleBuildCredit(input.ownerId, input.eventId, input.jobId, { status: "succeeded", aiGenerated: original.generated });
       return;
     }
 
@@ -387,17 +392,19 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
 
     await assertNotCancelled();
     await appendRunEvent(input.jobId, input.eventId, "patch", { document: edit.document, config: edit.config, changedNodeIds: edit.changedNodeIds, summary: edit.summary });
+    aiResultShown = edit.generated;
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "saving", message: "Validating and saving this version…" });
     const committed = await commitStudioRevision({ eventId: input.eventId, ownerId: input.ownerId, baseVersionId: state.revision.id, document: edit.document, config: edit.config, source: "ai", summary: edit.summary, prompt: input.prompt });
     if (!committed.ok) throw new Error(committed.error);
     const assistant = await createBuilderMessage({ eventId: input.eventId, runId: input.jobId, role: "assistant", content: edit.message, selectedNodeIds: edit.changedNodeIds, versionId: committed.revision.id, ownerId: input.ownerId });
     await updateStudioRun(input.jobId, { status: "succeeded", result_version_id: committed.revision.id, response_id: edit.responseId, progress_step: "done", progress_percent: 100, progress_message: edit.summary, completed_at: new Date().toISOString() });
     await appendRunEvent(input.jobId, input.eventId, "committed", { revision: committed.revision, message: assistant, changedNodeIds: edit.changedNodeIds, summary: edit.summary });
+    await settleBuildCredit(input.ownerId, input.eventId, input.jobId, { status: "succeeded", aiGenerated: edit.generated });
   } catch (error) {
     const message = error instanceof Error ? error.message : "agent_run_failed";
     const cancelled = message === "run_cancelled";
     await updateStudioRun(input.jobId, { status: "failed", error: message, progress_step: "error", progress_message: cancelled ? "Stopped" : "The edit could not be applied.", completed_at: new Date().toISOString() });
     await appendRunEvent(input.jobId, input.eventId, cancelled ? "cancelled" : "error", { message: cancelled ? "Stopped before saving changes." : message });
-    if (!providerCalled) await refundBuildCredit(input.ownerId, input.eventId, input.jobId);
+    await settleBuildCredit(input.ownerId, input.eventId, input.jobId, cancelled ? { status: "cancelled", providerCalled } : { status: "failed", aiResultShown });
   }
 }

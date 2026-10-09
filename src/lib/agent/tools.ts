@@ -2,6 +2,7 @@ import type { ImageInput } from "@/lib/ai/generator";
 import { progressForStep } from "@/lib/agent/build-progress";
 import type { BuildJobStatus, BuildProgressEvent, BuildProgressStep } from "@/lib/agent/progress";
 import { addDomainToVercelProject } from "@/lib/domains/vercel";
+import { EVENT_ASSET_BUCKET, isEventAssetPath } from "@/lib/asset-paths";
 import { appUrl } from "@/lib/env";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { createLocalDemoJob, finishLocalDemoJob, getLocalDemoEventById, getLocalDemoJob, updateLocalDemoJob } from "@/lib/local-demo-store";
@@ -339,4 +340,30 @@ export function previewUrls(slug: string) {
     slugPath: `${base}/${slug}`,
     subdomain: `${base}/${slug}`,
   };
+}
+
+/**
+ * Removes the placeholder draft a first build created before it failed, so the dashboard doesn't fill up with
+ * empty "Your site is being created…" events and the slug is free for a retry. Only touches the owner's own draft.
+ * The build job is detached before the delete so the client still sees why the build failed. Returns whether it was removed.
+ * Credit ledger rows must not reference the event (refund failed first builds with a null event id).
+ */
+export async function discardPlaceholderEvent(eventId: string, ownerId: string) {
+  const client = serviceSupabase();
+  if (!client) return false;
+
+  const { data: event } = await client.from("events").select("id, status").eq("id", eventId).eq("owner_id", ownerId).maybeSingle();
+  if (!event || event.status !== "draft") return false;
+
+  const { data: assets } = await client.from("assets").select("metadata").eq("event_id", eventId);
+  const storagePaths = (assets ?? []).flatMap((asset: { metadata: unknown }) => isEventAssetPath(asset.metadata, eventId) ? [asset.metadata.path] : []);
+  if (storagePaths.length) {
+    // Keep the row (and its asset rows) rather than orphan stored photos the account-delete flow could no longer find.
+    const { error: storageError } = await client.storage.from(EVENT_ASSET_BUCKET).remove(storagePaths);
+    if (storageError) return false;
+  }
+
+  await client.from("generation_jobs").update({ event_id: null }).eq("event_id", eventId);
+  const { data: deleted, error } = await client.from("events").delete().eq("id", eventId).eq("owner_id", ownerId).eq("status", "draft").select("id").maybeSingle();
+  return !error && Boolean(deleted);
 }

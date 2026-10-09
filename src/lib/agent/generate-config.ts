@@ -10,6 +10,8 @@ import type { EventConfig, EventSiteTemplate } from "@/lib/types";
 type GeneratedSitePlan = {
   config: EventConfig;
   template: EventSiteTemplate;
+  /** True when the provider produced the plan; false for the deterministic fallback (decides the credit refund). */
+  generated: boolean;
 };
 
 const eventConfigSchema = {
@@ -137,6 +139,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
     return {
       template: "custom",
       config: groundConfigInPrompt(config, prompt),
+      generated: true,
     };
   } catch {
     return fallback;
@@ -220,5 +223,5 @@ function fallbackSitePlan(prompt: string, themeOverrides?: ThemeOverrides): Gene
     themeOverrides,
   ), prompt);
 
-  return { template: config.template ?? template, config };
+  return { template: config.template ?? template, config, generated: false };
 }

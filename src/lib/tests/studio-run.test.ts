@@ -71,10 +71,22 @@ describe("executeStudioRun credit and cancellation", () => {
     expect(mocks.refund).toHaveBeenCalledWith("owner-1", "event-1", "job-1");
   });
 
-  it("keeps the credit when the edit fails after the provider call", async () => {
+  it("refunds when the provider failed and the fallback edit could not be saved", async () => {
     mocks.commit.mockResolvedValue({ ok: false, error: "version_conflict" });
     await run();
     expect(mocks.providerCalls).toBe(1);
+    expect(mocks.events.at(-1)).toEqual({ type: "error", payload: { message: "version_conflict" } });
+    expect(mocks.refund).toHaveBeenCalledWith("owner-1", "event-1", "job-1");
+  });
+
+  it("keeps the credit when the save fails after the AI patch was streamed", async () => {
+    global.fetch = vi.fn(async () => {
+      mocks.providerCalls += 1;
+      return { ok: true, json: async () => ({ id: "resp-1", output_text: JSON.stringify({ message: "Warmer now.", summary: "Warmer colors", eventPatch: {}, operations: [] }) }) };
+    }) as unknown as typeof fetch;
+    mocks.commit.mockResolvedValue({ ok: false, error: "version_conflict" });
+    await run();
+    expect(mocks.events.map((event) => event.type)).toContain("patch");
     expect(mocks.events.at(-1)).toEqual({ type: "error", payload: { message: "version_conflict" } });
     expect(mocks.refund).not.toHaveBeenCalled();
   });
