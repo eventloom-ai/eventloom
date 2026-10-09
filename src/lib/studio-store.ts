@@ -1,6 +1,7 @@
 import "server-only";
 
 import { assertEventAssetOwnership, composeSiteDocument, siteDocumentSchema, type SiteDocument } from "@/lib/site-document";
+import { getLocalDemoEventById, getLocalDemoRevisions, saveLocalDemoEvent, saveLocalDemoRevision } from "@/lib/local-demo-store";
 import { demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { BuilderMessage, BuilderRunEvent, EventConfig, EventRecord, SiteRevision } from "@/lib/types";
@@ -26,8 +27,24 @@ export type StudioState = {
   persistence: "database" | "demo";
 };
 
+const unsafeImageUrl = (value: string | undefined) => Boolean(value) && !(value!.startsWith("/") || /^https:\/\//i.test(value!));
+
+// Builds can carry inline `data:` reference photos in the config, which the site document rejects.
+// Seed without them instead of failing the studio forever.
+export function composeSeedDocument(config: EventConfig, prompt: string, makeId?: (prefix: string) => string) {
+  try {
+    return { document: composeSiteDocument(config, prompt, makeId), config };
+  } catch (error) {
+    if (!unsafeImageUrl(config.heroImageUrl) && !config.galleryImageUrls?.some(unsafeImageUrl)) throw error;
+    const { heroImageUrl, galleryImageUrls, ...rest } = config;
+    const safe: EventConfig = { ...rest, ...(unsafeImageUrl(heroImageUrl) ? {} : { heroImageUrl }), ...(galleryImageUrls ? { galleryImageUrls: galleryImageUrls.filter((url) => !unsafeImageUrl(url)) } : {}) };
+    return { document: composeSiteDocument(safe, prompt, makeId), config: safe };
+  }
+}
+
 function demoRevision(event: EventRecord): SiteRevision {
   const eventKey = event.id.replaceAll("-", "").slice(0, 10);
+  const seeded = composeSeedDocument(event.config, event.config.title, (prefix) => `${prefix}_${eventKey}`);
   return {
     id: `demo-version-${event.id}`,
     event_id: event.id,
@@ -35,8 +52,8 @@ function demoRevision(event: EventRecord): SiteRevision {
     source: "initial",
     summary: "First original version",
     prompt: event.config.title,
-    config: event.config,
-    document: composeSiteDocument(event.config, event.config.title, (prefix) => `${prefix}_${eventKey}`),
+    config: seeded.config,
+    document: seeded.document,
     created_at: new Date(0).toISOString(),
   };
 }
@@ -80,10 +97,13 @@ export async function seedInitialRevision(event: EventRecord, ownerId: string | 
   summary?: string;
 }) {
   const client = serviceSupabase();
-  const config = seed?.config ?? event.config;
   const prompt = seed?.prompt ?? event.config.title;
-  const document = seed?.document ?? composeSiteDocument(config, prompt);
-  if (!client) return { ...demoRevision({ ...event, config }), document, config, prompt, summary: seed?.summary ?? "First original version" };
+  const { document, config } = seed?.document ? { document: seed.document, config: seed.config ?? event.config } : composeSeedDocument(seed?.config ?? event.config, prompt);
+  if (!client) {
+    const revision = { ...demoRevision({ ...event, config }), document, config, prompt, summary: seed?.summary ?? "First original version" };
+    saveLocalDemoRevision(revision);
+    return revision;
+  }
   const { data, error } = await client.from("event_versions").insert({
     event_id: event.id,
     prompt,
@@ -111,10 +131,12 @@ export async function seedInitialRevision(event: EventRecord, ownerId: string | 
 export async function loadStudioState(eventId: string, ownerId: string | null): Promise<StudioState | null> {
   const client = serviceSupabase();
   if (!client) {
-    const event = demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
-    if (!event) return null;
-    const revision = demoRevision(event);
-    return { event: { ...event, document: revision.document, draft_version_id: revision.id }, revision, versions: [revision], messages: [], activeRun: null, persistence: "demo" };
+    const found = getLocalDemoEventById(eventId) ?? demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
+    if (!found) return null;
+    const event = { ...found, id: eventId };
+    const saved = getLocalDemoRevisions(eventId);
+    const revision = saved[0] ?? demoRevision(event);
+    return { event: { ...event, config: revision.config, document: revision.document, draft_version_id: revision.id }, revision, versions: saved.length ? saved : [revision], messages: [], activeRun: null, persistence: "demo" };
   }
 
   const full = await client.from("events").select("id, owner_id, slug, status, rsvp_open, config, draft_version_id, published_version_id").eq("id", eventId).maybeSingle();
@@ -164,7 +186,11 @@ export async function commitStudioRevision(input: {
   const document = siteDocumentSchema.parse(input.document);
   assertEventAssetOwnership(document, input.eventId);
   if (!client) {
-    return { ok: true as const, revision: { ...demoRevision({ id: input.eventId, slug: "demo", status: "draft", rsvp_open: false, config: input.config }), id: `demo-version-${crypto.randomUUID()}`, parent_version_id: input.baseVersionId, source: input.source, summary: input.summary, prompt: input.prompt, document, created_at: new Date().toISOString() } };
+    const revision: SiteRevision = { id: `demo-version-${crypto.randomUUID()}`, event_id: input.eventId, parent_version_id: input.baseVersionId, source: input.source, summary: input.summary, prompt: input.prompt, config: input.config, document, created_at: new Date().toISOString() };
+    saveLocalDemoRevision(revision);
+    const local = getLocalDemoEventById(input.eventId);
+    if (local) saveLocalDemoEvent({ ...local, config: input.config, document });
+    return { ok: true as const, revision };
   }
 
   const { data: inserted, error } = await client.from("event_versions").insert({

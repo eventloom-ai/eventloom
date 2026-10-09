@@ -6,6 +6,8 @@ export type ImageInput = {
   name: string;
   mediaType: string;
   dataUrl: string;
+  // Set once the image is stored as an event asset; site documents only accept this URL, never the data URL.
+  storedUrl?: string;
 };
 
 function namesFromPrompt(prompt: string) {

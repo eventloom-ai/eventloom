@@ -1,9 +1,10 @@
 import type { BuildJobStatus, BuildProgressStep } from "@/lib/agent/progress";
-import type { EventConfig, EventRecord } from "@/lib/types";
+import type { EventConfig, EventRecord, SiteRevision } from "@/lib/types";
 
 type LocalDemoState = {
   jobs: Map<string, BuildJobStatus>;
   events: Map<string, EventRecord>;
+  revisions: Map<string, SiteRevision[]>;
 };
 
 const globalDemoState = globalThis as typeof globalThis & {
@@ -14,7 +15,9 @@ function state(): LocalDemoState {
   globalDemoState.__eventloomLocalDemoState ??= {
     jobs: new Map(),
     events: new Map(),
+    revisions: new Map(),
   };
+  globalDemoState.__eventloomLocalDemoState.revisions ??= new Map();
   return globalDemoState.__eventloomLocalDemoState;
 }
 
@@ -85,4 +88,13 @@ export function getLocalDemoEventBySlug(slug: string) {
 
 export function getLocalDemoEventById(eventId: string) {
   return [...state().events.values()].find((event) => event.id === eventId) ?? null;
+}
+
+export function saveLocalDemoRevision(revision: SiteRevision) {
+  const current = state().revisions.get(revision.event_id) ?? [];
+  state().revisions.set(revision.event_id, [revision, ...current.filter((item) => item.id !== revision.id)].slice(0, 50));
+}
+
+export function getLocalDemoRevisions(eventId: string) {
+  return state().revisions.get(eventId) ?? [];
 }

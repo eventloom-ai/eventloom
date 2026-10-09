@@ -87,7 +87,7 @@ export function applyImagesToConfig<T extends { heroImageUrl?: string; galleryIm
 
   return {
     ...config,
-    heroImageUrl: images[0].dataUrl,
-    galleryImageUrls: images.slice(1).map((image) => image.dataUrl),
+    heroImageUrl: images[0].storedUrl ?? images[0].dataUrl,
+    galleryImageUrls: images.slice(1).map((image) => image.storedUrl ?? image.dataUrl),
   };
 }
