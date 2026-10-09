@@ -4,6 +4,7 @@ import { progressForStep } from "@/lib/agent/build-progress";
 import type { BuildJobStatus, BuildProgressEvent, BuildProgressStep } from "@/lib/agent/progress";
 import { addDomainToVercelProject } from "@/lib/domains/vercel";
 import { appUrl } from "@/lib/env";
+import { isReservedSlug } from "@/lib/reserved-slugs";
 import { createLocalDemoJob, finishLocalDemoJob, getLocalDemoEventById, getLocalDemoJob, updateLocalDemoJob } from "@/lib/local-demo-store";
 import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord, PageArtifact } from "@/lib/types";
@@ -25,6 +26,7 @@ export async function createEventRecord(input: {
   ownerId?: string | null;
   publish?: boolean;
 }): Promise<{ event: EventRecord | null; error?: string }> {
+  if (isReservedSlug(input.slug)) return { event: null, error: "slug_reserved" };
   const client = await writableClient(input.ownerId);
   if (!client) {
     return { event: null, error: "supabase_not_configured" };
@@ -81,6 +83,7 @@ export async function updateEventRecord(input: {
   config: EventConfig;
   ownerId?: string | null;
 }) {
+  if (input.slug && isReservedSlug(input.slug)) return { event: null as EventRecord | null, error: "slug_reserved" };
   const client = await writableClient(input.ownerId);
   if (!client) return { event: null as EventRecord | null, error: "supabase_not_configured" };
 

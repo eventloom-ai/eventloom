@@ -4,14 +4,14 @@ import { ArrowRight, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { creatorErrorMessage } from "@/lib/creator-errors";
-import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
+import { normalizeSlugInput, normalizeSlugTyping, suggestSlugOrFallback } from "@/lib/slug-suggest";
 
 const MAX_IMAGES = 5;
 
 export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }) {
   const router = useRouter();
   const [prompt, setPrompt] = useState(initialBrief);
-  const [slug, setSlug] = useState(normalizeSlugInput(suggestSlug(initialBrief) || ""));
+  const [slug, setSlug] = useState(() => suggestSlugOrFallback(initialBrief));
   const [slugEdited, setSlugEdited] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [isStarting, setIsStarting] = useState(false);
@@ -34,7 +34,7 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
   async function start() {
     if (!prompt.trim() || isStarting) return;
     setIsStarting(true); setError("");
-    const selectedSlug = slugEdited ? slug : normalizeSlugInput(suggestSlug(prompt) || slug || "my-event");
+    const selectedSlug = slugEdited ? normalizeSlugInput(slug) : suggestSlugOrFallback(prompt) || "my-event";
     try {
       const form = new FormData();
       form.set("prompt", prompt.trim());
@@ -95,7 +95,7 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
         value={prompt}
         onChange={(event) => {
           setPrompt(event.target.value);
-          if (!slugEdited) setSlug(normalizeSlugInput(suggestSlug(event.target.value) || ""));
+          if (!slugEdited) setSlug(suggestSlugOrFallback(event.target.value));
         }}
         rows={7}
         maxLength={8000}
@@ -115,8 +115,9 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
           value={slug}
           onChange={(event) => {
             setSlugEdited(true);
-            setSlug(normalizeSlugInput(event.target.value));
+            setSlug(normalizeSlugTyping(event.target.value));
           }}
+          onBlur={() => setSlug((current) => normalizeSlugInput(current))}
           aria-describedby="event-slug-help"
           className="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm text-[#252329] outline-none"
         />
@@ -161,7 +162,7 @@ export function NewEventStarter({ initialBrief = "" }: { initialBrief?: string }
 
       <button
         type="submit"
-        disabled={!prompt.trim() || slug.length < 3}
+        disabled={!prompt.trim() || normalizeSlugInput(slug).length < 3}
         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 disabled:cursor-not-allowed disabled:bg-violet-200 disabled:text-violet-500 disabled:shadow-none"
       >
         Create editable site

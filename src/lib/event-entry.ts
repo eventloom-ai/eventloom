@@ -1,4 +1,20 @@
+import { formatBriefDateTime } from "@/lib/agent/brief-facts";
+
 const MAX_LANDING_BRIEF_LENGTH = 2_000;
+
+/** Joins the landing composer's description, event type, date and location into one brief that fits the length cap. */
+export function composeLandingBrief({ description, eventTypeLabel, date, location }: { description: string; eventTypeLabel?: string; date?: string; location?: string }) {
+  const label = eventTypeLabel?.trim();
+  const prefix = label ? `${/\bevent$/i.test(label) ? label : `${label} event`}. ` : "";
+  const details = [
+    date?.trim() ? `The event is on ${formatBriefDateTime(date)}.` : "",
+    location?.trim() ? `It will be held at ${location.trim().replace(/[.\s]+$/, "")}.` : "",
+  ].filter(Boolean).join(" ");
+  const room = MAX_LANDING_BRIEF_LENGTH - prefix.length - (details ? details.length + 1 : 0) - 1;
+  const text = description.trim().slice(0, Math.max(0, room)).trim();
+  const body = !details || !text || /[.!?…。؟]["'”’)]*$/.test(text) ? text : `${text}.`;
+  return [`${prefix}${body}`.trim(), details].filter(Boolean).join(" ");
+}
 
 export function eventDraftPath(brief?: string) {
   const trimmed = brief?.trim().slice(0, MAX_LANDING_BRIEF_LENGTH) ?? "";

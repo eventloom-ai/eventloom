@@ -1,4 +1,5 @@
 import { defaultEventConfig } from "@/lib/ai/generator";
+import { briefFacts } from "@/lib/agent/brief-facts";
 import { env, openaiResponsesOptions } from "@/lib/env";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { extractPaletteFromPrompt } from "@/lib/event-theme";
@@ -151,16 +152,21 @@ function promptSupportsFact(value: string | undefined, prompt: string) {
     .some((token) => haystack.includes(token));
 }
 
+const DATE_CUE = /\b(?:today|tomorrow|next\s+\w+)\b|\b\d{4}-\d{2}-\d{2}(?!\d)/i;
+const VENUE_CUE = /\b(?:at|venue|location)\s+(?!(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:a\.?\s?m|p\.?\s?m)\b|\d{1,2}:\d{2}|noon\b|midnight\b)[^,.\n]+/i;
+const TBA_TIME = /^\s*$|to be (?:announced|confirmed)|\btba\b|\btbd\b/i;
+
 export function groundConfigInPrompt(config: EventConfig, prompt: string): EventConfig {
-  const hasDate = /\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{4})?\b|\b\d{4}-\d{2}-\d{2}\b|\b(?:today|tomorrow|next\s+\w+)\b/i.test(prompt);
-  const hasTime = /\b(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:a\.??m\.??|p\.??m\.??)\b|\b(?:noon|midnight)\b/i.test(prompt);
-  const hasVenue = /\b(?:at|venue|location)\s+[^,.\n]+/i.test(prompt) || promptSupportsFact(config.venueName, prompt);
+  const facts = briefFacts(prompt);
+  const hasDate = Boolean(facts.date) || DATE_CUE.test(prompt);
+  const hasTime = Boolean(facts.time);
+  const hasVenue = Boolean(facts.venue) || VENUE_CUE.test(prompt) || promptSupportsFact(config.venueName, prompt);
   const isWedding = /\bwedding\b/i.test(prompt);
   const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
-  const schedule = config.schedule.map((item) => ({
-    ...item,
-    time: hasTime || promptSupportsFact(item.time, prompt) ? item.time : "Time to be announced",
-  }));
+  const schedule = config.schedule.map((item, index) => {
+    const time = hasTime || promptSupportsFact(item.time, prompt) ? item.time : "Time to be announced";
+    return { ...item, time: !hasSeparateHalls && index === 0 && facts.time && TBA_TIME.test(time) ? facts.time : time };
+  });
 
   if (hasSeparateHalls && !schedule.some((item) => /men'?s|women'?s/i.test(`${item.title} ${item.location ?? ""}`))) {
     schedule.push(

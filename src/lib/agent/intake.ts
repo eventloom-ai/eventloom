@@ -1,3 +1,5 @@
+import { briefFacts } from "@/lib/agent/brief-facts";
+
 export type IntakeAnswerKey = "eventName" | "dateAndTime" | "dateTiming" | "venueType" | "venue" | "mensHall" | "womensHall" | "languages";
 
 export type IntakeAnswers = Partial<Record<IntakeAnswerKey, string>>;
@@ -20,7 +22,9 @@ const baseQuestions: IntakeQuestion[] = [
 ];
 
 export function intakeQuestionsForBrief(prompt: string): IntakeQuestion[] {
-  const questions = [...baseQuestions];
+  const facts = briefFacts(prompt);
+  const known: Partial<Record<IntakeAnswerKey, boolean>> = { dateAndTime: Boolean(facts.date), dateTiming: Boolean(facts.time), venue: Boolean(facts.venue) };
+  const questions = baseQuestions.filter((question) => !known[question.id]);
   const isBilingual = /\bbilingual\b|\barabic\b|\benglish\b/i.test(prompt);
   const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
 
@@ -36,6 +40,15 @@ export function intakeQuestionsForBrief(prompt: string): IntakeQuestion[] {
   }
 
   return questions;
+}
+
+export type IntakeAction = "open" | "advance" | "build";
+
+/** What submitting the build form should do: open the questionnaire, move to the next question, or start a (paid) build. */
+export function intakeAction({ refining, showIntake, step, total }: { refining: boolean; showIntake: boolean; step: number; total: number }): IntakeAction {
+  if (refining) return "build";
+  if (!showIntake) return "open";
+  return step < total - 1 ? "advance" : "build";
 }
 
 export function enrichBriefWithIntake(prompt: string, answers: IntakeAnswers) {

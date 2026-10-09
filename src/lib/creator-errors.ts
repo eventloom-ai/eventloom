@@ -2,6 +2,8 @@ export function creatorErrorMessage(code: string | null | undefined, fallback = 
   switch (code) {
     case "slug_taken":
       return "That site address is already in use. Choose another one and try again.";
+    case "slug_reserved":
+      return "That site address is reserved by Eventloom. Choose another one and try again.";
     case "unauthorized":
       return "Your sign-in expired. Sign in again, then continue where you left off.";
     case "forbidden":
