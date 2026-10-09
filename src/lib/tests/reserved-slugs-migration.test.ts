@@ -26,8 +26,9 @@ describe("reserved slug DB constraint", () => {
     expect([...slugs].sort()).toEqual([...RESERVED_SLUGS].sort());
   });
 
-  it("is added NOT VALID so existing rows cannot block the migration", () => {
+  it("only checks inserts and slug changes so legacy rows stay editable", () => {
     const { sql } = latestReservedSlugMigration();
-    expect(sql).toMatch(/add constraint events_slug_not_reserved[\s\S]*\bnot valid;/);
+    expect(sql).toMatch(/before insert or update of slug on public\.events/);
+    expect(sql).toMatch(/new\.slug is not distinct from old\.slug then return new/);
   });
 });
