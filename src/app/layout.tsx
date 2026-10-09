@@ -20,9 +20,12 @@ import { GlobalLegalFooter } from "@/components/global-legal-footer";
 import { env } from "@/lib/env";
 import "./globals.css";
 
+// Only the faces every page renders preload: Outfit (body text app-wide), Inter and Playfair (marketing and app UI).
+// Event-theme faces keep preload: false, so their CSS variables still exist and the files load only on pages that use them.
+
 // Display faces
 const playfair = Playfair_Display({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-playfair-face", display: "swap" });
-const fraunces = Fraunces({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-fraunces-face", display: "swap" });
+const fraunces = Fraunces({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-fraunces-face", display: "swap", preload: false });
 const instrumentSerif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-instrument-serif-face", display: "swap", preload: false });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk-face", display: "swap", preload: false });
 const bricolageGrotesque = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage-grotesque-face", display: "swap", preload: false });
