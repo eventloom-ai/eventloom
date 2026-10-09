@@ -45,22 +45,23 @@ export function ComparisonPage({ competitor }: { competitor: Competitor }) {
         <div className="mx-auto max-w-6xl">
           <p className={eyebrow}>Side by side</p>
           <h2 id="table-heading" className={`${sectionHeading} max-w-2xl`}>Eventloom and {competitor.name}, feature by feature.</h2>
-          <div className="mt-10 overflow-x-auto rounded-2xl border border-[#302821]/10 bg-[#fffaf3] shadow-[0_10px_30px_rgba(65,43,28,0.05)]">
-            <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-6">
+          {/* One semantic table; below md each row stacks into a card so both columns stay readable on a phone. */}
+          <div className="mt-10 rounded-2xl border border-[#302821]/10 bg-[#fffaf3] shadow-[0_10px_30px_rgba(65,43,28,0.05)]">
+            <table className="w-full border-collapse text-left text-sm leading-6 max-md:block">
               <caption className="sr-only">Eventloom compared with {competitor.name}</caption>
-              <thead>
+              <thead className="max-md:sr-only">
                 <tr className="border-b border-[#302821]/15 text-[11px] uppercase tracking-[0.16em] text-[#8a6153]">
-                  <th scope="col" className="w-[22%] p-4 font-semibold sm:p-5">Feature</th>
-                  <th scope="col" className="w-[39%] p-4 font-semibold sm:p-5">Eventloom</th>
-                  <th scope="col" className="w-[39%] p-4 font-semibold sm:p-5">{competitor.name}</th>
+                  <th scope="col" className="w-[22%] p-5 font-semibold">Feature</th>
+                  <th scope="col" className="w-[39%] p-5 font-semibold">Eventloom</th>
+                  <th scope="col" className="w-[39%] p-5 font-semibold">{competitor.name}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="max-md:block">
                 {competitor.rows.map((row) => (
-                  <tr key={row.key} className="border-b border-[#302821]/10 align-top last:border-b-0">
-                    <th scope="row" className="p-4 font-semibold text-[#302821] sm:p-5">{comparisonRowLabels[row.key]}</th>
-                    <td className="p-4 text-[#5f5248] sm:p-5">{eventloomColumn[row.key]}</td>
-                    <td className="p-4 text-[#5f5248] sm:p-5">{row.competitor}</td>
+                  <tr key={row.key} className="border-b border-[#302821]/10 align-top last:border-b-0 max-md:block max-md:p-5">
+                    <th scope="row" className="font-semibold text-[#302821] max-md:block md:p-5">{comparisonRowLabels[row.key]}</th>
+                    <td className="text-[#5f5248] max-md:mt-3 max-md:block md:p-5"><span aria-hidden="true" className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153] md:hidden">Eventloom</span>{eventloomColumn[row.key]}</td>
+                    <td className="text-[#5f5248] max-md:mt-3 max-md:block md:p-5"><span aria-hidden="true" className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a6153] md:hidden">{competitor.name}</span>{row.competitor}</td>
                   </tr>
                 ))}
               </tbody>

@@ -38,7 +38,7 @@ export function CompareHubPage() {
             </div>
             <Link href={GUIDE_PATH} className="inline-flex items-center gap-2 border-b border-[#302821] pb-1 text-sm font-semibold text-[#302821] transition hover:border-[#a37561] hover:text-[#8a6153]">Read the full RSVP builders guide <ArrowRight className="size-4" aria-hidden="true" /></Link>
           </div>
-          <ul className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-[#302821]/10 bg-[#302821]/10 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-[#302821]/10 bg-[#302821]/10 sm:grid-cols-2 lg:grid-cols-4">
             {competitors.map((item) => (
               <li key={item.slug} className="bg-[#fffaf3]">
                 <Link href={comparePath(item.slug)} className="group flex h-full flex-col justify-between gap-6 p-6 transition hover:bg-white">
@@ -51,6 +51,16 @@ export function CompareHubPage() {
                 </Link>
               </li>
             ))}
+            <li className="bg-[#302821]">
+              <Link href={GUIDE_PATH} className="group flex h-full flex-col justify-between gap-6 p-6 text-[#fff9f2] transition hover:bg-[#4a2d2a]">
+                <span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-[#dfb89f]">Roundup</span>
+                  <span className="mt-3 block text-lg font-semibold tracking-[-0.02em]">Best RSVP website builders</span>
+                  <span className="mt-2 block text-sm leading-6 text-[#eadbd0]/70">All seven tools plus Eventloom, sorted by wedding, party, corporate, and free use.</span>
+                </span>
+                <ArrowRight className="size-4 text-[#dfb89f] transition group-hover:translate-x-1" aria-hidden="true" />
+              </Link>
+            </li>
           </ul>
         </div>
       </section>
