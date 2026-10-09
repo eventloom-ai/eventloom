@@ -5,17 +5,17 @@ import type { BuildProgressEvent, BuildProgressReporter } from "@/lib/agent/prog
 import { applyImagesToConfig } from "@/lib/agent/parse-build-form";
 import { getAgentRuntime } from "@/lib/agent/runtime";
 import { saveLocalDemoEvent } from "@/lib/local-demo-store";
+import { composeSiteDocument } from "@/lib/site-document";
+import { seedInitialRevision } from "@/lib/studio-store";
 import type { ThemeOverrides } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
 import {
   createEventRecord,
   finishGenerationJob,
-  generateArtifactForConfig,
   getEventRecord,
   previewUrls,
   publishEventRecord,
   saveEventVersion,
-  savePageArtifact,
   updateEventConfig,
   updateEventRecord,
   updateGenerationJobProgress,
@@ -43,7 +43,6 @@ export type BuildSiteResult =
       event: EventRecord;
       preview: { slugPath: string; subdomain: string };
       runtime: ReturnType<typeof getAgentRuntime>;
-      artifactModel: string;
     }
   | {
       ok: false;
@@ -109,13 +108,15 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
       progressPercent: progressForStep("planned"),
     });
 
-    await report(input, { step: "generating", message: "Generating your page content…", progressPercent: progressForStep("generating") });
-    const artifact = await generateArtifactForConfig(config, input.prompt, input.images ?? []);
+    // Published pages render the structured site document, so compose it from the plan instead of generating a separate HTML artifact.
+    await report(input, { step: "generating", message: "Composing your page…", progressPercent: progressForStep("generating") });
+    // Reference photos arrive as data: URLs, which site documents reject; they stay on the config only.
+    const documentImage = config.heroImageUrl && /^(?:https:\/\/|\/)/i.test(config.heroImageUrl) ? config.heroImageUrl : undefined;
+    const document = composeSiteDocument({ ...config, heroImageUrl: documentImage }, input.prompt);
     await report(input, {
       step: "generating",
       phase: "content_ready",
       message: "Page content ready.",
-      model: artifact.model,
       progressPercent: progressForStep("generating", "content_ready"),
     });
 
@@ -126,7 +127,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
         status: "draft",
         rsvp_open: false,
         config,
-        artifact,
+        document,
       };
       saveLocalDemoEvent(event);
       await report(input, {
@@ -146,7 +147,6 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
         event,
         preview: previewUrls(input.slug),
         runtime,
-        artifactModel: artifact.model,
       };
     }
 
@@ -217,10 +217,10 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
 
     await report(input, { step: "saving", phase: "event_saved", message: "Event saved. Writing version history…", progressPercent: progressForStep("saving", "event_saved") });
 
-    await saveEventVersion(event.id, input.prompt, config, input.ownerId ?? null);
-    await report(input, { step: "saving", phase: "version_saved", message: "Saving page content and images…", progressPercent: progressForStep("saving", "version_saved") });
+    if (input.existingEventId) await saveEventVersion(event.id, input.prompt, config, input.ownerId ?? null);
+    else await seedInitialRevision(event, input.ownerId ?? null, { document, config, prompt: input.prompt, summary: "Created the first original version" });
+    await report(input, { step: "saving", phase: "version_saved", message: "Saving images…", progressPercent: progressForStep("saving", "version_saved") });
 
-    await savePageArtifact(event.id, artifact, input.publish ? "published" : "draft", input.ownerId ?? null);
     await uploadEventImages(event.id, input.images ?? [], input.ownerId ?? null);
     await updateEventConfig(event.id, config, input.ownerId ?? null);
 
@@ -248,10 +248,9 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     return {
       ok: true,
       mode: "production",
-      event: { ...event, artifact },
+      event: { ...event, document },
       preview,
       runtime,
-      artifactModel: artifact.model,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "build_failed";
