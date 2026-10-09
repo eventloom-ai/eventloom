@@ -166,11 +166,15 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
 }
 
 export async function executeStudioRun(input: { jobId: string; eventId: string; ownerId: string; prompt: string; selectedNodeIds: string[] }) {
+  // Once the provider has been called the credit is consumed, even if the run is cancelled or fails afterwards.
+  let providerCalled = false;
   try {
     const state = await loadStudioState(input.eventId, input.ownerId);
     if (!state) throw new Error("event_not_found");
     const run = await getStudioRun(input.jobId);
+    if (run?.cancel_requested) throw new Error("run_cancelled");
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "analyzing", message: run?.kind === "initial" ? "Designing your site from the brief…" : "Understanding your request…" });
+    providerCalled = Boolean(env.openaiApiKey());
     if (run?.kind === "initial") {
       const original = await generateOriginalSite(input.prompt, state.revision.config);
       const beforeCommit = await getStudioRun(input.jobId);
@@ -194,10 +198,10 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "applying", message: edit.summary });
     const config = Object.keys(edit.eventPatch).length ? applyEventDetailsPatch(state.revision.config, edit.eventPatch) : state.revision.config;
     const applied = edit.operations.length ? applySiteOperations(state.revision.document, edit.operations) : { document: state.revision.document, changedNodeIds: [] };
-    await appendRunEvent(input.jobId, input.eventId, "patch", { document: applied.document, config, changedNodeIds: applied.changedNodeIds, summary: edit.summary });
 
     const beforeCommit = await getStudioRun(input.jobId);
     if (beforeCommit?.cancel_requested) throw new Error("run_cancelled");
+    await appendRunEvent(input.jobId, input.eventId, "patch", { document: applied.document, config, changedNodeIds: applied.changedNodeIds, summary: edit.summary });
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "saving", message: "Validating and saving this version…" });
     const committed = await commitStudioRevision({ eventId: input.eventId, ownerId: input.ownerId, baseVersionId: state.revision.id, document: applied.document, config, source: "ai", summary: edit.summary, prompt: input.prompt });
     if (!committed.ok) throw new Error(committed.error);
@@ -209,6 +213,6 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
     const cancelled = message === "run_cancelled";
     await updateStudioRun(input.jobId, { status: "failed", error: message, progress_step: "error", progress_message: cancelled ? "Stopped" : "The edit could not be applied.", completed_at: new Date().toISOString() });
     await appendRunEvent(input.jobId, input.eventId, cancelled ? "cancelled" : "error", { message: cancelled ? "Stopped before saving changes." : message });
-    await refundBuildCredit(input.ownerId, input.eventId, input.jobId);
+    if (!providerCalled) await refundBuildCredit(input.ownerId, input.eventId, input.jobId);
   }
 }
