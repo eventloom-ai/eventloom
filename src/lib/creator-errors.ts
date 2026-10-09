@@ -22,7 +22,7 @@ export function creatorErrorMessage(code: string | null | undefined, fallback = 
     case "not_found":
       return "This event is no longer available here. Return to My events and open it again.";
     case "invalid_image":
-      return "Use a PNG, JPEG, WebP, or GIF image smaller than 10 MB.";
+      return "Use a PNG, JPEG, or WebP image smaller than 10 MB.";
     case "upload_failed":
       return "We couldn’t save that image. Try a smaller image or a different file.";
     case "network_error":
