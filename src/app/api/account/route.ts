@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { serviceSupabase } from "@/lib/supabase/server";
 import { isEventAssetPath } from "@/lib/asset-paths";
@@ -18,9 +19,11 @@ async function verifiedCreator() {
   return auth?.emailVerified && hasRequiredMfa(auth) ? auth : null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await verifiedCreator();
   if (!auth) return NextResponse.json({ error: "mfa_required" }, { status: 403 });
+  const limited = await enforceRateLimit(request, RATE_LIMITS.export, { userId: auth.user.id });
+  if (limited) return limited;
   const client = serviceSupabase();
   if (!client) return NextResponse.json({ error: "unavailable" }, { status: 503 });
   const userId = auth.user.id;
@@ -68,6 +71,8 @@ export async function PATCH(request: NextRequest) {
   const auth = await getAuthContext();
   if (!auth) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!auth.emailVerified) return NextResponse.json({ error: "email_verification_required" }, { status: 403 });
+  const limited = await enforceRateLimit(request, RATE_LIMITS.profileUpdate, { userId: auth.user.id });
+  if (limited) return limited;
   const client = serviceSupabase();
   if (!client) return NextResponse.json({ error: "unavailable" }, { status: 503 });
   const { data, error } = await client
@@ -95,6 +100,8 @@ export async function DELETE(request: NextRequest) {
   }
   const auth = await verifiedCreator();
   if (!auth) return NextResponse.json({ error: "mfa_required" }, { status: 403 });
+  const limited = await enforceRateLimit(request, RATE_LIMITS.accountDelete, { userId: auth.user.id });
+  if (limited) return limited;
   const body = await request.json().catch(() => null) as { confirmation?: unknown } | null;
   if (body?.confirmation !== "DELETE MY ACCOUNT") {
     return NextResponse.json({ error: "confirmation_required" }, { status: 400 });

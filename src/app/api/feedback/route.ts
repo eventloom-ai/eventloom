@@ -3,6 +3,7 @@ import { z } from "zod";
 import { reportOperationalEvent } from "@/lib/monitoring";
 import { getAuthContext } from "@/lib/security/auth";
 import { clientIpHash, isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { verifyTurnstile } from "@/lib/security/turnstile";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 import { serviceSupabase } from "@/lib/supabase/server";
@@ -19,6 +20,8 @@ export async function POST(request: NextRequest) {
   if (!isSameOriginMutation(request) || !requestWithinLimit(request, 10_000)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
+  const limited = await enforceRateLimit(request, RATE_LIMITS.feedback);
+  if (limited) return limited;
 
   const raw = await readJsonWithinLimit(request, 10_000);
   if (!raw.ok) {

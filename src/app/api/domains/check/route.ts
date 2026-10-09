@@ -4,11 +4,14 @@ import { domainPriceCapUsd, publicDomainPurchasingEnabled } from "@/lib/env";
 import { domainSchema, evaluateDomainQuote } from "@/lib/validation";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(req: NextRequest) {
   if (!publicDomainPurchasingEnabled()) return NextResponse.json({ error: "unavailable" }, { status: 503 });
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!requestWithinLimit(req, 8_192)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.domainLookup);
+  if (limited) return limited;
   const auth = await getAuthContext();
   if (!auth) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!auth.emailVerified || !hasRequiredMfa(auth)) return NextResponse.json({ error: "mfa_required" }, { status: 403 });

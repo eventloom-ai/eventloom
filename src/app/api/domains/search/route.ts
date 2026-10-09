@@ -3,9 +3,12 @@ import { domainProvider } from "@/lib/domains/provider";
 import { domainPriceCapUsd, publicDomainPurchasingEnabled } from "@/lib/env";
 import { evaluateDomainQuote } from "@/lib/validation";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export async function GET(req: NextRequest) {
   if (!publicDomainPurchasingEnabled()) return NextResponse.json({ error: "unavailable" }, { status: 503 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.domainLookup);
+  if (limited) return limited;
   const auth = await getAuthContext();
   if (!auth) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!auth.emailVerified || !hasRequiredMfa(auth)) return NextResponse.json({ error: "mfa_required" }, { status: 403 });

@@ -20,6 +20,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: (task: () => Promise<unknown>) => { mocks.after.push(task); } }));
 vi.mock("@/lib/supabase/server", () => ({ serviceSupabase: () => mocks.fake.client, getServerUser: async () => mocks.user, createSupabaseServerClient: async () => null }));
+// Limits have their own tests (rate-limit.test.ts); here every request is within them.
+vi.mock("@/lib/security/rate-limit", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/security/rate-limit")>()), enforceRateLimit: async () => null }));
 vi.mock("@/lib/env", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/env")>();
   return { ...actual, openaiResponsesOptions: () => ({ model: "test-model" }), env: { ...actual.env, openaiApiKey: () => mocks.key } };

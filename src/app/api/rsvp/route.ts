@@ -5,11 +5,14 @@ import { validateRsvpPayload } from "@/lib/validation";
 import { publicRsvpEnabled } from "@/lib/env";
 import { verifyPublicRsvpToken } from "@/lib/security/rsvp-token";
 import { clientIpHash, readJsonWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { verifyTurnstile } from "@/lib/security/turnstile";
 import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 export async function POST(req: NextRequest) {
   if (!publicRsvpEnabled()) return NextResponse.json({ error: "unavailable" }, { status: 503 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.rsvpSubmit);
+  if (limited) return limited;
   const parsedBody = await readJsonWithinLimit(req, 32_768);
   if (!parsedBody.ok) return NextResponse.json({ error: "invalid" }, { status: parsedBody.error === "payload_too_large" ? 413 : 400 });
   const body = parsedBody.data;

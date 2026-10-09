@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { isSameOriginMutation } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { serviceSupabase } from "@/lib/supabase/server";
 
@@ -9,6 +10,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const { eventId, submissionId } = await params;
   const auth = await getAuthContext();
   if (!auth?.emailVerified || !hasRequiredMfa(auth)) return NextResponse.json({ error: "mfa_required" }, { status: 403 });
+  const limited = await enforceRateLimit(request, RATE_LIMITS.rsvpDelete, { userId: auth.user.id });
+  if (limited) return limited;
   const client = serviceSupabase();
   if (!client) return NextResponse.json({ error: "unavailable" }, { status: 503 });
   const { data: event } = await client.from("events").select("id").eq("id", eventId).eq("owner_id", auth.user.id).maybeSingle();

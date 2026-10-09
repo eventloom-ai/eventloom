@@ -6,6 +6,7 @@ import { siteDocumentSchema } from "@/lib/site-document";
 import { canEditEvent, commitStudioRevision, loadStudioState } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
@@ -21,6 +22,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ev
   const { eventId } = await params;
   const user = await getServerUser();
   if (!(await canEditEvent(eventId, user?.id ?? null))) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.studioAutosave, { userId: user?.id });
+  if (limited) return limited;
   const body = await req.json().catch(() => null) as { baseVersionId?: string; document?: unknown; operations?: unknown; eventPatch?: unknown; design?: unknown; adoptDesign?: boolean; summary?: string } | null;
   if (!body?.baseVersionId || (!body.document && !body.operations && !body.eventPatch && !body.design && body.adoptDesign !== true)) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const state = await loadStudioState(eventId, user?.id ?? null);

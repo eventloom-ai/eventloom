@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn(async () => ({ data: "org-1", error
 vi.mock("@/lib/security/auth", () => ({ getAuthContext: async () => ({ emailVerified: true, user: { id: "user-1" } }) }));
 vi.mock("@/lib/security/audit", () => ({ recordAuditEvent: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ serviceSupabase: () => ({ rpc: mocks.rpc }) }));
+// Limits have their own tests (rate-limit.test.ts); here every request is within them.
+vi.mock("@/lib/security/rate-limit", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/security/rate-limit")>()), enforceRateLimit: async () => null }));
 
 import { POST } from "@/app/api/organizations/route";
 

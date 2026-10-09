@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
   const reapedGenerationJobs = await reapStaleGenerationJobs();
   const feedbackHashCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const feedbackSlaCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, staleFeedbackResult, retryEventsResult] = await Promise.all([
+  const [purgeResult, registrantResult, feedbackHashResult, retryResult, overduePrivacyResult, staleFeedbackResult, retryEventsResult, rateLimitResult] = await Promise.all([
     client.rpc("purge_expired_rsvp_data"),
     client.from("domain_registrant_payloads").delete({ count: "exact" }).lt("expires_at", now),
     client.from("product_feedback").update({ ip_hash: null }, { count: "exact" }).lt("created_at", feedbackHashCutoff).not("ip_hash", "is", null),
@@ -53,9 +53,14 @@ export async function GET(request: NextRequest) {
     client.from("privacy_requests").select("id", { count: "exact", head: true }).not("status", "in", '("completed","denied")').lte("due_at", now),
     client.from("product_feedback").select("id", { count: "exact", head: true }).in("status", ["new", "reviewing", "planned"]).lte("created_at", feedbackSlaCutoff),
     client.from("provider_webhook_events").select("id, provider_event_id, attempt_count").eq("provider", "stripe").eq("status", "retry").order("received_at").limit(5),
+    // Rate-limit windows are at most a day; rows older than two days are dead weight.
+    client.rpc("purge_rate_limit_hits"),
   ]);
+  // PGRST202: migration 20261009120000 not applied yet — not a reason to fail the whole run.
+  const rateLimitPurgeError = rateLimitResult.error?.code === "PGRST202" ? null : rateLimitResult.error;
+  if (rateLimitResult.error && !rateLimitPurgeError) reportOperationalEvent("warn", "rate_limit_purge_missing", { code: rateLimitResult.error.code });
 
-  if (purgeResult.error || registrantResult.error || feedbackHashResult.error || retryResult.error || overduePrivacyResult.error || staleFeedbackResult.error || retryEventsResult.error) {
+  if (purgeResult.error || registrantResult.error || feedbackHashResult.error || retryResult.error || overduePrivacyResult.error || staleFeedbackResult.error || retryEventsResult.error || rateLimitPurgeError) {
     reportOperationalEvent("error", "maintenance_failed", {
       purgeError: purgeResult.error?.code,
       registrantError: registrantResult.error?.code,
@@ -64,6 +69,7 @@ export async function GET(request: NextRequest) {
       privacyError: overduePrivacyResult.error?.code,
       feedbackQueueError: staleFeedbackResult.error?.code,
       providerRetryError: retryEventsResult.error?.code,
+      rateLimitPurgeError: rateLimitPurgeError?.code,
     });
     await markFailed("maintenance_query_failed");
     return NextResponse.json({ error: "maintenance_failed" }, { status: 500 });
@@ -120,6 +126,7 @@ export async function GET(request: NextRequest) {
     staleFeedback,
     replayedEvents,
     reapedGenerationJobs,
+    purgedRateLimitHits: Number(rateLimitResult.data ?? 0),
   });
 
   return NextResponse.json({
@@ -132,5 +139,6 @@ export async function GET(request: NextRequest) {
     feedback_items_past_sla: staleFeedback,
     replayed_provider_events: replayedEvents,
     reaped_generation_jobs: reapedGenerationJobs,
+    purged_rate_limit_hits: Number(rateLimitResult.data ?? 0),
   });
 }

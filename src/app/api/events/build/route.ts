@@ -4,6 +4,7 @@ import { startBuildJob } from "@/lib/agent/start-build";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const maxDuration = 300;
 
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest) {
   if (hasSupabasePublicEnv() && !ownerId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  const limited = await enforceRateLimit(req, RATE_LIMITS.aiGeneration, { userId: ownerId });
+  if (limited) return limited;
   const result = await startBuildJob(parsed, ownerId, startedAt);
 
   if (!result.ok) {

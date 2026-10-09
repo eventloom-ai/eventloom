@@ -1,15 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { safeCsvCell } from "@/lib/csv";
 import { serviceSupabase } from "@/lib/supabase/server";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ eventId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
   const auth = await getAuthContext();
   if (!auth?.emailVerified || !hasRequiredMfa(auth)) return NextResponse.json({ error: "mfa_required" }, { status: 403 });
+  const limited = await enforceRateLimit(request, RATE_LIMITS.export, { userId: auth.user.id });
+  if (limited) return limited;
   const client = serviceSupabase();
   if (!client) return NextResponse.json({ error: "unavailable" }, { status: 503 });
   const { data: event } = await client.from("events").select("id, slug, owner_id").eq("id", eventId).eq("owner_id", auth.user.id).maybeSingle();

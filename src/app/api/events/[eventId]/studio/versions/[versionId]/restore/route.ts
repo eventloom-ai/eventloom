@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { canEditEvent, commitStudioRevision, loadStudioState } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string; versionId: string }> }) {
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -9,6 +10,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   const { eventId, versionId } = await params;
   const user = await getServerUser();
   if (!(await canEditEvent(eventId, user?.id ?? null))) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.studioRestore, { userId: user?.id });
+  if (limited) return limited;
   const body = await req.json().catch(() => null) as { baseVersionId?: string } | null;
   const state = await loadStudioState(eventId, user?.id ?? null);
   if (!state) return NextResponse.json({ error: "not_found" }, { status: 404 });

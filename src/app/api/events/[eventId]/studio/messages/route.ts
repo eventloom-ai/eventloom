@@ -7,6 +7,7 @@ import { executeStudioRun } from "@/lib/studio-agent";
 import { canEditEvent, createBuilderMessage, createStudioRun, loadStudioState, updateStudioRun } from "@/lib/studio-store";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const maxDuration = 300;
 
@@ -17,6 +18,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   const { eventId } = await params;
   const user = await getServerUser();
   if (!user || !(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.aiGeneration, { userId: user.id });
+  if (limited) return limited;
   const body = await req.json().catch(() => null) as { message?: string; baseVersionId?: string; selectedNodeIds?: string[] } | null;
   const message = body?.message?.trim() ?? "";
   if (!message || !body?.baseVersionId) return NextResponse.json({ error: "invalid" }, { status: 400 });

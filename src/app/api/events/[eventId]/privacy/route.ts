@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canEditEvent } from "@/lib/studio-store";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { isSameOriginMutation, readJsonWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { syncEventRsvpDeadline } from "@/lib/rsvp-deadline-sync";
 
@@ -20,6 +21,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { eventId } = await params;
   const user = await getServerUser();
   if (!user || !(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const limited = await enforceRateLimit(request, RATE_LIMITS.eventSettings, { userId: user.id });
+  if (limited) return limited;
   const parsedBody = await readJsonWithinLimit(request, 4_096);
   const parsed = parsedBody.ok ? settingsSchema.safeParse(parsedBody.data) : null;
   if (!parsed?.success || new Date(parsed.data.endsAt) <= new Date()) return NextResponse.json({ error: "invalid_request" }, { status: 400 });

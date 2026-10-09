@@ -3,6 +3,7 @@ import { processAndStoreEventImage, storeDemoEventImage } from "@/lib/event-asse
 import { canEditEvent } from "@/lib/studio-store";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
 
   if (!client) {
     if (!(await canEditEvent(eventId, null))) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const limited = await enforceRateLimit(req, RATE_LIMITS.assetUpload);
+    if (limited) return limited;
     const form = await req.formData();
     const file = form.get("image");
     if (!(file instanceof File)) return NextResponse.json({ error: "invalid_image" }, { status: 400 });
@@ -24,6 +27,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
 
   const user = await getServerUser();
   if (!user || !(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.assetUpload, { userId: user.id });
+  if (limited) return limited;
   const form = await req.formData();
   const file = form.get("image");
   if (!(file instanceof File)) return NextResponse.json({ error: "invalid_image" }, { status: 400 });

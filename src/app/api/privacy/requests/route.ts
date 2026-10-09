@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyTurnstile } from "@/lib/security/turnstile";
 import { clientIpHash, isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { encryptSensitiveJson } from "@/lib/security/encryption";
 import { getAuthContext } from "@/lib/security/auth";
 import { serviceSupabase } from "@/lib/supabase/server";
@@ -20,6 +21,8 @@ export async function POST(request: NextRequest) {
   if (!isSameOriginMutation(request) || !requestWithinLimit(request, 12_000)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
+  const limited = await enforceRateLimit(request, RATE_LIMITS.privacyRequest);
+  if (limited) return limited;
   const parsedBody = await readJsonWithinLimit(request, 12_000);
   if (!parsedBody.ok) return NextResponse.json({ error: "invalid_request" }, { status: parsedBody.error === "payload_too_large" ? 413 : 400 });
   const parsed = requestSchema.safeParse(parsedBody.data);

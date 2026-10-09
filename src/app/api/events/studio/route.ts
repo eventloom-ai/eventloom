@@ -13,6 +13,7 @@ import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { createBuilderMessage, createStudioRun, seedInitialRevision, updateStudioRun } from "@/lib/studio-store";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const maxDuration = 300;
 
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest) {
   if (!requestWithinLimit(req, 45 * 1024 * 1024)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const user = await getServerUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.aiGeneration, { userId: user.id });
+  if (limited) return limited;
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const prompt = String(form.get("prompt") ?? "").trim();

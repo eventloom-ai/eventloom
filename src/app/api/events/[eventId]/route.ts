@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { isSameOriginMutation } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { isEventAssetPath } from "@/lib/asset-paths";
 
@@ -24,6 +25,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (!user || !client) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
+  const limited = await enforceRateLimit(request, RATE_LIMITS.eventDelete, { userId: user.id });
+  if (limited) return limited;
 
   const { data: event } = await client
     .from("events")

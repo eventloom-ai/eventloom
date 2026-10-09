@@ -6,6 +6,7 @@ import { canEditEvent } from "@/lib/studio-store";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { hasCreatorLegalOnboarding } from "@/lib/security/creator-legal";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { legalIdentityConfigured, publicCheckoutEnabled } from "@/lib/env";
 import { domainRegistrantSchema } from "@/lib/domains/registrant";
 import { clientIpHash } from "@/lib/security/request";
@@ -23,6 +24,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   const auth = await getAuthContext();
   const user = auth?.user;
   if (!auth || !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.checkout, { userId: user.id });
+  if (limited) return limited;
   if (!auth.emailVerified || !hasRequiredMfa(auth)) return NextResponse.json({ error: "mfa_required" }, { status: 403 });
   if (!(await hasCreatorLegalOnboarding(auth.user.id))) return NextResponse.json({ error: "legal_onboarding_required" }, { status: 403 });
   if (!(await canEditEvent(eventId, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });

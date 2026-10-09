@@ -3,12 +3,15 @@ import { LEGAL_VERSION } from "@/lib/legal-documents";
 import { getAuthContext } from "@/lib/security/auth";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { clientIpHash, isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { serviceSupabase } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginMutation(request) || !requestWithinLimit(request, 2_000)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const auth = await getAuthContext();
   if (!auth?.emailVerified) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const limited = await enforceRateLimit(request, RATE_LIMITS.legalAccept, { userId: auth.user.id });
+  if (limited) return limited;
   const parsedBody = await readJsonWithinLimit<{ age18?: unknown; accepted?: unknown; version?: unknown }>(request, 2_000);
   if (!parsedBody.ok) return NextResponse.json({ error: "invalid_request" }, { status: parsedBody.error === "payload_too_large" ? 413 : 400 });
   const body = parsedBody.data;

@@ -6,6 +6,7 @@ import { isEventOwner } from "@/lib/payments/billing";
 import { legalIdentityConfigured, publicCheckoutEnabled } from "@/lib/env";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { clientIpHash, isSameOriginMutation, readJsonWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 import { domainRegistrantSchema } from "@/lib/domains/registrant";
 import { hasCreatorLegalOnboarding } from "@/lib/security/creator-legal";
 import { hasCompleteEventPrivacyNotice } from "@/lib/privacy/event-privacy";
@@ -23,6 +24,8 @@ export async function POST(req: NextRequest) {
   const auth = await getAuthContext();
   const user = auth?.user ?? await getServerUser();
   if (!auth || !user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.checkout, { userId: user.id });
+  if (limited) return limited;
   if (!auth.emailVerified || !hasRequiredMfa(auth)) return NextResponse.json({ error: "mfa_required" }, { status: 403 });
   if (!(await hasCreatorLegalOnboarding(user.id))) return NextResponse.json({ error: "legal_onboarding_required" }, { status: 403 });
   if (!(await hasCompleteEventPrivacyNotice(body.event_id))) return NextResponse.json({ error: "event_privacy_notice_required" }, { status: 409 });

@@ -3,6 +3,7 @@ import { parseBuildForm } from "@/lib/agent/parse-build-form";
 import { startBuildJob } from "@/lib/agent/start-build";
 import { getServerUser } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
+import { RATE_LIMITS, enforceRateLimit } from "@/lib/security/rate-limit";
 
 export const maxDuration = 300;
 
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest) {
   if (!requestWithinLimit(req, 12 * 1024 * 1024)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const user = await getServerUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const limited = await enforceRateLimit(req, RATE_LIMITS.aiGeneration, { userId: user.id });
+  if (limited) return limited;
   const contentType = req.headers.get("content-type") ?? "";
   const form = contentType.includes("multipart/form-data") ? await req.formData() : null;
   const body = form
