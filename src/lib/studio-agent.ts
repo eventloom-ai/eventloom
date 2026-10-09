@@ -156,7 +156,7 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      ...openaiResponsesOptions(),
+      ...openaiResponsesOptions("studio-edit"),
       input: [
         { role: "system", content: "You are Eventloom's visual editing agent. Make the smallest safe set of changes that satisfies the request. Preserve all unrelated nodes and event facts. Never invent names, dates, times, venues, addresses, or URLs. Use only node IDs that exist. Prefer updating the selected nodes when selection is present. In update_style, set every style key you are not changing to null; to clear an existing style value, list its key in removeStyleKeys. Return concise user-facing copy." },
         { role: "user", content: JSON.stringify({ request: prompt, selectedNodeIds, event: config, document, recentConversation: messages.slice(-8).map((message) => ({ role: message.role, content: message.content })) }) },
@@ -312,7 +312,7 @@ async function requestDesignEdit(prompt: string, config: EventConfig, design: Ev
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      ...openaiResponsesOptions(),
+      ...openaiResponsesOptions("studio-edit"),
       input: [
         { role: "system", content: "You are Eventloom's design assistant for a page built from an approved design system. Make the smallest change that satisfies the request. You can switch the style or the palette (only from the listed keys; a palette must belong to the chosen style), rewrite or clear page copy, show, hide or reorder sections, and pick a section layout from its allowed variants. You never set colors, fonts or sizes. In design, null and empty arrays mean unchanged; list content keys in clearContent only to remove copy. In eventPatch, null means unchanged. Never invent names, dates, times, venues, addresses, URLs, dress codes or policies the host didn't give. Hero and RSVP can never be hidden. Return concise user-facing copy." },
         { role: "user", content: JSON.stringify({ request: prompt, selectedSections, event: { ...config, design: undefined }, design, styles, sectionVariants: SECTION_VARIANTS, recentConversation: messages.slice(-8).map((message) => ({ role: message.role, content: message.content })) }) },

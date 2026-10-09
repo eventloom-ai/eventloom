@@ -320,8 +320,7 @@ export async function generateOriginalSite(prompt: string, config: EventConfig, 
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      ...openaiResponsesOptions(),
-      reasoning: { effort: "xhigh" },
+      ...openaiResponsesOptions("original-site"),
       input: [
         { role: "system", content: ART_DIRECTOR },
         { role: "user", content: JSON.stringify({ brief: prompt, knownFacts: config, instruction: "Design the complete page now. concept should name the composition in one sentence." }) },

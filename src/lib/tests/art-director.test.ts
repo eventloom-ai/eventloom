@@ -4,7 +4,8 @@ const mocks = vi.hoisted(() => ({ key: "" }));
 vi.mock("@/lib/env", () => ({
   AI_REQUEST_TIMEOUT_MS: 240_000,
   env: { openaiApiKey: () => mocks.key },
-  openaiResponsesOptions: () => ({ model: "test", reasoning: { effort: "high" } }),
+  // Only the art-director purpose resolves to low effort, so the assertion below proves the purpose is passed.
+  openaiResponsesOptions: (purpose: string) => ({ model: "test", reasoning: { effort: purpose === "art-director" ? "low" : "high" } }),
 }));
 
 import { artDirectEvent, dressCodeFromBrief, fallbackDesignContent, fallbackEventDesign } from "@/lib/agent/art-director";

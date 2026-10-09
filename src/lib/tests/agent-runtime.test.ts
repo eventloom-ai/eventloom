@@ -7,6 +7,7 @@ vi.mock("@/lib/domains/provider", () => ({
 }));
 
 import { getAgentRuntime, getVerifiedAgentRuntime } from "@/lib/agent/runtime";
+import { openaiResponsesOptions } from "@/lib/env";
 
 const originalEnv = { ...process.env };
 
@@ -75,15 +76,36 @@ describe("agent domain-selling capability", () => {
 });
 
 describe("agent model defaults", () => {
-  it("defaults to gpt-5.6-luna at high reasoning effort", () => {
-    delete process.env.OPENAI_MODEL;
-    delete process.env.AI_MODEL;
-    delete process.env.OPENAI_REASONING_EFFORT;
-    delete process.env.AI_REASONING_EFFORT;
+  function clearAiEnv() {
+    for (const name of Object.keys(process.env)) {
+      if (/^(OPENAI|AI)_(MODEL|REASONING_EFFORT)/.test(name)) delete process.env[name];
+    }
+  }
+
+  it("defaults to gpt-5.6-luna with per-call reasoning effort", () => {
+    clearAiEnv();
 
     expect(getAgentRuntime()).toMatchObject({
       model: "gpt-5.6-luna",
-      reasoningEffort: "high",
+      reasoningEffort: { planner: "low", "art-director": "low", "original-site": "medium", "studio-edit": "medium" },
     });
+    expect(openaiResponsesOptions("planner")).toEqual({ model: "gpt-5.6-luna", reasoning: { effort: "low" } });
+  });
+
+  it("lets a global override force every call and a per-purpose override win over it", () => {
+    clearAiEnv();
+    process.env.OPENAI_REASONING_EFFORT = "high";
+    process.env.OPENAI_REASONING_EFFORT_STUDIO_EDIT = "xhigh";
+
+    expect(getAgentRuntime().reasoningEffort).toEqual({ planner: "high", "art-director": "high", "original-site": "high", "studio-edit": "xhigh" });
+  });
+
+  it("ignores invalid overrides", () => {
+    clearAiEnv();
+    process.env.AI_REASONING_EFFORT = "turbo";
+    process.env.OPENAI_REASONING_EFFORT_PLANNER = "lots";
+
+    expect(openaiResponsesOptions("planner").reasoning).toEqual({ effort: "low" });
+    expect(openaiResponsesOptions("original-site").reasoning).toEqual({ effort: "medium" });
   });
 });

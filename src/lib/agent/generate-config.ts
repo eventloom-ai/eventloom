@@ -83,7 +83,7 @@ export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOve
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      ...openaiResponsesOptions(),
+      ...openaiResponsesOptions("planner"),
       input: [
         {
           role: "system",

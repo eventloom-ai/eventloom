@@ -230,9 +230,8 @@ export async function artDirectEvent(input: { prompt: string; config: EventConfi
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      ...openaiResponsesOptions(),
-      // A short, closed-set choice plus a few lines of copy: low effort keeps the build fast.
-      reasoning: { effort: "low" },
+      // A short, closed-set choice plus a few lines of copy: low effort (the default) keeps the build fast.
+      ...openaiResponsesOptions("art-director"),
       input: [
         { role: "system", content: SYSTEM },
         {

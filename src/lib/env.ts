@@ -120,19 +120,48 @@ function aiModel() {
   return read("OPENAI_MODEL") || read("AI_MODEL") || "gpt-5.6-luna";
 }
 
-function aiReasoningEffort(): AiReasoningEffort {
-  const value = (read("OPENAI_REASONING_EFFORT") || read("AI_REASONING_EFFORT") || "high").toLowerCase();
-  return (AI_REASONING_EFFORTS as readonly string[]).includes(value) ? (value as AiReasoningEffort) : "high";
+/**
+ * Every OpenAI call names its purpose so it gets a reasoning effort sized to the job (see DECISIONS.md,
+ * 2026-10-09). Reasoning tokens are the bulk of the bill and of the latency, and a build is one flat credit.
+ * - planner: extracts facts and a palette from the brief into a fixed schema.
+ * - art-director: picks a style/palette from a closed set and writes a few lines of copy.
+ * - original-site: composes a whole page document (studio create, "start over").
+ * - studio-edit: applies one requested change to an existing page.
+ */
+export type AiCallPurpose = "planner" | "art-director" | "original-site" | "studio-edit";
+
+export const DEFAULT_AI_REASONING_EFFORT: Record<AiCallPurpose, AiReasoningEffort> = {
+  planner: "low",
+  "art-director": "low",
+  "original-site": "medium",
+  "studio-edit": "medium",
+};
+
+function parseEffort(value: string): AiReasoningEffort | null {
+  const normalized = value.toLowerCase();
+  return (AI_REASONING_EFFORTS as readonly string[]).includes(normalized) ? (normalized as AiReasoningEffort) : null;
+}
+
+/**
+ * Precedence: OPENAI_REASONING_EFFORT_<PURPOSE> (e.g. OPENAI_REASONING_EFFORT_STUDIO_EDIT), then the global
+ * OPENAI_REASONING_EFFORT / AI_REASONING_EFFORT (forces every call), then the per-purpose default.
+ * Invalid values are ignored.
+ */
+function aiReasoningEffort(purpose: AiCallPurpose = "studio-edit"): AiReasoningEffort {
+  const perPurpose = read(`OPENAI_REASONING_EFFORT_${purpose.toUpperCase().replace(/-/g, "_")}`);
+  return parseEffort(perPurpose)
+    ?? parseEffort(read("OPENAI_REASONING_EFFORT") || read("AI_REASONING_EFFORT"))
+    ?? DEFAULT_AI_REASONING_EFFORT[purpose];
 }
 
 // Per-call cap for one provider request. AI routes run with maxDuration 300s, so calls in one request
 // also share a total budget (aiDeadline/aiCallTimeoutMs in lib/ai/deadline) that is cut down as time passes.
 export const AI_REQUEST_TIMEOUT_MS = 240_000;
 
-export function openaiResponsesOptions() {
+export function openaiResponsesOptions(purpose: AiCallPurpose) {
   return {
     model: aiModel(),
-    reasoning: { effort: aiReasoningEffort() },
+    reasoning: { effort: aiReasoningEffort(purpose) },
   };
 }
 
