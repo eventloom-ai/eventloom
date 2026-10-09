@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { appUrl } from "@/lib/env";
+import { occasionPath, occasionTemplates, TEMPLATES_PATH } from "@/lib/occasion-templates";
 
 const publicRoutes = [
   "/",
@@ -9,6 +10,8 @@ const publicRoutes = [
   "/wedding-rsvp-website",
   "/birthday-event-website",
   "/private-event-website",
+  TEMPLATES_PATH,
+  ...occasionTemplates.map((occasion) => occasionPath(occasion.slug)),
   "/contact",
   "/legal",
   "/legal/terms",
@@ -22,7 +25,7 @@ const publicRoutes = [
   "/legal/security",
   "/privacy/request",
   "/ip",
-] as const;
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = appUrl().replace(/\/$/, "");
