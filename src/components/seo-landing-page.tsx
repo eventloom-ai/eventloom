@@ -80,7 +80,7 @@ export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#dfb89f]">Simple pricing</p>
             <div className="mt-4 flex items-end justify-between gap-4"><div><p className="text-lg font-semibold">One published event</p><p className="mt-1 text-sm text-[#eadbd0]/65">One year of Eventloom service</p></div><p className="font-[family-name:var(--font-playfair)] text-5xl tracking-[-0.055em]">$20</p></div>
             <ul className="mt-7 space-y-2 border-t border-white/15 pt-5 text-sm leading-6 text-[#eadbd0]/75"><li>Custom event website and shareable link</li><li>Guest RSVP collection and response management</li><li>Plain-language editing and secure hosting</li></ul>
-            <p className="mt-5 text-xs leading-6 text-[#eadbd0]/55">Create and refine your draft first. A custom domain is optional and charged separately at the live registrar cost shown before payment.</p>
+            <p className="mt-5 text-xs leading-6 text-[#eadbd0]/55">Create and refine your draft first. Every site gets its own eventloom.co link to share.</p>
           </article>
         </div>
       </section>

@@ -77,7 +77,7 @@ export const occasionTemplateContent: readonly OccasionTemplateContent[] = [
     faqs: [
       { question: "When should a wedding website go live?", answer: "Share it with save-the-dates, six to eight months before the wedding, or with invitations if you are not sending save-the-dates. Collect RSVPs until about three weeks before the day." },
       { question: "Can guests RSVP without creating an account?", answer: "Yes. Guests open your link, read the details, and reply. They never sign up for anything." },
-      { question: "What does it cost to publish?", answer: "You can draft and refine the site first. Publishing costs $20 once and keeps the site live for a year. A custom domain is optional and charged separately." },
+      { question: "What does it cost to publish?", answer: "You can draft and refine the site first. Publishing costs $20 once and keeps the site live for a year." },
     ],
     related: ["engagement", "bridal-shower", "anniversary"],
     landingPages: ["wedding-rsvp-website", "rsvp-website", "private-event-website"],
@@ -708,7 +708,7 @@ export const occasionTemplateContent: readonly OccasionTemplateContent[] = [
     faqs: [
       { question: "Can we match our brand colors?", answer: "Yes. Describe your colors or paste hex codes when you start, then adjust the design in plain language." },
       { question: "Do attendees need an account to RSVP?", answer: "No. Attendees reply from the link, which keeps sign-up friction away from busy guests." },
-      { question: "How is pricing handled for a company?", answer: "Each published event costs $20 once for a year. A custom domain is optional and priced separately before payment." },
+      { question: "How is pricing handled for a company?", answer: "Each published event costs $20 once for a year." },
       { question: "Can we send the link to external guests?", answer: "Yes. Clients, partners, and candidates open the same link as your team. They see only the event page, never your other events or the list of replies." },
     ],
     related: ["holiday-party", "retirement", "reunion"],

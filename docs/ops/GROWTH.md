@@ -27,7 +27,7 @@ Goal: when someone asks an assistant "what's a good site to make an RSVP / event
 How these engines pick sources (third-party reporting, verify periodically): ChatGPT search blends Bing's index with OpenAI's own crawler (OAI-SearchBot); Claude's web search reportedly uses Brave Search's index (Claude-SearchBot / Claude-User); Google AI Overviews use Google's index. All of them favour brands that many independent sources mention.
 - [x] robots.txt allows all crawlers (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, Claude-User, Google-Extended, PerplexityBot).
 - [x] /llms.txt fact sheet (price, how it works, links to every template/landing page).
-- [ ] Answer-shaped pages: honest comparison pages (vs Zola, The Knot, Joy, Partiful, Evite, Paperless Post, RSVPify) and a "best RSVP website builders" guide that states facts plainly, date-stamped, with Eventloom's trade-offs too.
+- [x] (2026-10-08: /compare + 7 comparisons + /guides/best-rsvp-website-builders) Answer-shaped pages: honest comparison pages (vs Zola, The Knot, Joy, Partiful, Evite, Paperless Post, RSVPify) and a "best RSVP website builders" guide that states facts plainly, date-stamped, with Eventloom's trade-offs too.
 - [ ] Consistent one-line entity description everywhere (site, llms.txt, schema, every profile/listing).
 - [ ] Third-party mentions (biggest lever, needs owner accounts/approval): Product Hunt, AlternativeTo, SaaSHub, There's An AI For That, Futurepedia, G2/Capterra free listings, genuinely helpful Reddit answers, Indie Hackers/HN launch post.
 - [ ] Organization schema `sameAs` links once official social profiles exist.
@@ -48,3 +48,4 @@ How these engines pick sources (third-party reporting, verify periodically): Cha
 | 2026-10-08 | Added made-with link, event share metadata, noindex on guest pages | — |
 | 2026-10-08 | Shipped /templates gallery + 14 occasion pages, homepage use-case links, FAQ/Product/Breadcrumb JSON-LD | — |
 | 2026-10-08 | Resubmitted sitemap in Search Console (15 new template URLs). Search baseline, last 3 months: 19 clicks, 314 impressions, avg position 6.3 — all branded ("eventloom" 14 clicks/84 impr; "loom event(s)" 57 impr, 0 clicks). Zero non-brand search traffic yet. | baseline |
+| 2026-10-08 | Shipped /compare hub, 7 sourced comparison pages, /guides/best-rsvp-website-builders; removed copy implying custom domains are on sale and that RSVP questions are fully custom | — |

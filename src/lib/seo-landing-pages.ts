@@ -38,7 +38,7 @@ export const seoLandingPages = {
     ],
     faqs: [
       { question: "Do guests need an account to RSVP?", answer: "No. Guests open your event link, read the details, answer your questions, and submit their RSVP without creating an Eventloom account." },
-      { question: "Can I ask about dietary restrictions?", answer: "Yes. Add questions for dietary needs, plus-ones, party size, travel plans, or any other information you need to plan well." },
+      { question: "Can I ask about dietary restrictions?", answer: "Yes. Your RSVP can ask for meal or dietary preferences, party size, guest names, email, phone, and a free-text note for anything else, like travel plans or accessibility needs." },
       { question: "Can I edit the RSVP website after sharing it?", answer: "Yes. Update the details or questions as your plans change, and guests will always see the current version of your event page." },
     ],
     related: [
