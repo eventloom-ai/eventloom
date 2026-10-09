@@ -7,6 +7,8 @@ export type SectionContext = {
   palette: Palette;
   /** 1-based position among content sections (the hero is 0), for "No. 02" style indexes. */
   number: number;
+  /** Rendered as a preview inside another page (template gallery, studio): no page-level h1. */
+  embedded?: boolean;
 };
 
 /** Site-wide tokens: fonts, type scale, shape and spacing. Section tones layer their colors on top. */

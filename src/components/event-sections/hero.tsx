@@ -11,11 +11,13 @@ const titleSize = { xl: s.titleXl, lg: s.titleLg, md: s.titleMd } as const;
 function Title({ props, ctx, centered, className }: { props: HeroProps; ctx: SectionContext; centered: boolean; className?: string }) {
   const italic = ctx.style.type.displayItalic && (props.coupleNames !== null || !["rule", "grid", "squiggle"].includes(ctx.style.ornament));
   const classes = cx(s.display, titleSize[props.titleScale], italic && s.italic, className);
-  if (!props.coupleNames) return <h1 className={classes}>{props.title}</h1>;
+  // An embedded preview (template pages) sits inside a page that has its own h1.
+  const Heading = ctx.embedded ? "p" : "h1";
+  if (!props.coupleNames) return <Heading className={classes}>{props.title}</Heading>;
   const [first, second] = props.coupleNames;
   // Couple names stack over an ampersand; screen readers get one natural sentence.
   return (
-    <h1 className={classes} aria-label={`${first} & ${second}`}>
+    <Heading className={classes} aria-label={`${first} & ${second}`}>
       <span aria-hidden="true" className="block">{first}</span>
       {centered ? (
         <>
@@ -27,7 +29,7 @@ function Title({ props, ctx, centered, className }: { props: HeroProps; ctx: Sec
           <span className={s.accentText} style={{ fontStyle: "italic" }}>&amp;</span> {second}
         </span>
       )}
-    </h1>
+    </Heading>
   );
 }
 
