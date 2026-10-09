@@ -1,0 +1,339 @@
+/*
+ * Note: these rules are unlayered, so they win over Tailwind utilities (which live in @layer utilities).
+ * Components use Tailwind for layout and only reach for `!` utilities when overriding a token rule here.
+ *
+ * Event-site section system. Every value comes from --ev-* tokens set by theme.ts:
+ * site tokens (fonts, type, shape, spacing, accent) on the root, tone colors per section.
+ * Layout lives in Tailwind classes on the components; this file holds the tokenized type,
+ * ornaments, frames and the RSVP form skin.
+ */
+
+.site {
+  font-family: var(--ev-body);
+  font-size: var(--ev-body-size);
+  font-weight: var(--ev-body-weight);
+  line-height: 1.65;
+  color: var(--ev-ink);
+  background: var(--ev-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+}
+
+.section {
+  position: relative;
+  overflow: clip;
+  background: var(--ev-bg);
+  color: var(--ev-ink);
+  padding: var(--ev-section-y) var(--ev-gutter);
+  scroll-margin-top: 1rem;
+}
+
+.ruled {
+  padding-top: 0;
+}
+
+.ruled > .inner {
+  border-top: 1px solid color-mix(in srgb, var(--ev-line) 22%, transparent);
+  padding-top: var(--ev-section-y);
+}
+
+.inner {
+  position: relative;
+  width: 100%;
+  max-width: var(--ev-measure);
+  margin-inline: auto;
+}
+
+/* Type ------------------------------------------------------------------- */
+
+.display {
+  font-family: var(--ev-display);
+  font-weight: var(--ev-display-weight);
+  letter-spacing: var(--ev-display-tracking);
+  line-height: var(--ev-display-leading);
+  text-transform: var(--ev-display-case);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.italic {
+  font-style: var(--ev-display-italic);
+}
+
+/* Phone minimums scale per face: condensed display faces (Instrument Serif) can afford a larger floor. */
+.titleXl { font-size: clamp(calc(4.25rem * var(--ev-title-floor, 1)), 1rem + 10.5vw, 10.5rem); }
+.titleLg { font-size: clamp(calc(3.25rem * var(--ev-title-floor, 1)), 1rem + 7.2vw, 7.75rem); }
+.titleMd { font-size: clamp(calc(2.4rem * var(--ev-title-floor, 1)), 1rem + 4.8vw, 5.75rem); }
+.h2 { font-size: clamp(2.35rem, 1.5rem + 3.4vw, 4.75rem); }
+.h2Compact { font-size: clamp(2.25rem, 1.5rem + 2.6vw, 3.75rem); }
+.h3 { font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2.1rem); line-height: 1.1; }
+
+.label {
+  font-family: var(--ev-label);
+  font-size: var(--ev-label-size);
+  letter-spacing: var(--ev-label-tracking);
+  font-weight: var(--ev-label-weight);
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: var(--ev-accent-text);
+}
+
+.lead {
+  font-size: clamp(1.15rem, 1rem + 0.55vw, 1.5rem);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.body p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.body p + p {
+  margin-top: 1.1em;
+}
+
+.muted { color: var(--ev-muted); }
+.accentText { color: var(--ev-accent-text); }
+.ink { color: var(--ev-ink); }
+
+.numerals {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Editorial drop cap; harmless in other styles because only `letter` story variants use it. */
+.dropCap > p:first-child::first-letter {
+  float: inline-start;
+  font-family: var(--ev-display);
+  font-size: 4.4em;
+  line-height: 0.82;
+  padding-inline-end: 0.08em;
+  margin-top: 0.06em;
+  color: var(--ev-accent-text);
+}
+
+/* Controls ---------------------------------------------------------------- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  min-height: 3.25rem;
+  padding: 0 1.9rem;
+  border-radius: var(--ev-button-radius);
+  background: var(--ev-accent);
+  color: var(--ev-on-accent);
+  font-family: var(--ev-label);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 200ms ease, filter 200ms ease, box-shadow 200ms ease;
+}
+
+.button:hover { filter: brightness(1.08); }
+.button:active { transform: translateY(1px); }
+
+.buttonGhost {
+  background: transparent;
+  color: inherit;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+  transition: text-decoration-color 200ms ease;
+}
+
+.link:hover { text-decoration-color: var(--ev-accent); }
+
+.button:focus-visible,
+.link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+/* Surfaces ---------------------------------------------------------------- */
+
+.card {
+  background: var(--ev-card);
+  border-radius: var(--ev-radius);
+}
+
+.hairline {
+  border-color: color-mix(in srgb, var(--ev-line) 22%, transparent);
+}
+
+.hairlineStrong {
+  border-color: color-mix(in srgb, var(--ev-line) 55%, transparent);
+}
+
+.lineBg {
+  background: color-mix(in srgb, var(--ev-line) 30%, transparent);
+}
+
+/* Playful offset shadow, noir gold frame. */
+.stickerCard {
+  border: 2px solid var(--ev-line);
+  box-shadow: 6px 6px 0 var(--ev-line);
+}
+
+.goldFrame {
+  border: 1px solid color-mix(in srgb, var(--ev-line) 65%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--ev-line) 30%, transparent);
+  outline-offset: 6px;
+}
+
+.frameRect { border-radius: var(--ev-radius); }
+.frameArch { border-radius: 999px 999px var(--ev-radius) var(--ev-radius); }
+.frameRounded { border-radius: var(--ev-radius); }
+
+/* Photo scrim: dark at the text, clear at the top. */
+.scrim {
+  background:
+    linear-gradient(to top, rgb(var(--ev-scrim) / 0.88) 0%, rgb(var(--ev-scrim) / 0.62) 32%, rgb(var(--ev-scrim) / 0.18) 62%, rgb(var(--ev-scrim) / 0.28) 100%);
+}
+
+.scrimCenter {
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 55%, rgb(var(--ev-scrim) / 0.72), rgb(var(--ev-scrim) / 0.5) 70%),
+    rgb(var(--ev-scrim) / 0.2);
+}
+
+.onPhoto {
+  color: var(--ev-on-photo);
+  --ev-accent-text: var(--ev-on-photo);
+  --ev-ink: var(--ev-on-photo);
+  --ev-muted: var(--ev-on-photo);
+  --ev-line: var(--ev-on-photo);
+}
+
+/* Ticket perforation (playful, noir details). */
+.perforation {
+  border-inline-start: 2px dashed color-mix(in srgb, var(--ev-line) 40%, transparent);
+}
+
+@media (max-width: 47.99rem) {
+  .perforation {
+    border-inline-start: 0;
+    border-top: 2px dashed color-mix(in srgb, var(--ev-line) 40%, transparent);
+  }
+}
+
+/* Confetti field for the playful poster hero. */
+.confetti {
+  mask-image: linear-gradient(to bottom, transparent 0 40%, black 75%);
+  background-image:
+    radial-gradient(circle, var(--ev-pop-1) 0 5px, transparent 6px),
+    radial-gradient(circle, var(--ev-pop-2) 0 4px, transparent 5px),
+    radial-gradient(circle, var(--ev-pop-4) 0 3px, transparent 4px);
+  background-size: 180px 160px, 230px 210px, 140px 190px;
+  background-position: 20px 30px, 120px 90px, 60px 140px;
+  opacity: 0.55;
+}
+
+@media (min-width: 64rem) {
+  .confetti { mask-image: linear-gradient(to left, black 30%, transparent 62%); }
+}
+
+/* Minimal grid lines: a quiet 12-column field behind the typeset hero. */
+.gridLines {
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--ev-line) 7%, transparent) 1px, transparent 1px);
+  background-size: calc(100% / 6) 100%;
+}
+
+@media (min-width: 48rem) {
+  .gridLines { background-size: calc(100% / 12) 100%; }
+}
+
+/* Giant closing wordmark sized from the title length so it never overflows. */
+.wordmark {
+  font-size: min(15vw, calc(var(--ev-wordmark-k, 150vw) / var(--len)), 14rem);
+  white-space: nowrap;
+}
+
+/* Masonry gallery: explicit columns whose last tile stretches, so every column ends on the same line. */
+.masonryColumn {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.5vw, 1.25rem);
+}
+
+.masonryColumn > :last-child {
+  flex: 1 1 auto;
+  aspect-ratio: auto !important;
+  min-height: 9rem;
+}
+
+/* RSVP: the shared RsvpForm, skinned to the style without changing the component. ---- */
+
+.rsvpSlot :is(form, section) {
+  background: var(--ev-form-bg);
+  color: #1c1917;
+  border: 0;
+  border-radius: var(--ev-radius);
+  box-shadow: 0 40px 80px -48px rgb(0 0 0 / 0.45);
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  font-family: var(--ev-body);
+  text-align: start;
+}
+
+/* The section already carries the heading, so the form's own header is hidden. */
+.rsvpSlot form > div:first-child {
+  display: none;
+}
+
+.rsvpSlot form > div:nth-child(2) {
+  margin-top: 0;
+}
+
+.rsvpSlot :is(input, textarea) {
+  min-height: 3rem;
+  background: #ffffff;
+  border-color: rgb(28 25 23 / 0.2);
+  border-radius: min(var(--ev-radius), 10px);
+}
+
+.rsvpSlot :is(input, textarea):focus-visible {
+  outline: 2px solid var(--ev-accent);
+  outline-offset: 1px;
+}
+
+.rsvpSlot section h2 {
+  font-family: var(--ev-display);
+  font-weight: var(--ev-display-weight);
+}
+
+.rsvpSlot form > button {
+  background: var(--ev-accent);
+  color: var(--ev-on-accent);
+  border-radius: var(--ev-button-radius);
+  min-height: 3.25rem;
+  font-family: var(--ev-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+/* Motion: CSS scroll-driven reveal, no JavaScript; off for reduced motion and unsupported browsers. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(1.5rem); }
+  to { opacity: 1; transform: none; }
+}
