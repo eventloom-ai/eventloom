@@ -5,6 +5,7 @@ import type { BuildProgressEvent, BuildProgressReporter } from "@/lib/agent/prog
 import { applyImagesToConfig } from "@/lib/agent/parse-build-form";
 import { getAgentRuntime } from "@/lib/agent/runtime";
 import { saveLocalDemoEvent } from "@/lib/local-demo-store";
+import { refundBuildCredit } from "@/lib/payments/billing";
 import { composeSiteDocument } from "@/lib/site-document";
 import { seedInitialRevision } from "@/lib/studio-store";
 import type { ThemeOverrides } from "@/lib/event-theme";
@@ -78,6 +79,22 @@ async function report(
   if (input.onProgress) {
     await input.onProgress(payload);
   }
+}
+
+async function quietly(task: () => unknown) {
+  try {
+    await task();
+  } catch {
+    // Best effort: bookkeeping failures must not mask the build outcome.
+  }
+}
+
+// A failed build delivered no site, so its credit goes back (refunds are idempotent per job).
+async function failBuild(input: BuildSiteInput, message: string, runtime: ReturnType<typeof getAgentRuntime>): Promise<BuildSiteResult> {
+  await quietly(() => finishGenerationJob(input.jobId, "failed", message, input.ownerId));
+  if (input.ownerId) await quietly(() => refundBuildCredit(input.ownerId!, input.placeholderEventId ?? input.existingEventId ?? null, input.jobId));
+  await quietly(() => report(input, { step: "error", message, progressPercent: 0 }));
+  return { ok: false, error: message, runtime };
 }
 
 export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSiteResult> {
@@ -161,9 +178,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     if (input.existingEventId) {
       if (!existingEvent) {
         const message = "event_not_found";
-        await finishGenerationJob(input.jobId, "failed", message, input.ownerId);
-        await report(input, { step: "error", message, progressPercent: 0 });
-        return { ok: false, error: message, runtime };
+        return failBuild(input, message, runtime);
       }
 
       const updated = await updateEventRecord({
@@ -175,9 +190,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
 
       if (!updated.event) {
         const message = updated.error ?? "update_event_failed";
-        await finishGenerationJob(input.jobId, "failed", message, input.ownerId);
-        await report(input, { step: "error", message, progressPercent: 0 });
-        return { ok: false, error: message, runtime };
+        return failBuild(input, message, runtime);
       }
 
       event = updated.event;
@@ -191,9 +204,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
 
       if (!updated.event) {
         const message = updated.error ?? "update_event_failed";
-        await finishGenerationJob(input.jobId, "failed", message, input.ownerId);
-        await report(input, { step: "error", message, progressPercent: 0 });
-        return { ok: false, error: message, runtime };
+        return failBuild(input, message, runtime);
       }
 
       event = updated.event;
@@ -207,9 +218,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
 
       if (!created.event) {
         const message = created.error ?? "create_event_failed";
-        await finishGenerationJob(input.jobId, "failed", message, input.ownerId);
-        await report(input, { step: "error", message, progressPercent: 0 });
-        return { ok: false, error: message, runtime };
+        return failBuild(input, message, runtime);
       }
 
       event = created.event;
@@ -234,7 +243,8 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     await finishGenerationJob(input.jobId, "succeeded", undefined, input.ownerId);
 
     const preview = previewUrls(event.slug);
-    await report(input, {
+    // The site is saved and the job succeeded; a lost progress update must not fail (and refund) a delivered build.
+    await quietly(() => report(input, {
       step: "done",
       message: "Your site is ready.",
       eventId: event.id,
@@ -243,7 +253,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
       template,
       config,
       progressPercent: 100,
-    });
+    }));
 
     return {
       ok: true,
@@ -253,9 +263,6 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
       runtime,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "build_failed";
-    await finishGenerationJob(input.jobId, "failed", message, input.ownerId);
-    await report(input, { step: "error", message, progressPercent: 0 });
-    return { ok: false, error: message, runtime };
+    return failBuild(input, error instanceof Error ? error.message : "build_failed", runtime);
   }
 }

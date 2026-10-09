@@ -243,7 +243,7 @@ export async function createBuilderMessage(input: {
   return (data as BuilderMessage | null) ?? null;
 }
 
-export async function createStudioRun(input: { eventId: string; ownerId: string; baseVersionId: string; prompt: string; selectedNodeIds: string[]; kind?: StudioRun["kind"] }) {
+export async function createStudioRun(input: { eventId: string; ownerId: string; baseVersionId: string | null; prompt: string; selectedNodeIds: string[]; kind?: StudioRun["kind"] }) {
   const client = serviceSupabase();
   if (!client) return `demo-run-${crypto.randomUUID()}`;
   const { data, error } = await client.from("generation_jobs").insert({

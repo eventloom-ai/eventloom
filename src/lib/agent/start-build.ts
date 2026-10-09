@@ -1,10 +1,11 @@
 import { after } from "next/server";
 import { buildCompleteSite } from "@/lib/agent/harness";
 import { enrichPromptWithTheme, type ParsedBuildForm } from "@/lib/agent/parse-build-form";
-import { createEventRecord, createGenerationJob, placeholderEventConfig } from "@/lib/agent/tools";
+import { progressForStep } from "@/lib/agent/build-progress";
+import { createEventRecord, createGenerationJob, finishGenerationJob, placeholderEventConfig, updateGenerationJobProgress } from "@/lib/agent/tools";
 import type { ImageInput } from "@/lib/ai/generator";
 import { processAndStoreEventImage } from "@/lib/event-assets";
-import { isEventOwner, reserveBuildCredit } from "@/lib/payments/billing";
+import { isEventOwner, refundBuildCredit, reserveBuildCredit } from "@/lib/payments/billing";
 import { reapStaleGenerationJobs } from "@/lib/studio-store";
 import { serviceSupabase } from "@/lib/supabase/server";
 
@@ -41,11 +42,29 @@ export async function startBuildJob(
   if (ownerId) {
     // A dead worker leaves its job "running", which blocks new builds on the event until the daily cron.
     await reapStaleGenerationJobs(parsed.existingEventId ? { eventId: parsed.existingEventId } : { ownerId });
-    const credit = await reserveBuildCredit(ownerId, parsed.existingEventId);
-    if (!credit.ok) return { ok: false, error: credit.error, status: 402 };
   }
 
   const prompt = enrichPromptWithTheme(parsed.prompt, parsed.themeOverrides);
+  // Create the job before charging: refunds are keyed by job id, so a credit is only ever reserved against a job that can return it.
+  const jobId = await createGenerationJob({
+    prompt,
+    slug: parsed.slug,
+    eventId: parsed.existingEventId ?? null,
+    ownerId,
+  });
+
+  if (!jobId) {
+    return { ok: false, error: "job_create_failed", status: 500 };
+  }
+
+  if (ownerId) {
+    const credit = await reserveBuildCredit(ownerId, parsed.existingEventId);
+    if (!credit.ok) {
+      await finishGenerationJob(jobId, "failed", credit.error, ownerId);
+      return { ok: false, error: credit.error, status: 402 };
+    }
+  }
+
   let placeholderEventId = parsed.existingEventId ?? null;
 
   if (!placeholderEventId && ownerId) {
@@ -57,24 +76,17 @@ export async function startBuildJob(
 
     if (!created.event) {
       const isDuplicate = created.error?.includes("duplicate key");
-      return { ok: false, error: isDuplicate ? "slug_taken" : (created.error ?? "create_event_failed"), status: isDuplicate ? 409 : 500 };
+      const error = isDuplicate ? "slug_taken" : (created.error ?? "create_event_failed");
+      await finishGenerationJob(jobId, "failed", error, ownerId);
+      await refundBuildCredit(ownerId, null, jobId);
+      return { ok: false, error, status: isDuplicate ? 409 : 500 };
     }
 
     placeholderEventId = created.event.id;
+    await updateGenerationJobProgress(jobId, { step: "started", message: "Starting your site build…", progressPercent: progressForStep("started"), eventId: placeholderEventId }, ownerId);
   }
 
   const images = ownerId && placeholderEventId ? await storeReferenceImages(placeholderEventId, parsed.images) : parsed.images;
-
-  const jobId = await createGenerationJob({
-    prompt,
-    slug: parsed.slug,
-    eventId: placeholderEventId,
-    ownerId,
-  });
-
-  if (!jobId) {
-    return { ok: false, error: "job_create_failed", status: 500 };
-  }
 
   const buildInput = {
     jobId,

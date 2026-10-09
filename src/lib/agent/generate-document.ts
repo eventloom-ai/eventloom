@@ -21,6 +21,8 @@ export type GeneratedOriginalSite = {
   config: EventConfig;
   message: string;
   summary: string;
+  // False when the provider was unavailable or failed and the deterministic fallback was used instead.
+  generated: boolean;
 };
 
 const styleSchema = {
@@ -307,6 +309,7 @@ export async function generateOriginalSite(prompt: string, config: EventConfig):
     config: groundConfigInPrompt(config, prompt),
     message: "I designed a first version from your description. Tell me what to change.",
     summary: "Designed the first original version",
+    generated: false,
   };
   const key = env.openaiApiKey();
   if (!key) return fallback;
@@ -341,6 +344,7 @@ export async function generateOriginalSite(prompt: string, config: EventConfig):
       config: nextConfig,
       message: concept ? `${message}${message.endsWith(".") ? "" : "."} ${concept}` : message,
       summary: typeof parsed.summary === "string" && parsed.summary.trim() ? parsed.summary : fallback.summary,
+      generated: true,
     };
   } catch {
     return fallback;
