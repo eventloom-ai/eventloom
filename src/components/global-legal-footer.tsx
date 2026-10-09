@@ -7,6 +7,7 @@ import { EventloomLogo } from "@/components/logo";
 const links = [["All policies", "/legal"], ["Terms", "/legal/terms"], ["Privacy", "/legal/privacy"], ["Domains", "/legal/domains"], ["Accessibility", "/legal/accessibility"], ["Security", "/legal/security"], ["Contact", "/contact"]] as const;
 
 export function shouldRenderGlobalLegalFooter(pathname: string | null) {
+  if (pathname === "/app/events/new") return false;
   return !(pathname?.startsWith("/app/events/") && pathname.endsWith("/studio"));
 }
 

@@ -96,8 +96,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
         <BuildJobProvider>{children}</BuildJobProvider>
-        <GlobalLegalFooter />
-        <FeedbackWidget turnstileSiteKey={env.turnstileSiteKey()} />
+        {/* Guest event pages are the host's site: no Eventloom footer or feedback button over their design. */}
+        <div className="contents [body:has([data-eventloom-guest-page])_&]:hidden">
+          <GlobalLegalFooter />
+          <FeedbackWidget turnstileSiteKey={env.turnstileSiteKey()} />
+        </div>
       </body>
     </html>
   );
