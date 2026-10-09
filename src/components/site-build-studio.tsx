@@ -25,7 +25,7 @@ import type { BuildProgressStep } from "@/lib/agent/progress";
 import { resolveEventPalette } from "@/lib/event-theme";
 import { enrichBriefWithIntake, intakeAction, intakeQuestionsForBrief, type IntakeAnswers } from "@/lib/agent/intake";
 import { publicSiteHost, publicSlugPath } from "@/lib/public-url";
-import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
+import { normalizeSlugInput, normalizeSlugTyping, suggestSlugOrFallback } from "@/lib/slug-suggest";
 import { useBuildJob } from "@/hooks/use-build-job";
 
 const moods = ["blush", "navy", "gold", "lavender", "forest", "sunset"] as const;
@@ -67,7 +67,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
   const intakeRef = useRef<HTMLDivElement>(null);
   const lastQuestionShownAt = useRef(0);
   const previewHost = publicSiteHost();
-  const suggestedSlug = normalizeSlugInput(suggestSlug(prompt) || "");
+  const suggestedSlug = suggestSlugOrFallback(prompt);
   const activeSlug = slugEdited ? slug : suggestedSlug;
   const palette = useMemo(() => (build.previewConfig ? resolveEventPalette(build.previewConfig) : null), [build.previewConfig]);
   const localPreviewImage = useMemo(() => (files[0] ? URL.createObjectURL(files[0]) : undefined), [files]);
@@ -123,14 +123,14 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
 
     const form = new FormData();
     form.set("prompt", enrichBriefWithIntake(prompt, intakeAnswers));
-    form.set("slug", activeSlug.trim());
+    form.set("slug", normalizeSlugInput(activeSlug));
     if (mood) form.set("mood", mood);
     if (build.completedEventId) form.set("event_id", build.completedEventId);
     files.forEach((file) => form.append("images", file));
     await startBuild(form);
   }
 
-  const canBuild = Boolean(prompt.trim() && activeSlug.trim() && !build.isBuilding);
+  const canBuild = Boolean(prompt.trim() && normalizeSlugInput(activeSlug) && !build.isBuilding);
   const previewSlug = build.slug || activeSlug || "your-event";
 
   return (
@@ -258,7 +258,7 @@ export function SiteBuildStudio({ initialPrompt, variant = "app", fullBleed = fa
             </div>
             <label className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#171717] px-3 py-2 text-[11px] text-[#8f8f96] focus-within:ring-2 focus-within:ring-violet-400/20">
               <span className="shrink-0">{previewHost}/</span>
-              <input value={activeSlug} required onChange={(event) => { setSlugEdited(true); setSlug(normalizeSlugInput(event.target.value)); }} disabled={build.isBuilding} className="min-w-0 flex-1 bg-transparent font-medium text-white outline-none" placeholder="your-event" />
+              <input value={activeSlug} required onChange={(event) => { setSlugEdited(true); setSlug(normalizeSlugTyping(event.target.value)); }} onBlur={() => setSlug((current) => normalizeSlugInput(current))} disabled={build.isBuilding} className="min-w-0 flex-1 bg-transparent font-medium text-white outline-none" placeholder="your-event" />
             </label>
           </div>
 

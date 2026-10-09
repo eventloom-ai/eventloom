@@ -4,6 +4,7 @@ import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { createEventRecord } from "@/lib/agent/tools";
 import { processAndStoreEventImage } from "@/lib/event-assets";
 import { reserveBuildCredit } from "@/lib/payments/billing";
+import { isReservedSlug } from "@/lib/reserved-slugs";
 import { normalizeSlugInput, suggestSlug } from "@/lib/slug-suggest";
 import { createBuilderMessage, seedInitialRevision } from "@/lib/studio-store";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
   const slugField = form.get("slug");
   const baseSlug = normalizeSlugInput((typeof slugField === "string" ? slugField : "") || suggestSlug(prompt) || "my-event");
   const slug = baseSlug.length >= 3 ? baseSlug : `event-${Date.now().toString(36)}`;
+  if (isReservedSlug(slug)) return NextResponse.json({ error: "slug_reserved" }, { status: 409 });
   const imageFiles = form.getAll("images").filter((entry): entry is File => entry instanceof File).slice(0, MAX_INITIAL_IMAGES);
 
   let planConfig = defaultEventConfig(prompt);

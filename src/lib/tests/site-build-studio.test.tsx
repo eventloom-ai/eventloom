@@ -21,4 +21,8 @@ describe("build studio intake", () => {
     expect(html).not.toContain('type="submit"');
   });
 
+  it("prefills an address for non-Latin briefs instead of disabling the build", () => {
+    const html = renderToStaticMarkup(<SiteBuildStudio initialPrompt="حفل زفاف أحمد وسارة" />);
+    expect(html).toMatch(/value="event-[a-z0-9]{6}"/);
+  });
 });

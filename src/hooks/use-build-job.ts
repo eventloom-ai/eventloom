@@ -187,7 +187,9 @@ export function useBuildJob() {
         const message =
           payload?.error === "slug_taken"
             ? "That link name is already taken. Choose another one."
-            : payload?.error ?? "We couldn't start the build. Please try again.";
+            : payload?.error === "slug_reserved"
+              ? "That link name is reserved by Eventloom. Choose another one."
+              : payload?.error ?? "We couldn't start the build. Please try again.";
         setState((current) => ({
           ...current,
           isBuilding: false,

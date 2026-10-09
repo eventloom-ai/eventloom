@@ -12,6 +12,7 @@ export async function startBuildJob(
   parsed: ParsedBuildForm,
   ownerId: string | null,
 ): Promise<StartBuildResult> {
+  if (parsed.slugReserved) return { ok: false, error: "slug_reserved", status: 409 };
   if (!parsed.slug || !parsed.prompt.trim()) {
     return { ok: false, error: "invalid", status: 400 };
   }

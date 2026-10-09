@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isReservedSlug } from "@/lib/reserved-slugs";
 import type { DomainQuote } from "@/lib/types";
 
 export const slugSchema = z
@@ -7,7 +8,8 @@ export const slugSchema = z
   .toLowerCase()
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   .min(3)
-  .max(63);
+  .max(63)
+  .refine((slug) => !isReservedSlug(slug), { message: "slug_reserved" });
 
 export const domainSchema = z
   .string()
