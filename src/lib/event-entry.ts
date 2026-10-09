@@ -17,6 +17,17 @@ export function composeLandingBrief({ description, eventTypeLabel, date, locatio
   return [`${prefix}${body}`.trim(), details].filter(Boolean).join(" ");
 }
 
+/** The sentence a template brief uses to name its palette ("Use the blush color palette."). */
+export function paletteSentence(mood: string) {
+  return `Use the ${mood} color palette.`;
+}
+
+/** The palette word a template brief names, if it is one of `moods` (the build intake's chips). */
+export function briefPaletteMood<T extends string>(brief: string | undefined, moods: readonly T[]): T | null {
+  const word = brief?.match(/\bUse the ([a-z]+) color palette\b/i)?.[1]?.toLowerCase();
+  return moods.find((mood) => mood === word) ?? null;
+}
+
 export function eventDraftPath(brief?: string) {
   const trimmed = brief?.trim().slice(0, MAX_LANDING_BRIEF_LENGTH) ?? "";
   return trimmed

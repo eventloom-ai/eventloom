@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { composeLandingBrief, eventDraftPath } from "@/lib/event-entry";
+import { composeLandingBrief, eventDraftPath, paletteSentence } from "@/lib/event-entry";
 import { MOOD_PALETTE, STYLE_FOR_KIND, chooseDesignStyle } from "@/lib/event-design/style-choice";
 import { designEventSite } from "@/lib/event-design/design-event-site";
 import { DESIGN_STYLES, type StyleKey } from "@/lib/event-design/styles";
 import type { DesignedSection, EventSiteDesign } from "@/lib/event-design/types";
 import { MOOD_PALETTES } from "@/lib/event-theme";
+import { ogCardFromDesign } from "@/lib/og/event-og-card";
 import { occasionTemplateContent, type OccasionMood, type OccasionTemplateContent } from "@/lib/occasion-template-content";
 import type { EventConfig } from "@/lib/types";
 
@@ -30,9 +31,10 @@ export function getOccasionTemplate(slug: string) {
 
 /** The brief a "Use this template" link starts a build with. A style adds its palette word, which the build maps to that palette. */
 export function occasionTemplateBrief(occasion: OccasionTemplate, mood: OccasionMood = occasion.styles[0].mood) {
-  return composeLandingBrief({ description: `${occasion.brief} Use the ${mood} color palette.`, eventTypeLabel: occasion.eventTypeLabel });
+  return composeLandingBrief({ description: `${occasion.brief} ${paletteSentence(mood)}`, eventTypeLabel: occasion.eventTypeLabel });
 }
 
+/** The draft path a template starts. Pages link through TemplateStartLink, which sends signed-out visitors to sign up first. */
 export function occasionTemplateHref(occasion: OccasionTemplate, mood?: OccasionMood) {
   return eventDraftPath(occasionTemplateBrief(occasion, mood));
 }
@@ -93,6 +95,11 @@ export function sampleDesignedSite(occasion: OccasionTemplate, styleIndex = 0): 
   return designEventSite(config, styleKey, {}, { paletteKey });
 }
 
+/** Share card for a template page: its first sample, labelled as a template. */
+export function occasionOgCard(occasion: OccasionTemplate) {
+  return ogCardFromDesign(sampleDesignedSite(occasion), { eyebrow: `${occasion.name} template` });
+}
+
 /**
  * The opening and the section after it: enough to read as the top of the page in a thumbnail. Thumbnails sit inside
  * gallery links, so their RSVP button and directions link carry no target and render as plain text.
@@ -108,18 +115,19 @@ export function sampleThumbnailSite(design: EventSiteDesign): EventSiteDesign {
 
 const ogImage = { url: "/opengraph-image", width: 1200, height: 630, alt: "Eventloom event websites with online RSVPs" };
 
-function pageMetadata(title: string, description: string, path: string): Metadata {
+/** `ownImage`: the route has its own opengraph-image file, which takes priority and which the Twitter card reuses. */
+function pageMetadata(title: string, description: string, path: string, ownImage = false): Metadata {
   return {
     title,
     description,
     alternates: { canonical: path },
-    openGraph: { type: "website", title: `${title} | Eventloom`, description, url: path, siteName: "Eventloom", images: [ogImage] },
-    twitter: { card: "summary_large_image", title: `${title} | Eventloom`, description, images: [ogImage.url] },
+    openGraph: { type: "website", title: `${title} | Eventloom`, description, url: path, siteName: "Eventloom", ...(ownImage ? {} : { images: [ogImage] }) },
+    twitter: { card: "summary_large_image", title: `${title} | Eventloom`, description, ...(ownImage ? {} : { images: [ogImage.url] }) },
   };
 }
 
 export function occasionMetadata(occasion: OccasionTemplate): Metadata {
-  return pageMetadata(occasion.title, occasion.metaDescription, occasionPath(occasion.slug));
+  return pageMetadata(occasion.title, occasion.metaDescription, occasionPath(occasion.slug), true);
 }
 
 export function templatesIndexMetadata(): Metadata {

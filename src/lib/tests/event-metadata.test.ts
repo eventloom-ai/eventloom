@@ -15,9 +15,15 @@ describe("eventMetadata", () => {
     expect(metadata.robots).toMatchObject({ index: false, follow: false });
   });
 
-  it("skips placeholder details and unsafe images", () => {
-    const metadata = eventMetadata(event({ date: "Date to be announced", venueName: "Venue to be announced", heroImageUrl: "data:image/png;base64,AAA" }), "/x");
+  it("skips placeholder details", () => {
+    const metadata = eventMetadata(event({ date: "Date to be announced", venueName: "Venue to be announced" }), "/x");
     expect(metadata.description).toBe("Dinner on the roof.");
+  });
+
+  it("leaves the share image to the route's opengraph-image card, shown as a large Twitter card", () => {
+    const metadata = eventMetadata(event({ heroImageUrl: "https://images.example/photo.jpg" }), "/x");
     expect(metadata.openGraph).not.toHaveProperty("images");
+    expect(metadata.twitter).toMatchObject({ card: "summary_large_image" });
+    expect(metadata.twitter).not.toHaveProperty("images");
   });
 });

@@ -10,7 +10,11 @@ describe("isPublicStaticPath", () => {
   });
 
   it("never covers creator, auth, admin, API or event pages", () => {
-    for (const path of ["/app", "/app/events/new", "/login", "/signup", "/auth/callback", "/admin", "/api/rsvp", "/studio", "/laylas-30th", "/sites/example.com"]) expect(isPublicStaticPath(path), path).toBe(false);
+    for (const path of ["/app", "/app/events/new", "/login", "/signup", "/auth/callback", "/admin", "/api/rsvp", "/studio", "/laylas-30th", "/sites/example.com", "/laylas-30th/rsvp/opengraph-image/x"]) expect(isPublicStaticPath(path), path).toBe(false);
+  });
+
+  it("lets the CDN keep event share images, which carry no per-visitor data", () => {
+    for (const path of ["/opengraph-image", "/laylas-30th/opengraph-image/v1-abc", "/sites/example.com/opengraph-image/default", "/templates/wedding/opengraph-image"]) expect(isPublicStaticPath(path), path).toBe(true);
   });
 });
 
