@@ -6,6 +6,25 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "eventloom-demo",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "NEXT_PUBLIC_SUPABASE_URL=",
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=",
+        "SUPABASE_SERVICE_ROLE_KEY=",
+        "STRIPE_SECRET_KEY=",
+        "STRIPE_PRICE_ID=",
+        "STRIPE_WEBHOOK_SECRET=",
+        "CLOUDFLARE_ACCOUNT_ID=",
+        "CLOUDFLARE_REGISTRAR_TOKEN=",
+        "VERCEL_OIDC_TOKEN=",
+        "NEXT_PUBLIC_APP_URL=http://localhost:3001",
+        "NEXT_PUBLIC_ROOT_DOMAIN=localhost:3001",
+        "npx", "next", "dev", "--port", "3001"
+      ],
+      "port": 3001
     }
   ]
 }
