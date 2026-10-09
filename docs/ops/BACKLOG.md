@@ -17,7 +17,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | S8 | Nothing asserts Stripe live mode in production (key prefix / `event.livemode`) | `env.ts:134`, webhook | fixed |
 | S9 | Asset bucket/path trusted from user-writable `assets.metadata` (service-role read/delete) | `api/assets/[assetId]`, event/account delete | fixed · migration pending |
 | S10 | Users can self-set legal onboarding flags on `profiles` | `20260722053811…sql:20` | fixed · migration pending |
-| S11 | No reserved-slug list: `login`, `admin`, `api`, SEO pages (`rsvp-website`…) claimable; subdomain phishing | `validation.ts:4` | fixed (app) · DB constraint open |
+| S11 | No reserved-slug list: `login`, `admin`, `api`, SEO pages (`rsvp-website`…) claimable; subdomain phishing | `validation.ts:4` | fixed (app) · DB constraint written (`20261009010000`, NOT VALID) · migration pending |
 
 ## P1 — broken core flows
 
@@ -51,7 +51,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | P3 | `BuildJobProvider` fetches `/api/events/build/active` on every page incl. guest pages | `build-job-provider.tsx` | fixed |
 | P4 | Every RSVP seq-scans the rate-limit table, locks the event row; 10/IP/10min blocks shared Wi-Fi | `20260731140918…sql:114-126` | fixed · migration pending |
 | P5 | 13 font families global on every page | `layout.tsx:24-38` | fixed: only Outfit, Inter and Playfair preload |
-| P6 | AI reasoning effort high/xhigh by default; flat 50¢ credit regardless of tokens | `env.ts:115`, `generate-document.ts:319` | open |
+| P6 | AI reasoning effort high/xhigh by default; flat 50¢ credit regardless of tokens | `env.ts:115`, `generate-document.ts:319` | fixed: per-call effort (planner/art director low, original site/studio edit medium), env overrides kept — see DECISIONS.md; credit still flat |
 
 ## P3 — growth / UX
 
@@ -78,15 +78,15 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | N9 | Demo-mode image uploads fail to save (data: URL rejected by schema) |
 | N10 | Draft pages say "This event is no longer accepting responses" — should say RSVPs open after publishing — **fixed** |
 | N11 | Hero subtitle wraps off-centre on composed pages |
-| N12 | Supabase migrations are not replayable on a fresh DB (`20260722052902` references a function created later) |
-| N13 | Preview deploys failing since 2026-09-23: Dependabot PRs #19 (prod deps, Stripe SDK expects apiVersion `2026-08-26.dahlia`) and #18 (dev deps) are stale and conflict with main — rebase (`@dependabot recreate`), fix the Stripe apiVersion, verify, merge |
+| N12 | Supabase migrations are not replayable on a fresh DB (`20260722052902` references a function created later) — **documented** in `supabase/README.md` (production-only legacy objects); `scripts/verify-migrations.sh` now lists the three known-legacy files explicitly and fails on any other pre-strict error |
+| N13 | Preview deploys failing since 2026-09-23: Dependabot PRs #19 (prod deps, Stripe SDK expects apiVersion `2026-08-26.dahlia`) and #18 (dev deps) are stale and conflict with main — rebase (`@dependabot recreate`), fix the Stripe apiVersion, verify, merge — **fixed** by upgrading in-tree (Stripe 22.6.2 / `2026-08-26.dahlia`); close #18/#19 once merged. Deferred majors: stripe 23 (`endive` API), eslint 10, typescript 7 |
 | N14 | No error monitoring in production (Sentry env unset) |
 | N15 | Essentially no traffic: ~48 requests in 7 days (2026-10-08), almost all internal testing |
 | N16 | (fixed: public pages now CDN-cached with nonce-free CSP) Every response gets `Cache-Control: private, no-store` from `src/proxy.ts`, so prerendered marketing/template pages are never CDN-cached; prerendered HTML has no CSP nonces, so `CSP_ENFORCE_ENABLED=true` would break static pages. Needs a per-route policy (public static pages: cacheable + hash/self CSP) |
 | N17 | Two-column sections with a large gap only show two columns at ≥ ~1150px (column min-width formula ignores the gap) — affects live event pages |
 | N18 | "Use this template" sends logged-out visitors to /login rather than signup; palette chip not pre-selected from the template brief |
 | N19 | Stuck domain order cases remain: register succeeded but recording failed + later step failed, or registrar reports pending — needs a registrar ownership check |
-| N20 | Credit refund rules inconsistent (studio edit keeps credit on fallback; studio create refunds on fallback; main build keeps credit on template fallback); failed builds leave an empty placeholder draft |
+| N20 | Credit refund rules inconsistent (studio edit keeps credit on fallback; studio create refunds on fallback; main build keeps credit on template fallback); failed builds leave an empty placeholder draft — **fixed**: one rule in `payments/ai-credit-rule.ts` (see DECISIONS.md), failed first builds delete their placeholder |
 
 ## Needs owner
 
