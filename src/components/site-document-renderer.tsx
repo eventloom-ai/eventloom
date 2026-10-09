@@ -1,11 +1,11 @@
 import Image from "next/image";
-import type { CSSProperties, FocusEvent, MouseEvent } from "react";
+import type { CSSProperties, FocusEvent, MouseEvent, ReactNode } from "react";
 import { RsvpForm } from "@/components/rsvp-form";
 import { SiteReveal } from "@/components/site-reveal";
 import { backgroundLayers, prepareSiteDocument } from "@/lib/site-contrast";
 import { coupleTitleLines } from "@/lib/couple-title";
 import type { SiteDocument, SiteNode, SiteStyle, SiteTextBinding } from "@/lib/site-document";
-import type { EventConfig, EventStatus } from "@/lib/types";
+import type { EventConfig, EventStatus, RsvpField } from "@/lib/types";
 
 type SiteDocumentRendererProps = {
   document: SiteDocument;
@@ -20,6 +20,8 @@ type SiteDocumentRendererProps = {
   interactive?: boolean;
   onSelectNode?: (nodeId: string) => void;
   onTextCommit?: (nodeId: string, content: string) => void;
+  /** Static sample (template pages): no reveal animation, a non-submitting RSVP form, and a div root so it can sit inside another page's main. */
+  readOnly?: boolean;
 };
 
 const padding = { none: "0", small: "clamp(1.1rem,4cqw,2rem)", medium: "clamp(2rem,7cqw,4.5rem)", large: "clamp(3rem,9cqw,6.5rem)", hero: "clamp(3.25rem,11cqw,8rem)" } as const;
@@ -102,6 +104,42 @@ export function siteBindingValue(binding: SiteTextBinding | undefined, config: E
   return typeof value === "string" ? value : "";
 }
 
+function Reveal({ readOnly, motion, index, style, children }: { readOnly?: boolean; motion: SiteDocument["theme"]["motion"]; index: number; style?: CSSProperties; children: ReactNode }) {
+  if (readOnly) return <div style={style}>{children}</div>;
+  return <SiteReveal motion={motion} index={index} style={style}>{children}</SiteReveal>;
+}
+
+const previewFieldLabels: Partial<Record<RsvpField, string>> = {
+  email: "Email",
+  phone: "Phone",
+  party_size: "Party size",
+  guest_names: "Guest names",
+  meal_preference: "Meal preference",
+  note: "Note",
+};
+
+/** A look-alike of the guest RSVP form for template previews. Every control is disabled and nothing can be submitted. */
+function RsvpPreview({ fields }: { fields: RsvpField[] }) {
+  const inputStyle: CSSProperties = { border: "1px solid rgba(0,0,0,0.15)", borderRadius: "6px", padding: "0.7rem 0.75rem", background: "#fff", font: "inherit", color: "#57534e" };
+  const labelStyle: CSSProperties = { display: "grid", gap: "0.45rem", fontSize: "0.875rem", fontWeight: 500 };
+  return (
+    <div aria-label="Sample RSVP form" style={{ borderRadius: "8px", border: "1px solid rgba(0,0,0,0.1)", background: "#fff", color: "#1c1917", padding: "1.25rem", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+      <p style={{ fontSize: "0.72rem", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8a6a3f" }}>Guest reply</p>
+      <p style={{ marginTop: "0.5rem", fontSize: "1.6rem", fontWeight: 600 }}>Confirm your details</p>
+      <div style={{ marginTop: "1.25rem", display: "grid", gap: "0.9rem", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 12rem), 1fr))" }}>
+        <label style={labelStyle}>First name<input disabled style={inputStyle} /></label>
+        <label style={labelStyle}>Last name<input disabled style={inputStyle} /></label>
+      </div>
+      {fields.includes("attendance") ? <div style={{ marginTop: "1rem", fontSize: "0.875rem", fontWeight: 500 }}>Will you attend?<div style={{ marginTop: "0.5rem", display: "flex", gap: "0.75rem" }}><span style={{ borderRadius: "999px", padding: "0.45rem 1rem", background: "#191713", color: "#fff" }}>Yes</span><span style={{ borderRadius: "999px", padding: "0.45rem 1rem", background: "#f5f5f4" }}>No</span></div></div> : null}
+      <div style={{ marginTop: "1rem", display: "grid", gap: "0.9rem" }}>
+        {fields.filter((field) => previewFieldLabels[field]).map((field) => <label key={field} style={labelStyle}>{previewFieldLabels[field]}<input disabled style={inputStyle} /></label>)}
+      </div>
+      <p style={{ marginTop: "1.25rem", borderRadius: "999px", background: "#405448", color: "#fff", padding: "0.9rem", textAlign: "center", fontWeight: 600, opacity: 0.8 }}>Send reply</p>
+      <p style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "#57534e" }}>Sample form. Guests can reply once the event is published.</p>
+    </div>
+  );
+}
+
 function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRendererProps }) {
   const { document, config, interactive, selectedNodeId, onSelectNode, onTextCommit } = context;
   const selected = selectedNodeId === node.id;
@@ -121,14 +159,14 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
       : node.style.columns === 1
         ? "1fr"
         : `repeat(auto-fit, minmax(min(100%, max(16rem, calc((100% - ${node.style.columns - 1} * 1.75rem) / ${node.style.columns}))), 1fr))`;
-    return <div {...common} style={{ ...common.style, display: "grid", gridTemplateColumns: columns, alignItems: "stretch" }}>{node.children.map((child, index) => <SiteReveal key={child.id} motion={document.theme.motion} index={index}><NodeView node={child} context={context} /></SiteReveal>)}</div>;
+    return <div {...common} style={{ ...common.style, display: "grid", gridTemplateColumns: columns, alignItems: "stretch" }}>{node.children.map((child, index) => <Reveal key={child.id} readOnly={context.readOnly} motion={document.theme.motion} index={index}><NodeView node={child} context={context} /></Reveal>)}</div>;
   }
   if (node.type === "overlay") return (
     <div {...common} style={{ display: "grid", position: "relative", overflow: "hidden", ...common.style }}>
       {node.children.map((child, index) => (
-        <SiteReveal key={child.id} motion={document.theme.motion} index={index} style={{ gridArea: "1 / 1", zIndex: index, minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: child.style?.justify === "end" ? "flex-end" : child.style?.justify === "center" ? "center" : "flex-start" }}>
+        <Reveal key={child.id} readOnly={context.readOnly} motion={document.theme.motion} index={index} style={{ gridArea: "1 / 1", zIndex: index, minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: child.style?.justify === "end" ? "flex-end" : child.style?.justify === "center" ? "center" : "flex-start" }}>
           <NodeView node={child} context={context} />
-        </SiteReveal>
+        </Reveal>
       ))}
     </div>
   );
@@ -169,14 +207,14 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
   if (node.type === "gallery") return <div {...common} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(13rem,1fr))", gap: "1rem", ...common.style }}>{node.images.map((image) => <div key={image.id} style={{ aspectRatio: "4 / 5", position: "relative", overflow: "hidden", borderRadius: document.theme.radius === "sharp" ? 0 : "1.25rem" }}><Image unoptimized fill sizes="(max-width: 768px) 50vw, 30vw" src={image.url} alt={image.alt} style={{ objectFit: "cover" }} /></div>)}</div>;
   if (node.type === "countdown") return <div {...common}><p style={{ fontSize: "clamp(1.8rem,8cqw,3.4rem)", fontFamily: "var(--event-display)", lineHeight: 0.95 }}>{config.date}</p><p style={{ opacity: 0.62, marginTop: "0.75rem", letterSpacing: "0.16em", textTransform: "uppercase", fontSize: "0.72rem" }}>Save the date</p></div>;
   if (node.type === "schedule") return <div {...common} style={{ display: "grid", gap: "0.25rem", ...common.style }}>{config.schedule.map((item) => <article key={`${item.title}-${item.time}`} style={{ display: "grid", gridTemplateColumns: "minmax(5.5rem,0.22fr) 1fr", gap: "1.75rem", paddingBlock: "1.4rem", borderTop: "1px solid color-mix(in srgb,currentColor 16%,transparent)" }}><p style={{ opacity: 0.58, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.75rem", paddingTop: "0.45rem" }}>{item.time}</p><div><h3 style={{ fontSize: "clamp(1.4rem,3vw,2.15rem)", fontFamily: "var(--event-display)", fontStyle: "italic", lineHeight: 1.05 }}>{item.title}</h3>{item.location ? <p style={{ marginTop: "0.4rem", opacity: 0.68 }}>{item.location}</p> : null}{item.description ? <p style={{ marginTop: "0.7rem", lineHeight: 1.65, opacity: 0.72, maxWidth: "36rem" }}>{item.description}</p> : null}</div></article>)}</div>;
-  if (node.type === "venue") return <div {...common}><p style={{ fontSize: "clamp(1.7rem,7cqw,3.2rem)", fontFamily: "var(--event-display)", lineHeight: 1.02, letterSpacing: "-0.04em" }}>{config.venueName}</p>{config.venueAddress ? <p style={{ marginTop: "0.85rem", opacity: 0.7, maxWidth: "24rem" }}>{config.venueAddress}</p> : null}{node.showMap && config.venueName && !/to be announced/i.test(config.venueName) ? <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${config.venueName} ${config.venueAddress ?? ""}`)}`} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "1.5rem", color: "inherit", letterSpacing: "0.12em", textTransform: "uppercase", fontSize: "0.72rem" }}>Open directions ↗</a> : null}</div>;
+  if (node.type === "venue") return <div {...common}><p style={{ fontSize: "clamp(1.7rem,7cqw,3.2rem)", fontFamily: "var(--event-display)", lineHeight: 1.02, letterSpacing: "-0.04em" }}>{config.venueName}</p>{config.venueAddress ? <p style={{ marginTop: "0.85rem", opacity: 0.7, maxWidth: "24rem" }}>{config.venueAddress}</p> : null}{node.showMap && !context.readOnly && config.venueName && !/to be announced/i.test(config.venueName) ? <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${config.venueName} ${config.venueAddress ?? ""}`)}`} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "1.5rem", color: "inherit", letterSpacing: "0.12em", textTransform: "uppercase", fontSize: "0.72rem" }}>Open directions ↗</a> : null}</div>;
   if (node.type === "rsvp") return (
     <div {...common}>
       <div style={{ maxWidth: "36rem", marginBottom: "2rem", textAlign: node.style?.align ?? "left" }}>
         <h2 style={{ fontFamily: "var(--event-display)", fontSize: "clamp(2.4rem,10cqw,4.4rem)", lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.045em" }}>{node.heading ?? "Will you join us?"}</h2>
         {node.description ? <p style={{ marginTop: "1.15rem", opacity: 0.68, lineHeight: 1.6, maxWidth: "28rem" }}>{node.description}</p> : null}
       </div>
-      <RsvpForm className="eventloom-managed-rsvp__form" formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} fields={config.rsvpFields} />
+      {context.readOnly ? <RsvpPreview fields={config.rsvpFields} /> : <RsvpForm className="eventloom-managed-rsvp__form" formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} fields={config.rsvpFields} />}
     </div>
   );
   return null;
@@ -186,14 +224,15 @@ export function SiteDocumentRenderer(props: SiteDocumentRendererProps) {
   const document = prepareSiteDocument(props.document);
   const context = { ...props, document };
   const shellStyle = siteDocumentShellStyle(document);
+  const Root = props.readOnly ? "div" : "main";
   return (
-    <main
+    <Root
       className="eventloom-site-document"
       dir={document.direction}
       style={shellStyle}
     >
-      {document.nodes.map((node, index) => <SiteReveal key={node.id} motion={document.theme.motion} index={index}><NodeView node={node} context={context} /></SiteReveal>)}
-    </main>
+      {document.nodes.map((node, index) => <Reveal key={node.id} readOnly={props.readOnly} motion={document.theme.motion} index={index}><NodeView node={node} context={context} /></Reveal>)}
+    </Root>
   );
 }
 
