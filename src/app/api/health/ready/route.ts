@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { env, externalLaunchReviewsApproved, isOpenSrsConfigured, isStripeConfigured, isSupabaseConfigured, isTurnstileConfigured, isVercelConfigured, legalIdentityConfigured, monitoringConfigured } from "@/lib/env";
+import { env, externalLaunchReviewsApproved, isOpenSrsConfigured, isStripeConfigured, isSupabaseConfigured, isTurnstileConfigured, isVercelConfigured, legalIdentityConfigured, monitoringConfigured, stripeKeyMatchesDeployment } from "@/lib/env";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { safeTokenEquals } from "@/lib/security/request";
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   }
   const checks = {
     database: isSupabaseConfigured() && database,
-    stripe: isStripeConfigured() && Boolean(env.stripeWebhookSecret()),
+    stripe: isStripeConfigured() && Boolean(env.stripeWebhookSecret()) && stripeKeyMatchesDeployment(),
     vercel: isVercelConfigured(),
     registrar: isOpenSrsConfigured(),
     turnstile: isTurnstileConfigured(),

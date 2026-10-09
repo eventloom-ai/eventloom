@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { domainProvider } from "@/lib/domains/provider";
-import { appUrl, domainPriceCapUsd, env, isDomainPurchasingConfigured } from "@/lib/env";
+import { appUrl, domainPriceCapUsd, env, isDomainPurchasingConfigured, stripeKeyMatchesDeployment } from "@/lib/env";
 import { LAUNCH_PRICE_CENTS } from "@/lib/payments/billing";
 import { serviceSupabase } from "@/lib/supabase/server";
 import { domainSchema, evaluateDomainQuote } from "@/lib/validation";
@@ -8,7 +8,7 @@ import { domainRegistrantSchema, storeRegistrantPayload, deleteRegistrantPayload
 
 export function stripeClient() {
   const key = env.stripeSecretKey();
-  if (!key) {
+  if (!key || !stripeKeyMatchesDeployment(key)) {
     return null;
   }
 

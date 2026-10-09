@@ -30,6 +30,7 @@ vi.mock("@/lib/env", () => ({
   domainPriceCapUsd: () => 15,
   env: { stripeSecretKey: () => "sk_test_checkout" },
   isDomainPurchasingConfigured: () => true,
+  stripeKeyMatchesDeployment: () => true,
 }));
 
 vi.mock("@/lib/domains/provider", () => ({

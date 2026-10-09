@@ -14,12 +14,14 @@ const mocks = vi.hoisted(() => ({
   beginProviderEvent: vi.fn(),
   startFulfillmentJob: vi.fn(),
   markFulfillment: vi.fn(),
+  production: false,
 }));
 
 vi.mock("@/lib/env", () => ({
   env: {
     stripeWebhookSecret: () => mocks.webhookSecret,
   },
+  isProductionDeployment: () => mocks.production,
 }));
 
 vi.mock("@/lib/payments/stripe", () => ({
@@ -54,6 +56,7 @@ function checkoutEvent() {
   return {
     id: "evt_launch_1",
     type: "checkout.session.completed",
+    livemode: true,
     data: {
       object: {
         id: "cs_launch_1",
@@ -97,6 +100,7 @@ describe("Stripe launch webhook", () => {
     mocks.stripeConfigured = true;
     mocks.storageConfigured = true;
     mocks.webhookSecret = "whsec_test";
+    mocks.production = false;
     mocks.constructEvent.mockReturnValue(checkoutEvent());
     mocks.rpc.mockResolvedValue({ data: { ok: true, duplicate: false }, error: null });
     mocks.loadLaunchOrder.mockImplementation(async () => mocks.storageConfigured
@@ -243,5 +247,30 @@ describe("Stripe launch webhook", () => {
     expect(response.status).toBe(200);
     expect(mocks.rpc).not.toHaveBeenCalled();
     expect(mocks.markFulfillment).toHaveBeenCalledWith({ eventRowId: "webhook-row", state: "service_active" });
+  });
+
+  it("waits for delayed-settlement payments instead of rejecting the completed session", async () => {
+    const event = checkoutEvent();
+    event.data.object.payment_status = "unpaid";
+    mocks.constructEvent.mockReturnValue(event);
+    const response = await POST(webhookRequest());
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("fulfills a launch when a delayed payment settles", async () => {
+    mocks.constructEvent.mockReturnValue({ ...checkoutEvent(), id: "evt_async_1", type: "checkout.session.async_payment_succeeded" });
+    const response = await POST(webhookRequest());
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("fulfill_event_launch", expect.objectContaining({ p_stripe_event_id: "evt_async_1" }));
+  });
+
+  it("never fulfills test-mode payments in production", async () => {
+    mocks.production = true;
+    mocks.constructEvent.mockReturnValue({ ...checkoutEvent(), livemode: false });
+    const response = await POST(webhookRequest());
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.logPaymentEvent).toHaveBeenCalledWith("error", "test_mode_event_in_production", expect.anything());
   });
 });

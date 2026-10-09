@@ -10,6 +10,15 @@ function enabled(name: string, productionDefault = false) {
   return production ? productionDefault : true;
 }
 
+export function isProductionDeployment() {
+  return read("VERCEL_ENV") === "production";
+}
+
+// Production must never take payments on a test key: test cards would publish sites and could buy real domains.
+export function stripeKeyMatchesDeployment(key = read("STRIPE_SECRET_KEY")) {
+  return !isProductionDeployment() || /^(sk|rk)_live_/.test(key);
+}
+
 export function appUrl() {
   return read("NEXT_PUBLIC_APP_URL") || "http://localhost:3000";
 }

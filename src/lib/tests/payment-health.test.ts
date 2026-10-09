@@ -15,6 +15,7 @@ vi.mock("@/lib/env", () => ({
   env: { readinessToken: () => "ready-secret", stripeWebhookSecret: () => "whsec_test" },
   isOpenSrsConfigured: () => true,
   isStripeConfigured: () => true,
+  stripeKeyMatchesDeployment: () => true,
   isSupabaseConfigured: () => true,
   isTurnstileConfigured: () => true,
   isVercelConfigured: () => true,

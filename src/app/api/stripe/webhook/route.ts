@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { provisionPurchasedDomain, type ProvisionedDomain } from "@/lib/domains/provision";
-import { env } from "@/lib/env";
+import { env, isProductionDeployment } from "@/lib/env";
 import { AI_LAUNCH_BONUS_CENTS, LAUNCH_PRICE_CENTS } from "@/lib/payments/billing";
 import { loadLaunchOrderForProvisioning, verifyLaunchFulfillment } from "@/lib/payments/fulfillment";
 import { logPaymentEvent } from "@/lib/payments/monitoring";
@@ -57,13 +57,21 @@ export async function processVerifiedStripeEvent(event: Stripe.Event, requestId:
     return NextResponse.json({ ok: true });
   }
 
-  if (event.type !== "checkout.session.completed") {
+  if (isProductionDeployment() && !event.livemode) {
+    logPaymentEvent("error", "test_mode_event_in_production", { requestId, stripeEventId: event.id, stripeEventType: event.type });
+    await markFulfillment({ eventRowId: storedEvent.eventRowId, state: "service_active" });
+    return NextResponse.json({ ok: true, ignored: "test_mode" });
+  }
+
+  // Delayed-settlement methods complete the session unpaid and settle later via async_payment_succeeded.
+  const settledSession = event.type === "checkout.session.async_payment_succeeded" || (event.type === "checkout.session.completed" && event.data.object.payment_status !== "unpaid");
+  if (!settledSession) {
     logPaymentEvent("info", "webhook_event_ignored", { requestId, stripeEventId: event.id, stripeEventType: event.type });
     await markFulfillment({ eventRowId: storedEvent.eventRowId, state: "service_active" });
     return NextResponse.json({ ok: true });
   }
 
-  const session = event.data.object;
+  const session = event.data.object as Stripe.Checkout.Session;
   const eventId = session.metadata?.event_id;
   const orderId = session.metadata?.order_id;
   const versionId = session.metadata?.version_id;
