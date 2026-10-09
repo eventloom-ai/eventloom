@@ -22,6 +22,8 @@ type AgentEdit = {
   eventPatch: Partial<EventConfig>;
 };
 
+const styleKeys = ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden", "texture", "letterSpacing", "italic", "opacity", "border", "justify", "rotate", "offset"];
+
 const editSchema = {
   type: "object",
   additionalProperties: false,
@@ -52,6 +54,7 @@ const editSchema = {
           url: { type: ["string", "null"] },
           alt: { type: ["string", "null"] },
           beforeNodeId: { type: ["string", "null"] },
+          removeStyleKeys: { type: ["array", "null"], items: { type: "string", enum: styleKeys } },
           style: {
             type: ["object", "null"], additionalProperties: false,
             properties: {
@@ -66,7 +69,7 @@ const editSchema = {
               justify: { type: ["string", "null"], enum: ["start", "center", "end", null] },
               rotate: { type: ["string", "null"], enum: ["none", "left", "right", null] }, offset: { type: ["string", "null"], enum: ["none", "raised", "lowered", null] },
             },
-            required: ["background", "color", "accent", "align", "width", "padding", "gap", "radius", "columns", "minHeight", "font", "size", "weight", "hidden", "texture", "letterSpacing", "italic", "opacity", "border", "justify", "rotate", "offset"],
+            required: styleKeys,
           },
           theme: {
             type: ["object", "null"], additionalProperties: false,
@@ -78,7 +81,7 @@ const editSchema = {
             required: ["text", "surface", "accent", "muted", "display", "body", "radius", "motion"],
           },
         },
-        required: ["op", "nodeId", "content", "url", "alt", "beforeNodeId", "style", "theme"],
+        required: ["op", "nodeId", "content", "url", "alt", "beforeNodeId", "removeStyleKeys", "style", "theme"],
       },
     },
   },
@@ -100,9 +103,11 @@ export function normalizeModelEdit(raw: Record<string, unknown>): AgentEdit {
     const op = String(operation.op ?? "");
     const nodeId = typeof operation.nodeId === "string" ? operation.nodeId : "";
     if (op === "replace_text" && nodeId && typeof operation.content === "string") return [{ op, nodeId, content: operation.content } satisfies SiteOperation];
-    if (op === "update_style" && nodeId && operation.style && typeof operation.style === "object") {
-      const style = Object.fromEntries(Object.entries(operation.style as Record<string, unknown>).filter(([, value]) => value !== undefined));
-      return [{ op, nodeId, style } as SiteOperation];
+    if (op === "update_style" && nodeId) {
+      // The strict schema makes the model send every style key, so null means "unchanged"; removals must be explicit.
+      const style: Record<string, unknown> = Object.fromEntries(Object.entries(operation.style && typeof operation.style === "object" ? operation.style as Record<string, unknown> : {}).filter(([key, value]) => styleKeys.includes(key) && value !== undefined && value !== null));
+      if (Array.isArray(operation.removeStyleKeys)) for (const key of operation.removeStyleKeys) if (typeof key === "string" && styleKeys.includes(key) && !(key in style)) style[key] = null;
+      return Object.keys(style).length ? [{ op, nodeId, style } as SiteOperation] : [];
     }
     if (op === "set_image" && nodeId && typeof operation.url === "string") return [{ op, nodeId, url: operation.url, ...(typeof operation.alt === "string" ? { alt: operation.alt } : {}) } satisfies SiteOperation];
     if (op === "remove_node" && nodeId) return [{ op, nodeId } satisfies SiteOperation];
@@ -142,7 +147,7 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
     body: JSON.stringify({
       ...openaiResponsesOptions(),
       input: [
-        { role: "system", content: "You are Eventloom's visual editing agent. Make the smallest safe set of changes that satisfies the request. Preserve all unrelated nodes and event facts. Never invent names, dates, times, venues, addresses, or URLs. Use only node IDs that exist. Prefer updating the selected nodes when selection is present. Return concise user-facing copy." },
+        { role: "system", content: "You are Eventloom's visual editing agent. Make the smallest safe set of changes that satisfies the request. Preserve all unrelated nodes and event facts. Never invent names, dates, times, venues, addresses, or URLs. Use only node IDs that exist. Prefer updating the selected nodes when selection is present. In update_style, set every style key you are not changing to null; to clear an existing style value, list its key in removeStyleKeys. Return concise user-facing copy." },
         { role: "user", content: JSON.stringify({ request: prompt, selectedNodeIds, event: config, document, recentConversation: messages.slice(-8).map((message) => ({ role: message.role, content: message.content })) }) },
       ],
       text: { format: { type: "json_schema", name: "eventloom_document_edit", strict: true, schema: editSchema } },
