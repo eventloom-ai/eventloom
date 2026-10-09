@@ -59,8 +59,8 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | --- | --- | --- |
 | G1 | Event pages have no metadata: inherit homepage title + canonical `/` (share previews generic; Google sees duplicates). Should be noindex by default with self-canonical + per-event OG image | fixed |
 | G2 | No "Made with Eventloom" loop on guest pages; legal footer links break on custom domains; unmerged branch `codex/guest-to-host-viral-loop` | partial: made-with link added; referral branch not merged |
-| G3 | SEO landing pages not linked from homepage; no FAQ/SoftwareApplication schema | open |
-| G4 | No template gallery / occasion pages (biggest organic lever) | open |
+| G3 | SEO landing pages not linked from homepage; no FAQ/SoftwareApplication schema | fixed (3daf0d9) |
+| G4 | No template gallery / occasion pages (biggest organic lever) | fixed: /templates + 14 occasion pages (3daf0d9) |
 | G5 | Mobile: Feedback button overlaps content; hero placeholder splits into two columns; studio overflows viewport by ~94px | partial: chrome hidden on guest pages, studio overflow fixed |
 
 ## Found during fixes (open)
@@ -82,6 +82,11 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | N13 | Preview deploys failing since 2026-09-23: Stripe SDK upgrade expects apiVersion `2026-08-26.dahlia` |
 | N14 | No error monitoring in production (Sentry env unset) |
 | N15 | Essentially no traffic: ~48 requests in 7 days (2026-10-08), almost all internal testing |
+| N16 | Every response gets `Cache-Control: private, no-store` from `src/proxy.ts`, so prerendered marketing/template pages are never CDN-cached; prerendered HTML has no CSP nonces, so `CSP_ENFORCE_ENABLED=true` would break static pages. Needs a per-route policy (public static pages: cacheable + hash/self CSP) |
+| N17 | Two-column sections with a large gap only show two columns at ≥ ~1150px (column min-width formula ignores the gap) — affects live event pages |
+| N18 | "Use this template" sends logged-out visitors to /login rather than signup; palette chip not pre-selected from the template brief |
+| N19 | Stuck domain order cases remain: register succeeded but recording failed + later step failed, or registrar reports pending — needs a registrar ownership check |
+| N20 | Credit refund rules inconsistent (studio edit keeps credit on fallback; studio create refunds on fallback; main build keeps credit on template fallback); failed builds leave an empty placeholder draft |
 
 ## Needs owner
 
