@@ -5,7 +5,7 @@ import { progressForStep } from "@/lib/agent/build-progress";
 import { createEventRecord, createGenerationJob, finishGenerationJob, placeholderEventConfig, updateGenerationJobProgress } from "@/lib/agent/tools";
 import { aiDeadline } from "@/lib/ai/deadline";
 import type { ImageInput } from "@/lib/ai/generator";
-import { processAndStoreEventImage } from "@/lib/event-assets";
+import { processAndStoreEventImage, storeDemoEventImage } from "@/lib/event-assets";
 import { isEventOwner, refundBuildCredit, reserveBuildCredit } from "@/lib/payments/billing";
 import { reapStaleGenerationJobs } from "@/lib/studio-store";
 import { serviceSupabase } from "@/lib/supabase/server";
@@ -16,13 +16,15 @@ export type StartBuildResult =
 
 // Store reference photos as private event assets so the site document gets an /api/assets URL
 // instead of an inline data URL (which the document schema rejects). Unstorable images keep their data URL.
-export async function storeReferenceImages(eventId: string, images: ImageInput[]): Promise<ImageInput[]> {
+export async function storeReferenceImages(eventId: string | null, images: ImageInput[]): Promise<ImageInput[]> {
   const client = serviceSupabase();
-  if (!client || !images.length) return images;
+  if (!images.length) return images;
   return Promise.all(images.map(async (image) => {
     const match = /^data:([^;,]+);base64,(.+)$/.exec(image.dataUrl);
     if (!match) return image;
-    const stored = await processAndStoreEventImage(client, eventId, new File([Buffer.from(match[2], "base64")], image.name || "reference", { type: match[1] }));
+    const file = new File([Buffer.from(match[2], "base64")], image.name || "reference", { type: match[1] });
+    // Demo mode has no storage; its in-memory asset store serves the same /api/assets/<id> URLs.
+    const stored = client && eventId ? await processAndStoreEventImage(client, eventId, file) : client ? { error: "no_event" } : await storeDemoEventImage(file);
     return "url" in stored ? { ...image, storedUrl: stored.url } : image;
   }));
 }
@@ -90,7 +92,7 @@ export async function startBuildJob(
     await updateGenerationJobProgress(jobId, { step: "started", message: "Starting your site build…", progressPercent: progressForStep("started"), eventId: placeholderEventId }, ownerId);
   }
 
-  const images = ownerId && placeholderEventId ? await storeReferenceImages(placeholderEventId, parsed.images) : parsed.images;
+  const images = ownerId && placeholderEventId ? await storeReferenceImages(placeholderEventId, parsed.images) : serviceSupabase() ? parsed.images : await storeReferenceImages(null, parsed.images);
 
   const buildInput = {
     jobId,

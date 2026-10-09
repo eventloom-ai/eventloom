@@ -7,7 +7,9 @@ describe("desktop studio layout", () => {
     const source = readFileSync("src/components/visual-studio.tsx", "utf8");
 
     expect(source).toContain('className="relative flex min-h-0 flex-1"');
-    expect(source).toContain('className="min-w-0 flex-1 bg-[#f3f3f3]"');
+    // The canvas column stacks an optional notice above Puck, which fills the rest of the height.
+    expect(source).toContain('className="flex min-w-0 flex-1 flex-col bg-[#f3f3f3]"');
+    expect(source).toContain('className="min-h-0 flex-1"');
     expect(source).toContain("<Puck");
     expect(source).toContain("<StudioChat");
   });

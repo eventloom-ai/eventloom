@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fallbackEventDesign } from "@/lib/agent/art-director";
+import { eventDesignSchema, readEventDesign } from "@/lib/event-design/schema";
 import { applyEventDetailsPatch, applySiteOperations } from "@/lib/site-document-operations";
 import { siteDocumentSchema } from "@/lib/site-document";
 import { canEditEvent, commitStudioRevision, loadStudioState } from "@/lib/studio-store";
@@ -19,8 +21,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ev
   const { eventId } = await params;
   const user = await getServerUser();
   if (!(await canEditEvent(eventId, user?.id ?? null))) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  const body = await req.json().catch(() => null) as { baseVersionId?: string; document?: unknown; operations?: unknown; eventPatch?: unknown; summary?: string } | null;
-  if (!body?.baseVersionId || (!body.document && !body.operations && !body.eventPatch)) return NextResponse.json({ error: "invalid" }, { status: 400 });
+  const body = await req.json().catch(() => null) as { baseVersionId?: string; document?: unknown; operations?: unknown; eventPatch?: unknown; design?: unknown; adoptDesign?: boolean; summary?: string } | null;
+  if (!body?.baseVersionId || (!body.document && !body.operations && !body.eventPatch && !body.design && body.adoptDesign !== true)) return NextResponse.json({ error: "invalid" }, { status: 400 });
   const state = await loadStudioState(eventId, user?.id ?? null);
   if (!state) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (state.revision.id !== body.baseVersionId) return NextResponse.json({ error: "version_conflict", state }, { status: 409 });
@@ -30,7 +32,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ev
       : body.operations
         ? applySiteOperations(state.revision.document, body.operations)
         : { document: state.revision.document, changedNodeIds: [] };
-    const config = body.eventPatch ? applyEventDetailsPatch(state.revision.config, body.eventPatch) : state.revision.config;
+    const patched = body.eventPatch ? applyEventDetailsPatch(state.revision.config, body.eventPatch) : state.revision.config;
+    // Designed events save their design on the config (the site document stays as the legacy fallback).
+    // `adoptDesign` moves a legacy event onto the design system with a design derived from its own details.
+    const config = body.design
+      ? { ...patched, design: eventDesignSchema.parse(body.design) }
+      : body.adoptDesign === true && !readEventDesign(patched)
+        ? { ...patched, design: fallbackEventDesign({ config: patched, prompt: state.revision.prompt || patched.title }) }
+        : patched;
     const result = await commitStudioRevision({
       eventId,
       ownerId: user?.id ?? null,

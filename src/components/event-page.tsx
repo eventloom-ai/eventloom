@@ -1,12 +1,32 @@
 import type { EventRecord } from "@/lib/types";
+import { EventSite } from "@/components/event-sections/event-site";
 import { RsvpForm } from "@/components/rsvp-form";
 import { SiteDocumentRenderer } from "@/components/site-document-renderer";
+import { designSiteFromConfig } from "@/lib/event-design/design-event-site";
 import { env, publicRsvpEnabled } from "@/lib/env";
 import { createPublicRsvpToken } from "@/lib/security/rsvp-token";
 
+/**
+ * Rendering rule: an event whose config carries a valid design renders through the designed section library;
+ * every other event renders its site document (or the plain fallback) exactly as it did before designs existed.
+ */
 export function EventPage({ event }: { event: EventRecord }) {
   const formToken = createPublicRsvpToken(event.id, event.slug) ?? "";
   const rsvpEnabled = publicRsvpEnabled() && Boolean(formToken) && event.status === "published" && event.rsvp_open;
+  const designed = designSiteFromConfig(event.config);
+  if (designed) {
+    return (
+      <div data-eventloom-guest-page="">
+        <main>
+          <EventSite
+            design={designed}
+            rsvp={<RsvpForm hideHeader formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} isDraft={event.status === "draft"} fields={event.config.rsvpFields} />}
+          />
+        </main>
+        <GuestFooter slug={event.slug} />
+      </div>
+    );
+  }
   if (event.document) {
     return (
       <div data-eventloom-guest-page="">

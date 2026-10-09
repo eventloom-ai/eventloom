@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { composeLandingBrief, eventDraftPath } from "@/lib/event-entry";
+import { MOOD_PALETTE, STYLE_FOR_KIND, chooseDesignStyle } from "@/lib/event-design/style-choice";
+import { designEventSite } from "@/lib/event-design/design-event-site";
+import { DESIGN_STYLES, type StyleKey } from "@/lib/event-design/styles";
+import type { DesignedSection, EventSiteDesign } from "@/lib/event-design/types";
 import { MOOD_PALETTES } from "@/lib/event-theme";
 import { occasionTemplateContent, type OccasionMood, type OccasionTemplateContent } from "@/lib/occasion-template-content";
-import { composeSiteDocument, type SiteDocument } from "@/lib/site-document";
 import type { EventConfig } from "@/lib/types";
 
 export type OccasionTemplate = OccasionTemplateContent;
@@ -50,21 +53,57 @@ export function sampleEventConfig(occasion: OccasionTemplate, styleIndex = 0): E
   };
 }
 
-/** A real site document for the sample event, composed the same way a new event's first draft is. Node ids are deterministic so static HTML is stable. */
-export function sampleSite(occasion: OccasionTemplate, styleIndex = 0): { config: EventConfig; document: SiteDocument } {
+// Words in a template style's prompt that name a design style, strongest first.
+const STYLE_CUES: Array<[RegExp, StyleKey]> = [
+  [/black-tie|luxury|gold details/i, "noir"],
+  [/sharp|modern|corporate|professional|tech/i, "minimal"],
+  [/playful|loud|bold|graphic|festival/i, "playful"],
+  [/editorial|literary|vintage/i, "editorial"],
+  [/romantic|soft|intimate|paper|tea party/i, "romantic"],
+];
+
+type StyleChoice = { styleKey: StyleKey; paletteKey: string };
+
+/** Best first: the style the template's wording names, then the kind-and-mood default, each in its mood palette, then its other palette. */
+function sampleStyleCandidates(occasion: OccasionTemplate, styleIndex: number): StyleChoice[] {
   const style = occasion.styles[styleIndex] ?? occasion.styles[0];
-  const config = sampleEventConfig(occasion, styleIndex);
-  let counter = 0;
-  const document = composeSiteDocument(config, style.prompt, (prefix) => `${prefix}_${(counter++).toString(36)}`);
-  return { config, document };
+  const chosen = chooseDesignStyle({ eventType: occasion.name, prompt: style.prompt, mood: style.mood });
+  const cued = STYLE_CUES.find(([pattern]) => pattern.test(style.prompt))?.[1];
+  // A memorial is never playful and never gets the vermilion accent.
+  const allowed = (choice: StyleChoice) => chosen.kind !== "memorial" || (choice.styleKey !== "playful" && choice.paletteKey !== "newsprint");
+  return [cued ?? chosen.styleKey, chosen.styleKey, STYLE_FOR_KIND[chosen.kind].default]
+    .flatMap((styleKey) => {
+      const preferred = MOOD_PALETTE[styleKey][style.mood];
+      return [preferred, ...DESIGN_STYLES[styleKey].palettes.map((palette) => palette.key).filter((key) => key !== preferred)].map((paletteKey) => ({ styleKey, paletteKey }));
+    })
+    .filter(allowed);
 }
 
-/** The opening and the section after it, sized to its content: enough to read as the top of the page in a thumbnail. */
-export function sampleThumbnailDocument(document: SiteDocument): SiteDocument {
-  return {
-    ...document,
-    nodes: document.nodes.slice(0, 2).map((node, index) => index === 0 ? { ...node, style: { ...node.style, minHeight: "auto" as const } } : node),
-  };
+/** The approved design style and palette each template style is shown in. Styles on one page never look identical. */
+export function sampleDesignStyle(occasion: OccasionTemplate, styleIndex = 0): StyleChoice {
+  const earlier = occasion.styles.slice(0, styleIndex).map((_, index) => sampleDesignStyle(occasion, index));
+  const candidates = sampleStyleCandidates(occasion, styleIndex);
+  return candidates.find((choice) => !earlier.some((item) => item.styleKey === choice.styleKey && item.paletteKey === choice.paletteKey)) ?? candidates[0];
+}
+
+/** The sample event as a designed site, laid out by the same designEventSite a new event uses. Deterministic, so static HTML is stable. */
+export function sampleDesignedSite(occasion: OccasionTemplate, styleIndex = 0): EventSiteDesign {
+  const config = sampleEventConfig(occasion, styleIndex);
+  const { styleKey, paletteKey } = sampleDesignStyle(occasion, styleIndex);
+  return designEventSite(config, styleKey, {}, { paletteKey });
+}
+
+/**
+ * The opening and the section after it: enough to read as the top of the page in a thumbnail. Thumbnails sit inside
+ * gallery links, so their RSVP button and directions link carry no target and render as plain text.
+ */
+export function sampleThumbnailSite(design: EventSiteDesign): EventSiteDesign {
+  const sections = design.sections.slice(0, 2).map((section): DesignedSection => {
+    if (section.kind === "hero") return { ...section, props: { ...section.props, cta: { ...section.props.cta, href: "" } } };
+    if (section.kind === "details") return { ...section, props: { ...section.props, mapUrl: undefined } };
+    return section;
+  });
+  return { ...design, sections };
 }
 
 const ogImage = { url: "/opengraph-image", width: 1200, height: 630, alt: "Eventloom event websites with online RSVPs" };

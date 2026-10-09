@@ -122,14 +122,16 @@ const previewFieldLabels: Partial<Record<RsvpField, string>> = {
 };
 
 /** A look-alike of the guest RSVP form for template previews. Every control is disabled and nothing can be submitted. */
-function RsvpPreview({ fields }: { fields: RsvpField[] }) {
+export function RsvpPreview({ fields, hideHeader = false }: { fields: RsvpField[]; hideHeader?: boolean }) {
   const inputStyle: CSSProperties = { border: "1px solid rgba(0,0,0,0.15)", borderRadius: "6px", padding: "0.7rem 0.75rem", background: "#fff", font: "inherit", color: "#57534e" };
   const labelStyle: CSSProperties = { display: "grid", gap: "0.45rem", fontSize: "0.875rem", fontWeight: 500 };
   return (
     <div aria-label="Sample RSVP form" style={{ borderRadius: "8px", border: "1px solid rgba(0,0,0,0.1)", background: "#fff", color: "#1c1917", padding: "1.25rem", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-      <p style={{ fontSize: "0.72rem", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8a6a3f" }}>Guest reply</p>
-      <p style={{ marginTop: "0.5rem", fontSize: "1.6rem", fontWeight: 600 }}>Confirm your details</p>
-      <div style={{ marginTop: "1.25rem", display: "grid", gap: "0.9rem", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 12rem), 1fr))" }}>
+      {hideHeader ? null : <>
+        <p style={{ fontSize: "0.72rem", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8a6a3f" }}>Guest reply</p>
+        <p style={{ marginTop: "0.5rem", fontSize: "1.6rem", fontWeight: 600 }}>Confirm your details</p>
+      </>}
+      <div style={{ marginTop: hideHeader ? 0 : "1.25rem", display: "grid", gap: "0.9rem", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 12rem), 1fr))" }}>
         <label style={labelStyle}>First name<input disabled style={inputStyle} /></label>
         <label style={labelStyle}>Last name<input disabled style={inputStyle} /></label>
       </div>

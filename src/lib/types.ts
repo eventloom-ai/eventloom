@@ -1,3 +1,5 @@
+import type { EventDesign } from "@/lib/event-design/schema";
+
 export type EventStatus = "draft" | "published" | "archived";
 export type DomainStatus = "searching" | "quoted" | "registered" | "vercel_pending" | "ready" | "failed";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
@@ -35,6 +37,11 @@ export type EventConfig = {
   rsvpDeadline?: string;
   heroImageUrl?: string;
   galleryImageUrls?: string[];
+  /**
+   * New-style design (style, palette, copy, section overrides). When present and valid the event renders
+   * through EventSite; otherwise it renders its legacy SiteDocument, exactly as before the design rollout.
+   */
+  design?: EventDesign;
 };
 
 export type PageArtifact = {

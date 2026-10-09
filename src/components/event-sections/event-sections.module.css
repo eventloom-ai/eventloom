@@ -284,15 +284,6 @@
   text-align: start;
 }
 
-/* The section already carries the heading, so the form's own header is hidden. */
-.rsvpSlot form > div:first-child {
-  display: none;
-}
-
-.rsvpSlot form > div:nth-child(2) {
-  margin-top: 0;
-}
-
 .rsvpSlot :is(input, textarea) {
   min-height: 3rem;
   background: #ffffff;

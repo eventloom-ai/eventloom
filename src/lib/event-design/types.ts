@@ -18,8 +18,11 @@ import type { RsvpField } from "@/lib/types";
  */
 export type EventDesignContent = {
   eyebrow?: string;
+  detailsHeading?: string;
+  scheduleHeading?: string;
   story?: { eyebrow?: string; heading: string; paragraphs: string[]; signature?: string };
   dressCode?: { title?: string; body: string };
+  goodToKnowHeading?: string;
   goodToKnow?: { title: string; body: string }[];
   travel?: { heading?: string; items: { title: string; body: string; href?: string; linkLabel?: string }[] };
   galleryHeading?: string;

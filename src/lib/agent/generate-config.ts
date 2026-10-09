@@ -67,10 +67,11 @@ const eventConfigSchema = {
   ],
 } as const;
 
-export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOverrides, options: { deadline?: number } = {}): Promise<GeneratedSitePlan> {
+export async function generateSitePlan(prompt: string, themeOverrides?: ThemeOverrides, options: { deadline?: number; callsLeft?: number } = {}): Promise<GeneratedSitePlan> {
   const fallback = fallbackSitePlan(prompt, themeOverrides);
   const openaiKey = env.openaiApiKey();
-  const timeoutMs = aiCallTimeoutMs(options.deadline);
+  // callsLeft > 1 leaves part of the shared budget for the provider calls that follow (the art director).
+  const timeoutMs = aiCallTimeoutMs(options.deadline, { callsLeft: options.callsLeft });
   if (!openaiKey || timeoutMs === null) {
     return fallback;
   }

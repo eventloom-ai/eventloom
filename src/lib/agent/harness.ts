@@ -1,4 +1,5 @@
 import type { ImageInput } from "@/lib/ai/generator";
+import { artDirectEvent } from "@/lib/agent/art-director";
 import { generateSitePlan } from "@/lib/agent/generate-config";
 import { progressForStep } from "@/lib/agent/build-progress";
 import type { BuildProgressEvent, BuildProgressReporter } from "@/lib/agent/progress";
@@ -106,7 +107,8 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     await report(input, { step: "started", message: "Starting your site build…", progressPercent: progressForStep("started") });
     await report(input, { step: "planning", message: "Understanding your event and shaping a unique direction…", progressPercent: progressForStep("planning") });
 
-    const plan = await generateSitePlan(input.prompt, input.themeOverrides, { deadline: input.deadline });
+    // Two provider calls share the build's time budget: the planner here and the art director below.
+    const plan = await generateSitePlan(input.prompt, input.themeOverrides, { deadline: input.deadline, callsLeft: 2 });
     const existingEvent = input.existingEventId ? await getEventRecord(input.existingEventId, input.ownerId) : null;
     let config = normalizeGeneratedConfig(plan.config, input.prompt, input.themeOverrides);
     config = applyImagesToConfig(config, input.images ?? []);
@@ -131,6 +133,10 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     await report(input, { step: "generating", message: "Composing your page…", progressPercent: progressForStep("generating") });
     // Reference photos arrive as data: URLs, which site documents reject; they stay on the config only.
     const documentImage = config.heroImageUrl && /^(?:https:\/\/|\/)/i.test(config.heroImageUrl) ? config.heroImageUrl : undefined;
+    // New events render through the approved design system: the art director picks a style, palette and copy
+    // (deterministic fallback without a provider). The composed site document stays as the legacy fallback.
+    const art = await artDirectEvent({ prompt: input.prompt, config, mood: input.themeOverrides?.mood, hasPhotos: Boolean(documentImage), deadline: input.deadline });
+    config = { ...config, design: art.design };
     const document = composeSiteDocument({ ...config, heroImageUrl: documentImage }, input.prompt);
     await report(input, {
       step: "generating",

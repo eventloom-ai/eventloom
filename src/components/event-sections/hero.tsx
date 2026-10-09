@@ -11,11 +11,13 @@ const titleSize = { xl: s.titleXl, lg: s.titleLg, md: s.titleMd } as const;
 function Title({ props, ctx, centered, className }: { props: HeroProps; ctx: SectionContext; centered: boolean; className?: string }) {
   const italic = ctx.style.type.displayItalic && (props.coupleNames !== null || !["rule", "grid", "squiggle"].includes(ctx.style.ornament));
   const classes = cx(s.display, titleSize[props.titleScale], italic && s.italic, className);
-  if (!props.coupleNames) return <h1 className={classes}>{props.title}</h1>;
+  // An embedded preview (template pages) sits inside a page that has its own h1.
+  const Heading = ctx.embedded ? "p" : "h1";
+  if (!props.coupleNames) return <Heading className={classes}>{props.title}</Heading>;
   const [first, second] = props.coupleNames;
   // Couple names stack over an ampersand; screen readers get one natural sentence.
   return (
-    <h1 className={classes} aria-label={`${first} & ${second}`}>
+    <Heading className={classes} aria-label={`${first} & ${second}`}>
       <span aria-hidden="true" className="block">{first}</span>
       {centered ? (
         <>
@@ -27,11 +29,13 @@ function Title({ props, ctx, centered, className }: { props: HeroProps; ctx: Sec
           <span className={s.accentText} style={{ fontStyle: "italic" }}>&amp;</span> {second}
         </span>
       )}
-    </h1>
+    </Heading>
   );
 }
 
 function RsvpButton({ props, ghost = false, className }: { props: HeroProps; ghost?: boolean; className?: string }) {
+  // A CTA without a target (a decorative thumbnail inside a link) renders as a span, never a nested <a>.
+  if (!props.cta.href) return <span className={cx(s.button, ghost && s.buttonGhost, className)}>{props.cta.label}</span>;
   return <a href={props.cta.href} className={cx(s.button, ghost && s.buttonGhost, className)}>{props.cta.label}</a>;
 }
 
@@ -198,7 +202,7 @@ function TypesetHero({ section, ctx }: { section: HeroSection; ctx: SectionConte
         <div>
           <div className="flex items-end justify-between gap-6 pb-3">
             <p className={cx(s.label, "flex items-center gap-3")}>{minimal ? <span aria-hidden="true" className="inline-block size-2.5" style={{ background: "var(--ev-accent)" }} /> : null}{props.eyebrow}</p>
-            <a href={props.cta.href} className={cx(s.label, s.link, "!text-[var(--ev-ink)]")}>{props.cta.label}</a>
+            {props.cta.href ? <a href={props.cta.href} className={cx(s.label, s.link, "!text-[var(--ev-ink)]")}>{props.cta.label}</a> : <span className={cx(s.label, "!text-[var(--ev-ink)]")}>{props.cta.label}</span>}
           </div>
           {minimal ? <div className={cx(s.lineBg, "h-px w-full")} /> : <Ornament kind="rule" />}
         </div>
