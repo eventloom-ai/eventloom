@@ -27,6 +27,7 @@ vi.mock("@/lib/agent/tools", async (importOriginal) => {
 
 const { buildCompleteSite } = await import("@/lib/agent/harness");
 const { getLocalDemoEventBySlug } = await import("@/lib/local-demo-store");
+const { readEventDesign } = await import("@/lib/event-design/schema");
 const tools = await import("@/lib/agent/tools");
 
 const prompt = "Garden supper for Lena. The event is on Saturday, November 21, 2026 at 7:30 PM. It will be held at Rose Court.";
@@ -50,6 +51,14 @@ describe("site build harness", () => {
     const saved = getLocalDemoEventBySlug("garden-supper");
     expect(saved?.document?.nodes.length).toBeGreaterThan(0);
     expect(saved?.config.schedule[0]?.time).toBe("7:30 PM");
+    // New events carry a design (deterministic without a provider); the document stays as the legacy fallback.
+    expect(readEventDesign(saved?.config)).toMatchObject({ version: 1, content: {} });
+  });
+
+  it("art-directs with the intake mood", async () => {
+    mocks.persist = false;
+    await buildCompleteSite({ jobId: "job-2", prompt: "Wedding for Lena and Omar at Rose Court.", slug: "lena-omar", themeOverrides: { mood: "navy" } });
+    expect(readEventDesign(getLocalDemoEventBySlug("lena-omar")?.config)).toMatchObject({ styleKey: "editorial", paletteKey: "riviera" });
   });
 
   it("seeds the first site document for a new event instead of saving a page artifact", async () => {

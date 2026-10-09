@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiDeadline } from "@/lib/ai/deadline";
+import { artDirectEvent } from "@/lib/agent/art-director";
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { createEventRecord } from "@/lib/agent/tools";
@@ -62,9 +63,13 @@ export async function POST(req: NextRequest) {
     : Promise.resolve();
 
   try {
+    // New events render through the approved design system; the site document is kept as the legacy fallback.
+    const baseConfig = original?.config ?? planConfig;
+    const art = await artDirectEvent({ prompt, config: baseConfig, hasPhotos: Boolean(baseConfig.heroImageUrl), deadline }).catch(() => null);
+    const designedConfig = art ? { ...baseConfig, design: art.design } : baseConfig;
     const revision = await seedInitialRevision(created.event, user.id, original
-      ? { document: original.document, config: original.config, prompt, summary: original.summary }
-      : { config: planConfig, prompt, summary: "Created the first original version" });
+      ? { document: original.document, config: designedConfig, prompt, summary: original.summary }
+      : { config: designedConfig, prompt, summary: "Created the first original version" });
     await createBuilderMessage({ eventId: created.event.id, role: "user", content: prompt, versionId: revision.id, ownerId: user.id });
     await createBuilderMessage({
       eventId: created.event.id,
