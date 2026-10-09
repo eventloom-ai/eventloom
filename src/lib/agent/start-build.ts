@@ -5,6 +5,7 @@ import { createEventRecord, createGenerationJob, placeholderEventConfig } from "
 import type { ImageInput } from "@/lib/ai/generator";
 import { processAndStoreEventImage } from "@/lib/event-assets";
 import { isEventOwner, reserveBuildCredit } from "@/lib/payments/billing";
+import { reapStaleGenerationJobs } from "@/lib/studio-store";
 import { serviceSupabase } from "@/lib/supabase/server";
 
 export type StartBuildResult =
@@ -37,6 +38,8 @@ export async function startBuildJob(
   }
 
   if (ownerId) {
+    // A dead worker leaves its job "running", which blocks new builds on the event until the daily cron.
+    await reapStaleGenerationJobs(parsed.existingEventId ? { eventId: parsed.existingEventId } : { ownerId });
     const credit = await reserveBuildCredit(ownerId, parsed.existingEventId);
     if (!credit.ok) return { ok: false, error: credit.error, status: 402 };
   }

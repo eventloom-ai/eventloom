@@ -2,6 +2,7 @@ import "server-only";
 
 import { assertEventAssetOwnership, composeSiteDocument, siteDocumentSchema, type SiteDocument } from "@/lib/site-document";
 import { getLocalDemoEventById, getLocalDemoRevisions, saveLocalDemoEvent, saveLocalDemoRevision } from "@/lib/local-demo-store";
+import { refundBuildCredit } from "@/lib/payments/billing";
 import { demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { BuilderMessage, BuilderRunEvent, EventConfig, EventRecord, SiteRevision } from "@/lib/types";
@@ -26,6 +27,8 @@ export type StudioState = {
   activeRun: StudioRun | null;
   persistence: "database" | "demo";
 };
+
+export const STALE_JOB_MS = 10 * 60 * 1000;
 
 const unsafeImageUrl = (value: string | undefined) => Boolean(value) && !(value!.startsWith("/") || /^https:\/\//i.test(value!));
 
@@ -154,6 +157,7 @@ export async function loadStudioState(eventId: string, ownerId: string | null): 
     revision = data ? revisionFromRow(data as Record<string, unknown>) : null;
   }
   revision ??= await seedInitialRevision(event, ownerId);
+  await reapStaleGenerationJobs({ eventId });
 
   const [versionsResult, messagesResult, runResult] = await Promise.all([
     client.from("event_versions").select("id, event_id, parent_version_id, source, summary, prompt, config, document, created_at").eq("event_id", eventId).not("document", "is", null).order("created_at", { ascending: false }).limit(50),
@@ -261,9 +265,15 @@ export async function createStudioRun(input: { eventId: string; ownerId: string;
 
 export async function appendRunEvent(jobId: string, eventId: string, type: BuilderRunEvent["type"], payload: Record<string, unknown>) {
   const client = serviceSupabase();
-  if (!client || jobId.startsWith("demo-run-")) return;
-  const { data } = await client.from("generation_job_events").select("sequence").eq("job_id", jobId).order("sequence", { ascending: false }).limit(1).maybeSingle();
-  await client.from("generation_job_events").insert({ job_id: jobId, event_id: eventId, sequence: Number(data?.sequence ?? 0) + 1, type, payload });
+  if (!client || jobId.startsWith("demo-run-")) return false;
+  // The worker and the cancel route can append concurrently; on a (job_id, sequence) collision re-read and retry.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data } = await client.from("generation_job_events").select("sequence").eq("job_id", jobId).order("sequence", { ascending: false }).limit(1).maybeSingle();
+    const { error } = await client.from("generation_job_events").insert({ job_id: jobId, event_id: eventId, sequence: Number(data?.sequence ?? 0) + 1, type, payload });
+    if (!error) return true;
+    if (error.code !== "23505") return false;
+  }
+  return false;
 }
 
 export async function loadRunEvents(jobId: string, afterSequence = 0) {
@@ -291,4 +301,29 @@ export async function requestStudioRunCancellation(jobId: string) {
   if (!client) return true;
   const { data } = await client.from("generation_jobs").update({ cancel_requested: true, progress_message: "Stopping after the current step…" }).eq("id", jobId).eq("status", "running").select("id").maybeSingle();
   return Boolean(data);
+}
+
+// Workers are killed at maxDuration (300s), so a job still "running" after STALE_JOB_MS will never finish.
+// Fail it, tell any listening studio, and refund its build credit (refunds are idempotent per job).
+export async function reapStaleGenerationJobs(scope: { eventId?: string | null; ownerId?: string | null } = {}) {
+  const client = serviceSupabase();
+  if (!client) return 0;
+  try {
+    let query = client.from("generation_jobs")
+      .update({ status: "failed", error: "job_timed_out", progress_step: "error", progress_message: "This run took too long and was stopped.", completed_at: new Date().toISOString() })
+      .eq("status", "running")
+      .lt("created_at", new Date(Date.now() - STALE_JOB_MS).toISOString());
+    if (scope.eventId) query = query.eq("event_id", scope.eventId);
+    if (scope.ownerId) query = query.eq("owner_id", scope.ownerId);
+    const { data, error } = await query.select("id, event_id, owner_id");
+    if (error || !data) return 0;
+    for (const job of data as Array<{ id: string; event_id: string | null; owner_id: string | null }>) {
+      if (!job.event_id) continue;
+      await appendRunEvent(job.id, job.event_id, "error", { message: "job_timed_out" });
+      if (job.owner_id) await refundBuildCredit(job.owner_id, job.event_id, job.id);
+    }
+    return data.length;
+  } catch {
+    return 0;
+  }
 }

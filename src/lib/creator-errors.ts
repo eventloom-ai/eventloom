@@ -15,6 +15,8 @@ export function creatorErrorMessage(code: string | null | undefined, fallback = 
       return "Your included AI build credit is used. Your draft is safe, and direct editing still works.";
     case "version_conflict":
       return "This site changed in another tab. We loaded the newest version so you can continue safely.";
+    case "job_timed_out":
+      return "That change took too long and was stopped. Your draft is safe and the build credit was returned.";
     case "run_in_progress":
       return "One change is still finishing. Wait for it to complete, then send the next request.";
     case "not_found":
