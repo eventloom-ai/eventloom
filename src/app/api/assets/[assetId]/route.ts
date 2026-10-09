@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { canEditEvent } from "@/lib/studio-store";
+import { EVENT_ASSET_BUCKET, isEventAssetPath } from "@/lib/asset-paths";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   const { assetId } = await params;
@@ -18,8 +19,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const editable = user ? await canEditEvent(asset.event_id, user.id) : false;
   if (!published && !editable) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const metadata = asset.metadata as { bucket?: string; path?: string } | null;
-  if (!metadata?.bucket || !metadata.path) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  const { data, error } = await client.storage.from(metadata.bucket).download(metadata.path);
+  if (!isEventAssetPath(metadata, asset.event_id)) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const { data, error } = await client.storage.from(EVENT_ASSET_BUCKET).download(metadata.path);
   if (error || !data) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  return new NextResponse(await data.arrayBuffer(), { headers: { "Content-Type": "image/webp", "X-Content-Type-Options": "nosniff", "Cache-Control": published ? "public, max-age=31536000, immutable" : "private, no-store" } });
+  // Asset paths are content-unique, so published copies can live at the CDN instead of re-running this function.
+  const caching: Record<string, string> = published ?{ "Cache-Control": "public, max-age=31536000, immutable", "CDN-Cache-Control": "public, s-maxage=86400" } : { "Cache-Control": "private, no-store" };
+  return new NextResponse(await data.arrayBuffer(), { headers: { "Content-Type": "image/webp", "X-Content-Type-Options": "nosniff", ...caching } });
 }

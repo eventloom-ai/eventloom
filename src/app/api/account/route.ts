@@ -4,6 +4,7 @@ import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { isSameOriginMutation, readJsonWithinLimit, requestWithinLimit } from "@/lib/security/request";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { serviceSupabase } from "@/lib/supabase/server";
+import { isEventAssetPath } from "@/lib/asset-paths";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -103,12 +104,9 @@ export async function DELETE(request: NextRequest) {
 
   const { data: assets } = await client
     .from("assets")
-    .select("metadata, events!inner(owner_id)")
+    .select("event_id, metadata, events!inner(owner_id)")
     .eq("events.owner_id", auth.user.id);
-  const storagePaths = (assets ?? []).flatMap((asset) => {
-    const metadata = asset.metadata as { bucket?: unknown; path?: unknown } | null;
-    return metadata?.bucket === "event-assets-private" && typeof metadata.path === "string" ? [metadata.path] : [];
-  });
+  const storagePaths = (assets ?? []).flatMap((asset) => isEventAssetPath(asset.metadata, asset.event_id) ? [asset.metadata.path] : []);
   const { data, error } = await client.rpc("delete_creator_account", { p_user_id: auth.user.id });
   if (error) {
     const activeDomain = error.message.includes("active_domain_transfer_required");

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { recordAuditEvent } from "@/lib/security/audit";
 import { isSameOriginMutation } from "@/lib/security/request";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
+import { isEventAssetPath } from "@/lib/asset-paths";
 
 const ACTIVE_DOMAIN_STATUSES = ["registered", "vercel_pending", "ready"];
 
@@ -54,8 +55,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 
   const storagePaths = (assets as StoredAsset[] | null ?? [])
-    .filter((asset) => asset.metadata?.bucket === "event-assets-private" && typeof asset.metadata.path === "string")
-    .map((asset) => asset.metadata!.path as string);
+    .flatMap((asset) => isEventAssetPath(asset.metadata, eventId) ? [asset.metadata.path] : []);
   if (storagePaths.length > 0) {
     const { error: storageError } = await client.storage.from("event-assets-private").remove(storagePaths);
     if (storageError) {

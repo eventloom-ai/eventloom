@@ -7,6 +7,7 @@ import { siteDocumentSchema } from "@/lib/site-document";
 
 const INTERNAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
 const PLATFORM_HOST_SUFFIXES = [".vercel.app"];
+const LIVE_DOMAIN_STATUSES = ["vercel_pending", "ready"];
 
 export function normalizeHost(rawHost: string) {
   return rawHost.split(":")[0]?.toLowerCase() ?? "";
@@ -139,21 +140,24 @@ export async function resolveEventByHost(host: string): Promise<EventRecord | nu
     return null;
   }
 
+  // Platform subdomains always map to their own slug; only full custom domains consult the domains table.
+  if (!hostTenant.includes(".")) return resolveEventBySlug(hostTenant);
+
   const client = serviceSupabase();
   if (!client) {
     return null;
   }
 
+  // Only domains attached by paid fulfillment count; rows a user wrote directly never route traffic.
   const { data: domain } = await client
     .from("domains")
     .select("event_id, domain")
     .eq("domain", hostTenant)
+    .not("order_id", "is", null)
+    .in("status", LIVE_DOMAIN_STATUSES)
     .maybeSingle();
 
-  if (domain?.event_id) {
-    const { data: event } = await client.from("events").select("slug").eq("id", domain.event_id).maybeSingle();
-    return event?.slug ? resolveEventBySlug(event.slug) : null;
-  }
-
-  return resolveEventBySlug(hostTenant);
+  if (!domain?.event_id) return null;
+  const { data: event } = await client.from("events").select("slug").eq("id", domain.event_id).maybeSingle();
+  return event?.slug ? resolveEventBySlug(event.slug) : null;
 }
