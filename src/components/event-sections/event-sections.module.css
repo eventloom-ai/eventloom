@@ -266,10 +266,9 @@
   gap: clamp(0.6rem, 1.5vw, 1.25rem);
 }
 
+/* Tiles keep their ratio; the last one only grows to absorb the small difference between columns. */
 .masonryColumn > :last-child {
   flex: 1 1 auto;
-  aspect-ratio: auto !important;
-  min-height: 9rem;
 }
 
 /* RSVP: the shared RsvpForm, skinned to the style without changing the component. ---- */
