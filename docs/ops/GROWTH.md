@@ -13,8 +13,8 @@ Positioning: **"Your event website and RSVPs in a minute. $20 once — no subscr
 Done: 6 landing pages, sitemap, OG/JSON-LD, per-event metadata + noindex.
 Next, in order:
 1. ~~Link the 6 landing pages from homepage; FAQ + product schema~~ (done 2026-10-08)
-2. ~~`/templates` gallery~~ (done 2026-10-08) `/templates` gallery + `/templates/[occasion]` pages rendered from real theme presets, each with a "Use this template" button that starts a build. Programmatic but genuinely useful pages.
-3. Occasion pages: baby shower, bridal shower, engagement, anniversary, graduation, quinceañera, bar/bat mitzvah, reunion, retirement, corporate offsite, memorial.
+2. ~~`/templates` gallery + `/templates/[occasion]` pages with real rendered samples and a "Use this template" button~~ (done 2026-10-08)
+3. ~~Occasion pages~~ (14 done 2026-10-08). Still missing: corporate offsite variants, baby/gender reveal, housewarming, kids' birthday, Eid/Diwali/Christmas parties.
 4. Comparison pages: Zola / The Knot / Joy / Partiful / Evite alternatives — honest tables.
 5. Free tools as link magnets (no signup): RSVP wording generator, RSVP deadline calculator, wedding hashtag generator, "how many guests will actually come" estimator.
 6. Guides: how to word an RSVP, RSVP etiquette, how to ask for dietary restrictions, how to plan a backyard party.
