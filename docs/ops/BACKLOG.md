@@ -7,18 +7,18 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 
 | # | Issue | Where | Status |
 | --- | --- | --- | --- |
-| S1 | Any signed-in user can write the `domains` table directly (Supabase REST) and hijack a tenant subdomain or squat a custom domain; host resolution trusts any row regardless of status | `20260722053921_consolidate_rls_policies.sql`, grants `:25`, `tenancy.ts resolveEventByHost` | fixed (code) · migration pending |
-| S2 | Guest PII readable with a stolen password (no MFA): RLS on `rsvp_submissions/guests/answers` ignores AAL; app reads via service role anyway | grants `:34-42` | fixed · migration pending |
+| S1 | Any signed-in user can write the `domains` table directly (Supabase REST) and hijack a tenant subdomain or squat a custom domain; host resolution trusts any row regardless of status | `20260722053921_consolidate_rls_policies.sql`, grants `:25`, `tenancy.ts resolveEventByHost` | fixed (code) · migration applied (verified 2026-10-09) |
+| S2 | Guest PII readable with a stolen password (no MFA): RLS on `rsvp_submissions/guests/answers` ignores AAL; app reads via service role anyway | grants `:34-42` | fixed · migration applied (verified 2026-10-09) |
 | S3 | Unmetered DALL·E endpoint any signed-in user can loop (~$0.08/call); nothing in the UI calls it | `api/invitation/generate` | fixed |
 | S4 | Cancel-after-generate refunds AI credit after the OpenAI call is paid; patch is streamed before cancel check → free unlimited AI | `studio-agent.ts:185-206` | fixed |
 | S5 | Multiple pending checkouts per event → second payment never fulfilled, never refunded; domain registered before the conflict check | `payments/stripe.ts:41-48`, `stripe/webhook/route.ts:112-128` | fixed |
 | S6 | Domain provisioning retries are not idempotent; price cap re-checked after payment → paid orders stuck forever | `domains/provision.ts:18-26` | fixed (retries resume from the recorded registration; cap not re-applied after payment) |
 | S7 | Async (ACH etc.) Checkout payments never fulfilled | `stripe/webhook/route.ts:60-75` | fixed (subscribe webhook to async_payment_succeeded) |
 | S8 | Nothing asserts Stripe live mode in production (key prefix / `event.livemode`) | `env.ts:134`, webhook | fixed |
-| S9 | Asset bucket/path trusted from user-writable `assets.metadata` (service-role read/delete) | `api/assets/[assetId]`, event/account delete | fixed · migration pending |
-| S10 | Users can self-set legal onboarding flags on `profiles` | `20260722053811…sql:20` | fixed · migration pending |
-| S11 | No reserved-slug list: `login`, `admin`, `api`, SEO pages (`rsvp-website`…) claimable; subdomain phishing | `validation.ts:4` | fixed (app) · DB constraint written (`20261009010000`, NOT VALID) · migration pending |
-| S12 | No durable rate limiting: AI, upload, checkout, registrar, RSVP and form routes could be looped by one client (in-memory limits don't survive Vercel's many instances); sign-in/sign-up go browser → Supabase Auth with no CAPTCHA on sign-in | all `src/app/api/**` write routes, `auth-form.tsx` | fixed (Postgres limiter `20261009120000`, limits table in DECISIONS.md; sign-in/reset send Turnstile token) · migration pending · Supabase/Vercel settings need owner |
+| S9 | Asset bucket/path trusted from user-writable `assets.metadata` (service-role read/delete) | `api/assets/[assetId]`, event/account delete | fixed · migration applied (verified 2026-10-09) |
+| S10 | Users can self-set legal onboarding flags on `profiles` | `20260722053811…sql:20` | fixed · migration applied (verified 2026-10-09) |
+| S11 | No reserved-slug list: `login`, `admin`, `api`, SEO pages (`rsvp-website`…) claimable; subdomain phishing | `validation.ts:4` | fixed (app) · DB constraint written (`20261009010000`, NOT VALID) · migration applied (verified 2026-10-09) |
+| S12 | No durable rate limiting: AI, upload, checkout, registrar, RSVP and form routes could be looped by one client (in-memory limits don't survive Vercel's many instances); sign-in/sign-up go browser → Supabase Auth with no CAPTCHA on sign-in | all `src/app/api/**` write routes, `auth-form.tsx` | fixed (Postgres limiter `20261009120000`, limits table in DECISIONS.md; sign-in/reset send Turnstile token) · migration applied (verified 2026-10-09) · Supabase/Vercel settings need owner |
 
 ## P1 — broken core flows
 
@@ -31,7 +31,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | B5 | AI style edit wipes all other style keys (nulls treated as deletes) | `studio-agent.ts:103-105` | fixed |
 | B6 | Building with reference photos from `/app/events/new` crashes studio permanently (data: URL fails `safeUrl`) | `parse-build-form.ts:84`, `studio-store.ts:85` | fixed |
 | B7 | Stuck AI run/job permanently blocks builds and the studio assistant for that event; no AI fetch timeouts; no reaper | `studio-store.ts:139`, generators | fixed |
-| B8 | Meal-preference and other custom RSVP answers silently dropped | `submit_public_rsvp`, field seeding | fixed · migration pending |
+| B8 | Meal-preference and other custom RSVP answers silently dropped | `submit_public_rsvp`, field seeding | fixed · migration applied (verified 2026-10-09) |
 | B9 | RSVP deadline field does nothing | `config.rsvpDeadline` vs `events.rsvp_deadline_at` | fixed (7e2834d): deadline text → end of that day in the event timezone on save/publish/timezone change; form shows "RSVPs closed on …" |
 | B10 | Puck autosave runs during an AI run → version conflicts, lost edits | `visual-studio.tsx:87-118` | fixed |
 | B11 | Puck studio lost image upload and RSVP-question toggles | `eventloom-puck-config.tsx` | fixed (dcde999): cover + gallery uploader with descriptions in both editors, RSVP questions checklist |
@@ -50,7 +50,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | P1 | Uploaded photos stored full-size (1.5–3 MB), served through a function with no CDN cache → egress bill on first viral event | `event-assets.ts:16`, `api/assets/[assetId]` | fixed: CDN cache header; uploads resized to 2400px, WebP q80, metadata stripped |
 | P2 | No public page is CDN-cached (per-request CSP nonce + `no-store`); event pages do 3–5 sequential DB queries | `proxy.ts:21-30`, `tenancy.ts` | open |
 | P3 | `BuildJobProvider` fetches `/api/events/build/active` on every page incl. guest pages | `build-job-provider.tsx` | fixed |
-| P4 | Every RSVP seq-scans the rate-limit table, locks the event row; 10/IP/10min blocks shared Wi-Fi | `20260731140918…sql:114-126` | fixed · migration pending |
+| P4 | Every RSVP seq-scans the rate-limit table, locks the event row; 10/IP/10min blocks shared Wi-Fi | `20260731140918…sql:114-126` | fixed · migration applied (verified 2026-10-09) |
 | P5 | 13 font families global on every page | `layout.tsx:24-38` | fixed: only Outfit, Inter and Playfair preload |
 | P6 | AI reasoning effort high/xhigh by default; flat 50¢ credit regardless of tokens | `env.ts:115`, `generate-document.ts:319` | fixed: per-call effort (planner/art director low, original site/studio edit medium), env overrides kept — see DECISIONS.md; credit still flat |
 
@@ -93,7 +93,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 
 | # | Issue | Status |
 | --- | --- | --- |
-| U1 | Moderation, phishing hold at publish, report form, admin takedown (see DECISIONS 2026-10-09) | done (app) · migrations `20261009150000`, `20261009150100` pending |
+| U1 | Moderation, phishing hold at publish, report form, admin takedown (see DECISIONS 2026-10-09) | done (app) · migrations `20261009150000`, `20261009150100` applied |
 | U2 | Owners can still write `events.status` / `published_version_id` directly through the Data API ("Owners update events" + update grant), which skips the publish-time safety check and payment. Needs a column-level grant or trigger like the suspension one; the admin publish path uses the user client, so change it to the service role first | open |
 | U3 | Legacy events whose published version fails the site-document schema fall back to `events.config` (latest draft config), which skips the publish-time check | open |
 | U4 | Abuse report retention: no purge yet. Add to the maintenance cron (e.g. delete `reporter_email` 90 days after a report closes) once the Privacy Policy states the period | open |
@@ -109,7 +109,7 @@ See `docs/ops/LAUNCH-CHECKLIST.md` for the ordered pre-Stripe list.
 
 - Confirm Stripe is in live mode and payouts go to the right bank (Dashboard → Settings → Payouts). Check `PUBLIC_CHECKOUT_ENABLED` is `true` in Vercel production env — it defaults to off.
 - `vercel login` on this machine so agents can read deployments/logs/env names.
-- Approve applying new Supabase migrations to production.
+- ~~Approve applying new Supabase migrations to production.~~ (all local migrations are applied as of 2026-10-09)
 - ~~**Apply `20261009120000_durable_rate_limits` (S12).**~~ (applied 2026-10-09) Until it is applied the app limiter logs `rate_limiter_unavailable` (reason `PGRST202`) and lets requests through, and the daily cron logs `rate_limit_purge_missing`; nothing breaks, but nothing is limited either.
 - **Supabase Auth abuse settings (S12)** — sign-up, sign-in and password reset go straight from the browser to Supabase, so only Supabase can limit them. In the Supabase Dashboard for the production project:
   1. *Authentication → Attack Protection → Enable CAPTCHA protection*: provider **Cloudflare Turnstile**, secret = the same value as Vercel's `TURNSTILE_SECRET_KEY`. **Order matters:** first make sure `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set in Vercel production and the deploy containing the sign-in Turnstile widget is live (the login form only sends a token when that key is set). Turning CAPTCHA on before that blocks every email/password sign-in and password reset. Google sign-in is unaffected. In Cloudflare → Turnstile → the widget, make sure the production hostname(s) (`eventloom-beta.vercel.app`, `eventloom.co` if used) are allowed.
@@ -117,3 +117,11 @@ See `docs/ops/LAUNCH-CHECKLIST.md` for the ordered pre-Stripe list.
   3. *Authentication → Sign In / Providers → Email*: **Confirm email ON**, *Secure password change* ON, minimum password length 12 with letters+digits+symbols (matches `supabase/config.toml`), leaked-password protection ON (needs Pro — skip if on Free).
   4. *Authentication → Emails → minimum interval between emails* **60 s** (`max_frequency`).
 - **Vercel Firewall (S12, optional, $0).** Vercel's DDoS mitigation is automatic on Hobby and blocked/denied traffic is not billed. In Project → Firewall: (a) add a custom rule *"Probe paths"* — path is one of `/wp-admin`, `/wp-login.php`, `/.env`, `/.git/config`, `/phpmyadmin`, `/xmlrpc.php` → action **Log** for a few days, then **Deny**; (b) if the Firewall offers the **Rate Limit** action on this plan, add *"API burst"* — path starts with `/api/`, path does not start with `/api/stripe/webhook` and not `/api/cron/` → Rate Limit, fixed window **60 s**, **300 requests per IP**, start with action **Log**, then switch to 429 after checking traffic (counters are per region; the app's Postgres limiter is the precise one, this only stops floods before they reach a function). If Rate Limit is not offered on Hobby, it needs Pro — skip it; the app limiter covers the routes. Persistent action durations are Pro-only too. Bot Protection managed ruleset: leave on *Log* (it can challenge guests opening invitation links from in-app browsers).
+
+## Found by daily ops (2026-10-09)
+
+| # | Issue | Status |
+| --- | --- | --- |
+| D1 | Dev-only high advisory GHSA-vfj7-8cjw-p6xm (braces stack-exhaustion DoS) via `eslint-config-next` → `@next/eslint-plugin-next` → `fast-glob` → `micromatch` → `braces`. Production deps clean; `security:audit` passes (dev gate is critical). Wait for an upstream patch or add an `overrides` pin once a fixed `braces` exists | open (low) |
+| D2 | `vercel logs` CLI only shows function/edge logs; CDN-cached pages (most public traffic since N16) never appear, so log line counts undercount traffic. Use Vercel Web Analytics or the dashboard's Observability tab for real request totals | open (low) |
+| D3 | Daily abuse-report query (README) needs the service role / SQL editor; the scheduled ops run has no non-secret way to run it, so it is skipped. Give the run a read-only path (e.g. `/admin` count endpoint callable by a cron token, or a `supabase` CLI SQL command) | needs owner |
