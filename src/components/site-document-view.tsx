@@ -9,7 +9,7 @@ import type { EventConfig, EventStatus, RsvpField } from "@/lib/types";
 // site-document-renderer.tsx plugs the live parts in for guest pages, previews, and the studio.
 export type SiteDocumentParts = {
   Reveal?: ComponentType<{ motion: SiteDocument["theme"]["motion"]; index?: number; style?: CSSProperties; children: ReactNode }>;
-  Rsvp?: ComponentType<{ fields: RsvpField[]; isOpen: boolean; isDraft?: boolean; formToken: string; turnstileSiteKey: string }>;
+  Rsvp?: ComponentType<{ fields: RsvpField[]; isOpen: boolean; isDraft?: boolean; closedOn?: string; formToken: string; turnstileSiteKey: string }>;
 };
 
 export type SiteDocumentRendererProps = {
@@ -19,6 +19,8 @@ export type SiteDocumentRendererProps = {
   slug?: string;
   status: EventStatus;
   rsvpOpen: boolean;
+  /** The RSVP deadline's day once it has passed (guest pages only). */
+  rsvpClosedOn?: string;
   formToken?: string;
   turnstileSiteKey?: string;
   selectedNodeId?: string | null;
@@ -221,7 +223,7 @@ function NodeView({ node, context }: { node: SiteNode; context: SiteDocumentRend
         <h2 style={{ fontFamily: "var(--event-display)", fontSize: "clamp(2.4rem,10cqw,4.4rem)", lineHeight: 0.95, fontStyle: "italic", letterSpacing: "-0.045em" }}>{node.heading ?? "Will you join us?"}</h2>
         {node.description ? <p style={{ marginTop: "1.15rem", opacity: 0.68, lineHeight: 1.6, maxWidth: "28rem" }}>{node.description}</p> : null}
       </div>
-      {LiveRsvp ? <LiveRsvp formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} isDraft={context.status === "draft"} fields={config.rsvpFields} /> : <RsvpPreview fields={config.rsvpFields} />}
+      {LiveRsvp ? <LiveRsvp formToken={context.formToken ?? ""} turnstileSiteKey={context.turnstileSiteKey ?? ""} isOpen={context.status === "published" && context.rsvpOpen && Boolean(context.formToken)} isDraft={context.status === "draft"} closedOn={context.rsvpClosedOn} fields={config.rsvpFields} /> : <RsvpPreview fields={config.rsvpFields} />}
     </div>
     );
   }

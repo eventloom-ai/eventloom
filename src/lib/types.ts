@@ -37,6 +37,8 @@ export type EventConfig = {
   rsvpDeadline?: string;
   heroImageUrl?: string;
   galleryImageUrls?: string[];
+  /** Host-written descriptions for the photos above, keyed by image URL. */
+  imageAlts?: Record<string, string>;
   /**
    * New-style design (style, palette, copy, section overrides). When present and valid the event renders
    * through EventSite; otherwise it renders its legacy SiteDocument, exactly as before the design rollout.
@@ -62,6 +64,8 @@ export type EventRecord = {
   document?: SiteDocument | null;
   draft_version_id?: string | null;
   published_version_id?: string | null;
+  /** When guest replies close (events.rsvp_deadline_at), derived from config.rsvpDeadline; null for no deadline. */
+  rsvp_deadline_at?: string | null;
 };
 
 export type SiteRevision = {

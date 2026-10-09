@@ -3,6 +3,8 @@ import "server-only";
 import { assertEventAssetOwnership, composeSiteDocument, siteDocumentSchema, type SiteDocument } from "@/lib/site-document";
 import { getLocalDemoEventById, getLocalDemoRevisions, saveLocalDemoEvent, saveLocalDemoRevision } from "@/lib/local-demo-store";
 import { refundBuildCredit } from "@/lib/payments/billing";
+import { rsvpDeadlineTimestamp } from "@/lib/rsvp-deadline";
+import { syncEventRsvpDeadline } from "@/lib/rsvp-deadline-sync";
 import { demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { BuilderMessage, BuilderRunEvent, EventConfig, EventRecord, SiteRevision } from "@/lib/types";
@@ -193,7 +195,8 @@ export async function commitStudioRevision(input: {
     const revision: SiteRevision = { id: `demo-version-${crypto.randomUUID()}`, event_id: input.eventId, parent_version_id: input.baseVersionId, source: input.source, summary: input.summary, prompt: input.prompt, config: input.config, document, created_at: new Date().toISOString() };
     saveLocalDemoRevision(revision);
     const local = getLocalDemoEventById(input.eventId);
-    if (local) saveLocalDemoEvent({ ...local, config: input.config, document });
+    // Demo events have no timezone setting, so the deadline closes at the end of that day in UTC.
+    if (local) saveLocalDemoEvent({ ...local, config: input.config, document, rsvp_deadline_at: rsvpDeadlineTimestamp(input.config.rsvpDeadline, { eventDate: input.config.date }) });
     return { ok: true as const, revision };
   }
 
@@ -214,6 +217,7 @@ export async function commitStudioRevision(input: {
     await client.from("event_versions").delete().eq("id", inserted.id);
     return { ok: false as const, error: "version_conflict" };
   }
+  await syncEventRsvpDeadline(input.eventId);
   const revision = revisionFromRow(inserted as Record<string, unknown>);
   return revision ? { ok: true as const, revision } : { ok: false as const, error: "invalid_revision" };
 }

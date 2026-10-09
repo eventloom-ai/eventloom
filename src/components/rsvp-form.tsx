@@ -9,8 +9,11 @@ import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
 
-/** `hideHeader` drops the form's own "Guest reply" heading when the surrounding section already titles it. */
-export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, isDraft = false, fields = defaultFields, className = "", hideHeader = false }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; isDraft?: boolean; fields?: RsvpField[]; className?: string; hideHeader?: boolean }) {
+/**
+ * `hideHeader` drops the form's own "Guest reply" heading when the surrounding section already titles it.
+ * `closedOn` is the RSVP deadline's day once it has passed; the closed form then says when replies closed.
+ */
+export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, isDraft = false, closedOn, fields = defaultFields, className = "", hideHeader = false }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; isDraft?: boolean; closedOn?: string; fields?: RsvpField[]; className?: string; hideHeader?: boolean }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [attending, setAttending] = useState(true);
   const [partySize, setPartySize] = useState(1);
@@ -65,6 +68,15 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
     setTurnstileResetKey((value) => value + 1);
     setStatus("error");
     setMessage(rsvpErrorMessage(res ? (payload?.error ?? (res.status === 429 ? "try_later" : null)) : "network_error"));
+  }
+
+  if (!isOpen && closedOn && !isDraft) {
+    return (
+      <section className={`rounded-[8px] border border-black/10 bg-white/70 p-6 ${className}`} data-rsvp-state="deadline-passed">
+        <h2 className="text-2xl font-semibold">RSVPs closed on {closedOn}</h2>
+        <p className="mt-2 text-stone-600">The reply deadline has passed. If you still need to reply, please contact the host directly.</p>
+      </section>
+    );
   }
 
   if (!isOpen) {

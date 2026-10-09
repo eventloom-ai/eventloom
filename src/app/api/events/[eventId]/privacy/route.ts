@@ -4,6 +4,7 @@ import { canEditEvent } from "@/lib/studio-store";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { isSameOriginMutation, readJsonWithinLimit } from "@/lib/security/request";
 import { recordAuditEvent } from "@/lib/security/audit";
+import { syncEventRsvpDeadline } from "@/lib/rsvp-deadline-sync";
 
 const settingsSchema = z.object({
   controllerLegalName: z.string().trim().min(2).max(160),
@@ -29,6 +30,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     client.from("events").update({ ends_at: parsed.data.endsAt, event_ends_at: parsed.data.endsAt, timezone: parsed.data.timezone, event_timezone: parsed.data.timezone, updated_at: new Date().toISOString() }).eq("id", eventId),
   ]);
   if (settingsResult.error || eventResult.error) return NextResponse.json({ error: "save_failed" }, { status: 500 });
+  // The RSVP deadline closes at the end of its day in the event's timezone, which may just have changed.
+  await syncEventRsvpDeadline(eventId);
   await recordAuditEvent({ action: "event.privacy_settings.updated", actorUserId: user.id, actorType: "user", eventId, targetType: "event", targetId: eventId });
   return NextResponse.json({ ok: true });
 }
