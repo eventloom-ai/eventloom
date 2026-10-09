@@ -34,6 +34,8 @@ export type BuildSiteInput = {
   themeOverrides?: ThemeOverrides;
   existingEventId?: string;
   placeholderEventId?: string | null;
+  // Absolute time by which every provider call must be done (see aiDeadline); unset means only the per-call cap applies.
+  deadline?: number;
   onProgress?: BuildProgressReporter;
 };
 
@@ -104,7 +106,7 @@ export async function buildCompleteSite(input: BuildSiteInput): Promise<BuildSit
     await report(input, { step: "started", message: "Starting your site build…", progressPercent: progressForStep("started") });
     await report(input, { step: "planning", message: "Understanding your event and shaping a unique direction…", progressPercent: progressForStep("planning") });
 
-    const plan = await generateSitePlan(input.prompt, input.themeOverrides);
+    const plan = await generateSitePlan(input.prompt, input.themeOverrides, { deadline: input.deadline });
     const existingEvent = input.existingEventId ? await getEventRecord(input.existingEventId, input.ownerId) : null;
     let config = normalizeGeneratedConfig(plan.config, input.prompt, input.themeOverrides);
     config = applyImagesToConfig(config, input.images ?? []);

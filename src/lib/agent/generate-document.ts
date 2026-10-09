@@ -1,7 +1,8 @@
 import "server-only";
 
 import { groundConfigInPrompt } from "@/lib/agent/generate-config";
-import { AI_REQUEST_TIMEOUT_MS, env, openaiResponsesOptions } from "@/lib/env";
+import { aiCallTimeoutMs } from "@/lib/ai/deadline";
+import { env, openaiResponsesOptions } from "@/lib/env";
 import {
   composeSiteDocument,
   newSiteNodeId,
@@ -303,7 +304,7 @@ function configFromGeneratedEvent(base: EventConfig, raw: Record<string, unknown
   }, prompt);
 }
 
-export async function generateOriginalSite(prompt: string, config: EventConfig): Promise<GeneratedOriginalSite> {
+export async function generateOriginalSite(prompt: string, config: EventConfig, options: { deadline?: number } = {}): Promise<GeneratedOriginalSite> {
   const fallback = {
     document: prepareSiteDocument(composeSiteDocument(config, prompt)),
     config: groundConfigInPrompt(config, prompt),
@@ -312,7 +313,8 @@ export async function generateOriginalSite(prompt: string, config: EventConfig):
     generated: false,
   };
   const key = env.openaiApiKey();
-  if (!key) return fallback;
+  const timeoutMs = aiCallTimeoutMs(options.deadline);
+  if (!key || timeoutMs === null) return fallback;
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -326,7 +328,7 @@ export async function generateOriginalSite(prompt: string, config: EventConfig):
       ],
       text: { format: { type: "json_schema", name: "eventloom_original_site", strict: true, schema: originalSiteSchema } },
     }),
-    signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   }).catch(() => null);
 
   if (!response?.ok) return fallback;

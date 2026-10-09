@@ -125,7 +125,8 @@ function aiReasoningEffort(): AiReasoningEffort {
   return (AI_REASONING_EFFORTS as readonly string[]).includes(value) ? (value as AiReasoningEffort) : "high";
 }
 
-// AI routes run with maxDuration 300s; abort provider calls before the function is killed mid-job.
+// Per-call cap for one provider request. AI routes run with maxDuration 300s, so calls in one request
+// also share a total budget (aiDeadline/aiCallTimeoutMs in lib/ai/deadline) that is cut down as time passes.
 export const AI_REQUEST_TIMEOUT_MS = 240_000;
 
 export function openaiResponsesOptions() {

@@ -3,6 +3,7 @@ import { buildCompleteSite } from "@/lib/agent/harness";
 import { enrichPromptWithTheme, type ParsedBuildForm } from "@/lib/agent/parse-build-form";
 import { progressForStep } from "@/lib/agent/build-progress";
 import { createEventRecord, createGenerationJob, finishGenerationJob, placeholderEventConfig, updateGenerationJobProgress } from "@/lib/agent/tools";
+import { aiDeadline } from "@/lib/ai/deadline";
 import type { ImageInput } from "@/lib/ai/generator";
 import { processAndStoreEventImage } from "@/lib/event-assets";
 import { isEventOwner, refundBuildCredit, reserveBuildCredit } from "@/lib/payments/billing";
@@ -29,6 +30,8 @@ export async function storeReferenceImages(eventId: string, images: ImageInput[]
 export async function startBuildJob(
   parsed: ParsedBuildForm,
   ownerId: string | null,
+  // When the request began: the build runs in after() of the same invocation, so it shares the route's time budget.
+  startedAt = Date.now(),
 ): Promise<StartBuildResult> {
   if (parsed.slugReserved) return { ok: false, error: "slug_reserved", status: 409 };
   if (!parsed.slug || !parsed.prompt.trim()) {
@@ -97,6 +100,7 @@ export async function startBuildJob(
     existingEventId: parsed.existingEventId,
     placeholderEventId,
     ownerId,
+    deadline: aiDeadline(startedAt),
   };
 
   after(async () => {

@@ -7,6 +7,7 @@ import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now();
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!requestWithinLimit(req, 12 * 1024 * 1024)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const user = await getServerUser();
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   const parsed = await parseBuildForm(form, body);
   const ownerId = user.id;
-  const result = await startBuildJob(parsed, ownerId);
+  const result = await startBuildJob(parsed, ownerId, startedAt);
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });

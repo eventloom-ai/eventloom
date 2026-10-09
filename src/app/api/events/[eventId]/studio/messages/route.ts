@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
+import { aiDeadline } from "@/lib/ai/deadline";
 import { reserveBuildCredit } from "@/lib/payments/billing";
 import { executeStudioRun } from "@/lib/studio-agent";
 import { canEditEvent, createBuilderMessage, createStudioRun, loadStudioState, updateStudioRun } from "@/lib/studio-store";
@@ -9,6 +10,7 @@ import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
+  const deadline = aiDeadline();
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!requestWithinLimit(req, 16_384)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const { eventId } = await params;
@@ -31,6 +33,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
     return NextResponse.json({ error: credit.error }, { status: 402 });
   }
   const userMessage = await createBuilderMessage({ eventId, runId, role: "user", content: message, selectedNodeIds, versionId: state.revision.id, ownerId: user.id });
-  after(async () => executeStudioRun({ jobId: runId, eventId, ownerId: user.id, prompt: message, selectedNodeIds }));
+  after(async () => executeStudioRun({ jobId: runId, eventId, ownerId: user.id, prompt: message, selectedNodeIds, deadline }));
   return NextResponse.json({ runId, message: userMessage, remainingCreditCents: credit.remainingCents }, { status: 202 });
 }

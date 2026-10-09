@@ -1,7 +1,8 @@
 import "server-only";
 
 import { generateOriginalSite } from "@/lib/agent/generate-document";
-import { AI_REQUEST_TIMEOUT_MS, env, openaiResponsesOptions } from "@/lib/env";
+import { aiCallTimeoutMs } from "@/lib/ai/deadline";
+import { env, openaiResponsesOptions } from "@/lib/env";
 import { refundBuildCredit } from "@/lib/payments/billing";
 import { applyEventDetailsPatch, applySiteOperations, type SiteOperation } from "@/lib/site-document-operations";
 import { findSiteNode, type SiteDocument } from "@/lib/site-document";
@@ -138,9 +139,10 @@ function fallbackEdit(prompt: string, document: SiteDocument, selectedNodeIds: s
   return { message: "I refined the visual direction while keeping your content and structure intact.", summary: "Refined visual direction", operations: [{ op: "set_theme", colors: { text: palette[0], surface: palette[1], accent: palette[2], muted: palette[3] }, motion: /motion|animate/i.test(prompt) ? "expressive" : document.theme.motion }], eventPatch: {} };
 }
 
-async function requestAgentEdit(prompt: string, document: SiteDocument, config: EventConfig, messages: BuilderMessage[], selectedNodeIds: string[]) {
+async function requestAgentEdit(prompt: string, document: SiteDocument, config: EventConfig, messages: BuilderMessage[], selectedNodeIds: string[], deadline?: number) {
   const key = env.openaiApiKey();
-  if (!key) return fallbackEdit(prompt, document, selectedNodeIds);
+  const timeoutMs = aiCallTimeoutMs(deadline);
+  if (!key || timeoutMs === null) return fallbackEdit(prompt, document, selectedNodeIds);
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -152,7 +154,7 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
       ],
       text: { format: { type: "json_schema", name: "eventloom_document_edit", strict: true, schema: editSchema } },
     }),
-    signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   }).catch(() => null);
   if (!response?.ok) return fallbackEdit(prompt, document, selectedNodeIds);
   const data = await response.json().catch(() => null) as { id?: string; output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }> } | null;
@@ -165,7 +167,7 @@ async function requestAgentEdit(prompt: string, document: SiteDocument, config: 
   }
 }
 
-export async function executeStudioRun(input: { jobId: string; eventId: string; ownerId: string; prompt: string; selectedNodeIds: string[] }) {
+export async function executeStudioRun(input: { jobId: string; eventId: string; ownerId: string; prompt: string; selectedNodeIds: string[]; deadline?: number }) {
   // Once the provider has been called the credit is consumed, even if the run is cancelled or fails afterwards.
   let providerCalled = false;
   try {
@@ -174,9 +176,9 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
     const run = await getStudioRun(input.jobId);
     if (run?.cancel_requested) throw new Error("run_cancelled");
     await appendRunEvent(input.jobId, input.eventId, "status", { stage: "analyzing", message: run?.kind === "initial" ? "Designing your site from the brief…" : "Understanding your request…" });
-    providerCalled = Boolean(env.openaiApiKey());
+    providerCalled = Boolean(env.openaiApiKey()) && aiCallTimeoutMs(input.deadline) !== null;
     if (run?.kind === "initial") {
-      const original = await generateOriginalSite(input.prompt, state.revision.config);
+      const original = await generateOriginalSite(input.prompt, state.revision.config, { deadline: input.deadline });
       const beforeCommit = await getStudioRun(input.jobId);
       if (beforeCommit?.cancel_requested) throw new Error("run_cancelled");
       await appendRunEvent(input.jobId, input.eventId, "status", { stage: "saving", message: original.summary });
@@ -189,7 +191,7 @@ export async function executeStudioRun(input: { jobId: string; eventId: string; 
       return;
     }
 
-    const generated = await requestAgentEdit(input.prompt, state.revision.document, state.revision.config, state.messages, input.selectedNodeIds);
+    const generated = await requestAgentEdit(input.prompt, state.revision.document, state.revision.config, state.messages, input.selectedNodeIds, input.deadline);
     const edit = "edit" in generated ? generated.edit : generated;
     const responseId = "responseId" in generated ? generated.responseId : null;
     const beforeApply = await getStudioRun(input.jobId);

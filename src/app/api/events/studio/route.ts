@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { aiDeadline } from "@/lib/ai/deadline";
 import { defaultEventConfig } from "@/lib/ai/generator";
 import { generateOriginalSite } from "@/lib/agent/generate-document";
 import { createEventRecord } from "@/lib/agent/tools";
@@ -15,6 +16,7 @@ export const maxDuration = 300;
 const MAX_INITIAL_IMAGES = 5;
 
 export async function POST(req: NextRequest) {
+  const deadline = aiDeadline();
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!requestWithinLimit(req, 45 * 1024 * 1024)) return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
   const user = await getServerUser();
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
   const runId = await createStudioRun({ eventId: created.event.id, ownerId: user.id, baseVersionId: null, prompt, selectedNodeIds: [], kind: "initial" });
   const credit = runId ? await reserveBuildCredit(user.id, created.event.id) : null;
   const charged = Boolean(runId && credit?.ok);
-  const original = charged ? await generateOriginalSite(prompt, planConfig).catch(() => null) : null;
+  const original = charged ? await generateOriginalSite(prompt, planConfig, { deadline }).catch(() => null) : null;
   const delivered = Boolean(original?.generated);
   // The credit pays for an AI-designed site; a failed or fallback generation gives it back (idempotent per run).
   if (charged && !delivered) await refundBuildCredit(user.id, created.event.id, runId!);
