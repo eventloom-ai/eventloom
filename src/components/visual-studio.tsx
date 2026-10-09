@@ -23,6 +23,10 @@ const studioViewports: Viewports = [
 ];
 
 const studioDictionary = { "header-publish": "Save draft" } as const;
+// While an AI run is active the editor is read-only and autosave is held, so a manual save can't
+// move the draft out from under the run (which would fail its commit with version_conflict).
+const editablePermissions = { drag: true, duplicate: true, delete: true, edit: true, insert: true };
+const lockedPermissions = { drag: false, duplicate: false, delete: false, edit: false, insert: false };
 
 export function VisualStudio({ initialState, initialNotice }: VisualStudioProps) {
   const [revision, setRevision] = useState(initialState.revision);
@@ -46,6 +50,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
   const baseVersionIdRef = useRef(initialState.revision.id);
   const queuedEditRef = useRef<{ document: SiteRevision["document"]; eventPatch: Partial<EventConfig> } | null>(null);
   const activeSaveRef = useRef<Promise<void> | null>(null);
+  const activeRunRef = useRef<string | null>(initialState.activeRun?.id ?? null);
 
   const puckConfig = useMemo(() => createEventloomPuckConfig({
     document: revision.document,
@@ -81,7 +86,8 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     applyCommittedRevision(state.revision, true);
     setVersions(state.versions);
     setMessages(state.messages);
-    setActiveRunId(state.activeRun?.id ?? null);
+    activeRunRef.current = state.activeRun?.id ?? null;
+    setActiveRunId(activeRunRef.current);
   }, [applyCommittedRevision, event.id]);
 
   const persistQueuedDocuments = useCallback(async () => {
@@ -132,6 +138,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
       }
       setSaveStatus("saving");
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+      if (activeRunRef.current) return;
       if (immediate) void persistQueuedDocuments();
       else saveTimerRef.current = window.setTimeout(() => {
         saveTimerRef.current = null;
@@ -149,6 +156,19 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     setSelectedNodeId(selectedPuckNodeId(state.data, state.ui.itemSelector));
   }, []);
 
+  const startRun = useCallback((runId: string | null) => {
+    activeRunRef.current = runId;
+    setActiveRunId(runId);
+  }, []);
+
+  // Resume held autosaves (the run never committed, so they still apply to the current draft), then reload.
+  const endRunWithoutCommit = useCallback(async () => {
+    startRun(null);
+    setActivity("");
+    await persistQueuedDocuments();
+    await refreshState();
+  }, [persistQueuedDocuments, refreshState, startRun]);
+
   const connectRun = useCallback((runId: string) => {
     sourceRef.current?.close();
     const source = new EventSource(`/api/events/${event.id}/studio/runs/${runId}/events`);
@@ -165,9 +185,10 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     });
     source.addEventListener("committed", (raw) => {
       const data = JSON.parse((raw as MessageEvent).data) as { revision: SiteRevision; message?: BuilderMessage };
+      queuedEditRef.current = null;
       applyCommittedRevision(data.revision, true);
       if (data.message) setMessages((current) => [...current.filter((message) => message.id !== data.message?.id), data.message!]);
-      setActiveRunId(null);
+      startRun(null);
       setActivity("");
       setError("");
       source.close();
@@ -176,14 +197,17 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
       if (!(raw instanceof MessageEvent)) return;
       const message = (JSON.parse(raw.data) as { message?: string }).message;
       setError(creatorErrorMessage(message, "We couldn’t apply that change, but your previous version is safe."));
-      setActiveRunId(null);
-      setActivity("");
       source.close();
-      void refreshState();
+      void endRunWithoutCommit();
     };
     source.addEventListener("error", failed);
     source.addEventListener("cancelled", failed);
-  }, [applyCommittedRevision, event.config, event.id, refreshState]);
+    // The server ends the stream with `done` once the run has stopped; this covers a missed terminal event.
+    source.addEventListener("done", () => {
+      source.close();
+      void endRunWithoutCommit();
+    });
+  }, [applyCommittedRevision, endRunWithoutCommit, event.config, event.id, startRun]);
 
   useEffect(() => {
     if (activeRunId) connectRun(activeRunId);
@@ -200,6 +224,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     if (!value || activeRunId) return;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     await persistQueuedDocuments();
+    activeRunRef.current = "pending";
     const prompt = attachment ? `${value}\n\nReference image URL: ${attachment.url}` : value;
     setError("");
     const optimistic: BuilderMessage = { id: `pending-${crypto.randomUUID()}`, event_id: event.id, run_id: null, role: "user", content: prompt, selected_node_ids: selectedNodeId ? [selectedNodeId] : [], version_id: baseVersionIdRef.current, status: "pending", created_at: new Date().toISOString() };
@@ -209,13 +234,17 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     if (!response.ok || !payload?.runId) {
       setMessages((current) => current.filter((message) => message.id !== optimistic.id));
       setError(creatorErrorMessage(payload?.error, "We couldn’t start that change. Your message and draft are safe."));
-      if (payload?.state) applyCommittedRevision(payload.state.revision, true);
+      activeRunRef.current = null;
+      if (payload?.state) {
+        queuedEditRef.current = null;
+        applyCommittedRevision(payload.state.revision, true);
+      } else void persistQueuedDocuments();
       return;
     }
     setComposer("");
     setAttachment(null);
     setMessages((current) => [...current.filter((message) => message.id !== optimistic.id), payload.message ?? optimistic]);
-    setActiveRunId(payload.runId);
+    startRun(payload.runId);
     setActivity("Understanding your request…");
     connectRun(payload.runId);
   }
@@ -276,6 +305,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
           headerTitle={event.config.title}
           dictionary={studioDictionary}
           viewports={studioViewports}
+          permissions={activeRunId ? lockedPermissions : editablePermissions}
         />
       </div>
       {drawerOpen ? <StudioDrawer versions={versions} currentVersionId={revision.id} disabled={Boolean(activeRunId) || saveStatus === "saving"} onRestore={restore} onClose={() => setDrawerOpen(false)} /> : null}
