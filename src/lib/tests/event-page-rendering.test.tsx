@@ -52,6 +52,25 @@ describe("event page rendering rule", () => {
     expect(html).toContain("Made with Eventloom");
   });
 
+  it("links every guest page to an absolute report form (it works on subdomains and custom domains)", () => {
+    for (const html of [renderToStaticMarkup(<EventPage event={event({ config: { ...legacyConfig, design } })} />), renderToStaticMarkup(<EventPage event={event()} />)]) {
+      expect(html).toContain('href="https://eventloom.test/report?event=amina-kareem"');
+      expect(html).toContain("Report this page");
+    }
+  });
+
+  it("renders outbound document links in a new tab with noopener noreferrer nofollow, and unsafe ones as plain text", () => {
+    const document = composeSiteDocument(legacyConfig, "", (prefix) => `${prefix}_node`);
+    document.nodes.push(
+      { id: "outbound_button", type: "button", label: "Book a room", href: "https://hotel.example.com/book" },
+      { id: "unsafe_button", type: "button", label: "Sneaky", href: "//evil.example/login" },
+    );
+    const html = renderToStaticMarkup(<EventPage event={event({ document })} />);
+    expect(html).toMatch(/<a[^>]*href="https:\/\/hotel.example.com\/book"[^>]*target="_blank"[^>]*rel="noopener noreferrer nofollow"|<a[^>]*rel="noopener noreferrer nofollow"[^>]*href="https:\/\/hotel.example.com\/book"/);
+    expect(html).not.toContain("evil.example");
+    expect(html).not.toMatch(/<iframe|<script(?! type="application\/ld\+json")/);
+  });
+
   it("falls back to the legacy renderer when a stored design is invalid", () => {
     const broken = { ...design, styleKey: "brutalist" } as unknown as EventDesign;
     const html = renderToStaticMarkup(<EventPage event={event({ config: { ...legacyConfig, design: broken } })} />);

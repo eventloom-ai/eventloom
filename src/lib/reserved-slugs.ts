@@ -3,7 +3,7 @@
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   // Top-level routes and metadata files in src/app.
   "admin", "api", "app", "auth", "compare", "contact", "demo-wedding", "design-preview", "favicon", "guides", "icon", "ip", "legal", "llms",
-  "login", "opengraph-image", "privacy", "robots", "signup", "sitemap", "sites", "studio", "templates",
+  "login", "opengraph-image", "privacy", "report", "robots", "signup", "sitemap", "sites", "studio", "templates",
   // SEO landing pages (src/lib/seo-landing-pages.ts).
   "birthday-event-website", "event-website-builder", "online-rsvp", "private-event-website", "rsvp-website", "wedding-rsvp-website",
   // Platform, infrastructure and impersonation-prone names.

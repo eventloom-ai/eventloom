@@ -69,6 +69,7 @@ function GuestFooter({ slug }: { slug: string }) {
     <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-[#111] px-5 py-4 text-[12px] text-white/70">
       <a href={guestReferralUrl(base, "guest_page", slug)} className="font-medium text-white hover:underline">Made with Eventloom · Create your own event site</a>
       <a href={`${base}/legal/privacy`} className="hover:underline">Privacy</a>
+      <a href={`${base}/report?event=${encodeURIComponent(slug)}`} rel="nofollow" className="text-white/50 hover:underline">Report this page</a>
     </footer>
   );
 }
