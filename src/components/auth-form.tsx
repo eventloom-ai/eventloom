@@ -36,6 +36,14 @@ export function AuthForm({
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const acceptanceRef = useRef<HTMLInputElement>(null);
+  // Supabase Auth checks this token itself once CAPTCHA protection is on in the dashboard. It is only
+  // sent when a Turnstile site key is configured; a token Supabase isn't checking is simply ignored.
+  const captchaRequired = Boolean(turnstileSiteKey);
+  const captchaOptions = captchaRequired ? { captchaToken } : {};
+  const resetCaptcha = () => {
+    setCaptchaToken("");
+    setCaptchaResetKey((value) => value + 1);
+  };
 
   const continuingDraft = nextPath.startsWith("/app/events/new");
   const title = mode === "signup"
@@ -88,7 +96,7 @@ export function AuthForm({
         password,
         options: {
           data: { full_name: fullName.trim(), age_18_confirmed: true, legal_version: "2026-07-22-beta" },
-          captchaToken: captchaToken || undefined,
+          ...captchaOptions,
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         },
       });
@@ -96,8 +104,7 @@ export function AuthForm({
       setIsSubmitting(false);
 
       if (signUpError) {
-        setCaptchaToken("");
-        setCaptchaResetKey((value) => value + 1);
+        resetCaptcha();
         if (/already registered/i.test(signUpError.message)) {
           setShowSignInHint(true);
           setError("This email already has an account. Sign in with your existing password, or reset it below.");
@@ -121,10 +128,18 @@ export function AuthForm({
       return;
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (captchaRequired && !captchaToken) {
+      setError("Complete the security check, then try again.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password, options: captchaOptions });
     setIsSubmitting(false);
 
     if (signInError) {
+      // Turnstile tokens are single-use, so every attempt needs a fresh check.
+      resetCaptcha();
       setError(signInError.message);
       return;
     }
@@ -178,11 +193,18 @@ export function AuthForm({
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      setError("Complete the security check, then choose reset password.");
+      return;
+    }
+
     setIsSubmitting(true);
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`,
+      ...captchaOptions,
     });
     setIsSubmitting(false);
+    resetCaptcha();
 
     if (resetError) {
       setError(resetError.message);
@@ -326,6 +348,12 @@ export function AuthForm({
           </div>
         ) : null}
 
+        {mode === "signin" && turnstileSiteKey ? (
+          <div className="mt-5">
+            <TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.creatorSignin} onToken={setCaptchaToken} resetKey={captchaResetKey} />
+          </div>
+        ) : null}
+
         {error ? (
           <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-600" role="alert">
             <p>{error}</p>
@@ -350,7 +378,7 @@ export function AuthForm({
 
         <button
           type="submit"
-          disabled={isSubmitting || (mode === "signup" && (!accepted || (Boolean(turnstileSiteKey) && !captchaToken)))}
+          disabled={isSubmitting || (captchaRequired && !captchaToken) || (mode === "signup" && !accepted)}
           className="mt-6 w-full rounded-full bg-[#0071e3] py-3.5 text-[17px] font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSubmitting

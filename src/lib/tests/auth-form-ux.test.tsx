@@ -43,3 +43,16 @@ describe("signup conversion flow", () => {
     expect(html).toContain('data-signup-ux="continue-draft-v2"');
   });
 });
+
+describe("sign-in bot protection", () => {
+  it("asks for the Turnstile check on sign-in only when a site key is configured", () => {
+    const protectedHtml = renderToStaticMarkup(<AuthForm mode="signin" turnstileSiteKey="test-site-key" />);
+    expect(protectedHtml).toContain('id="turnstile-');
+    // No token yet, so the submit button waits for the check.
+    expect(protectedHtml).toMatch(/<button type="submit" disabled=""/);
+
+    const openHtml = renderToStaticMarkup(<AuthForm mode="signin" />);
+    expect(openHtml).not.toContain('id="turnstile-');
+    expect(openHtml).not.toMatch(/<button type="submit" disabled=""/);
+  });
+});

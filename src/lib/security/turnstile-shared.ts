@@ -1,5 +1,6 @@
 export const TURNSTILE_ACTIONS = {
   creatorSignup: "creator_signup",
+  creatorSignin: "creator_signin",
   productFeedback: "product_feedback",
   privacyRequest: "privacy_request",
   publicRsvp: "public_rsvp",
