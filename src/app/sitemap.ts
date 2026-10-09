@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { COMPARE_PATH, comparePath, competitors, GUIDE_PATH } from "@/lib/comparisons";
 import { appUrl } from "@/lib/env";
 import { occasionPath, occasionTemplates, TEMPLATES_PATH } from "@/lib/occasion-templates";
 
@@ -12,6 +13,9 @@ const publicRoutes = [
   "/private-event-website",
   TEMPLATES_PATH,
   ...occasionTemplates.map((occasion) => occasionPath(occasion.slug)),
+  COMPARE_PATH,
+  ...competitors.map((competitor) => comparePath(competitor.slug)),
+  GUIDE_PATH,
   "/contact",
   "/legal",
   "/legal/terms",

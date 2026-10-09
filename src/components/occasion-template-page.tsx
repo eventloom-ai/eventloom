@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { MarketingHeader } from "@/components/marketing-header";
 import { TemplateSitePreview, TemplateThumbnail } from "@/components/template-preview";
+import { comparisonLinksFor } from "@/lib/comparisons";
 import { appUrl } from "@/lib/env";
 import { getOccasionTemplate, occasionPath, occasionTemplateHref, TEMPLATES_PATH, type OccasionTemplate } from "@/lib/occasion-templates";
 import { seoLandingPages, type SeoLandingPage } from "@/lib/seo-landing-pages";
@@ -209,6 +210,7 @@ export function OccasionTemplatePage({ occasion }: { occasion: OccasionTemplate 
             <span className="font-semibold text-[#302821]">Explore more:</span>
             <Link href={TEMPLATES_PATH} className={textLink}>All templates</Link>
             {guides.map((guide) => <Link key={guide.slug} href={`/${guide.slug}`} className={textLink}>{guide.title}</Link>)}
+            {comparisonLinksFor(occasion.slug).map((link) => <Link key={link.href} href={link.href} className={textLink}>{link.label}</Link>)}
           </div>
         </div>
       </section>

@@ -2,8 +2,8 @@
 // (keep in sync with the top-level entries of src/app) or a name that reads as an official Eventloom host.
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   // Top-level routes and metadata files in src/app.
-  "admin", "api", "app", "auth", "contact", "demo-wedding", "favicon", "icon", "ip", "legal", "llms", "login", "opengraph-image",
-  "privacy", "robots", "signup", "sitemap", "sites", "studio", "templates",
+  "admin", "api", "app", "auth", "compare", "contact", "demo-wedding", "favicon", "guides", "icon", "ip", "legal", "llms", "login",
+  "opengraph-image", "privacy", "robots", "signup", "sitemap", "sites", "studio", "templates",
   // SEO landing pages (src/lib/seo-landing-pages.ts).
   "birthday-event-website", "event-website-builder", "online-rsvp", "private-event-website", "rsvp-website", "wedding-rsvp-website",
   // Platform, infrastructure and impersonation-prone names.

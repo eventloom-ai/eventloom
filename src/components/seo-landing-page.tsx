@@ -3,6 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { MarketingHeader } from "@/components/marketing-header";
 import { StartEventPrompt } from "@/components/start-event-prompt";
+import { comparisonLinksFor } from "@/lib/comparisons";
 import { appUrl, publicSignupEnabled } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getServerUser } from "@/lib/supabase/server";
@@ -131,6 +132,7 @@ export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
           <span className="font-semibold text-[#302821]">Explore more:</span>
           {page.related.map((related) => <Link key={related.href} href={related.href} className="underline decoration-[#c19a7d] underline-offset-4 transition hover:text-[#8a6153]">{related.label}</Link>)}
           <Link href="/templates" className="underline decoration-[#c19a7d] underline-offset-4 transition hover:text-[#8a6153]">Event website templates</Link>
+          {comparisonLinksFor(page.eventType).map((link) => <Link key={link.href} href={link.href} className="underline decoration-[#c19a7d] underline-offset-4 transition hover:text-[#8a6153]">{link.label}</Link>)}
         </div>
       </section>
     </main>
