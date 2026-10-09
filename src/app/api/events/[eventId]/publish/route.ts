@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createLaunchCheckoutSession } from "@/lib/payments/stripe";
 import { isPlatformAdmin } from "@/lib/platform-admin";
-import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
+import { serviceSupabase } from "@/lib/supabase/server";
 import { canEditEvent } from "@/lib/studio-store";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
 import { hasCreatorLegalOnboarding } from "@/lib/security/creator-legal";
@@ -32,9 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   if (!(await hasCompleteEventPrivacyNotice(eventId))) return NextResponse.json({ error: "event_privacy_notice_required" }, { status: 409 });
 
   const platformAdmin = await isPlatformAdmin(user.id);
-  const client = platformAdmin
-    ? (await createSupabaseServerClient() ?? serviceSupabase())
-    : (serviceSupabase() ?? await createSupabaseServerClient());
+  const client = serviceSupabase();
   if (client) {
     const [{ data: event }, { data: entitlement }] = await Promise.all([
       client.from("events").select("draft_version_id, ends_at, event_ends_at").eq("id", eventId).maybeSingle(),

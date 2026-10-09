@@ -6,17 +6,14 @@ import { EVENT_ASSET_BUCKET, isEventAssetPath } from "@/lib/asset-paths";
 import { appUrl } from "@/lib/env";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { createLocalDemoJob, finishLocalDemoJob, getLocalDemoEventById, getLocalDemoJob, updateLocalDemoJob } from "@/lib/local-demo-store";
-import { createSupabaseServerClient, serviceSupabase } from "@/lib/supabase/server";
+import { serviceSupabase } from "@/lib/supabase/server";
 import type { EventConfig, EventRecord } from "@/lib/types";
 
+// Every app write goes through the service role after the route has checked ownership; signed-in users have no
+// direct write grants (20261009130000_app_owned_writes), so the database can't be edited around the app's checks.
+// The owner is still passed so call sites read as owner-scoped writes.
 async function writableClient(ownerId?: string | null) {
-  if (ownerId) {
-    const userClient = await createSupabaseServerClient();
-    if (userClient) {
-      return userClient;
-    }
-  }
-
+  void ownerId;
   return serviceSupabase();
 }
 
