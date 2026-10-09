@@ -18,8 +18,15 @@ const BuildJobContext = createContext<BuildJobContextValue>({
   refreshActiveJob: async () => {},
 });
 
+// Guest event pages and marketing pages never start builds; only creator areas look up server-side jobs.
+function isCreatorPath(pathname: string | null) {
+  return Boolean(pathname && /^\/(app|studio)(\/|$)/.test(pathname));
+}
+
 export function BuildJobProvider({ children }: { children: ReactNode }) {
   const [activeJob, setActiveJob] = useState<BuildJobStatus | null>(null);
+  const pathname = usePathname();
+  const creatorPath = isCreatorPath(pathname);
 
   const refreshActiveJob = useCallback(async () => {
     const stored = readStoredBuildJob();
@@ -35,6 +42,11 @@ export function BuildJobProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    if (!creatorPath) {
+      setActiveJob(null);
+      return;
+    }
+
     const response = await fetch("/api/events/build/active", { cache: "no-store" }).catch(() => null);
     if (!response?.ok) {
       setActiveJob(null);
@@ -43,7 +55,7 @@ export function BuildJobProvider({ children }: { children: ReactNode }) {
 
     const payload = (await response.json()) as { jobs: BuildJobStatus[] };
     setActiveJob(payload.jobs[0] ?? null);
-  }, []);
+  }, [creatorPath]);
 
   useEffect(() => {
     const initialTimer = window.setTimeout(() => {
