@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { safeRedirectPath } from "@/lib/auth/redirect";
+import { LEGAL_VERSION } from "@/lib/legal-version";
 import { SIGNUP_UX_VERSION } from "@/lib/auth/signup-ux";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EventloomLogo } from "@/components/logo";
@@ -95,7 +96,7 @@ export function AuthForm({
         email,
         password,
         options: {
-          data: { full_name: fullName.trim(), age_18_confirmed: true, legal_version: "2026-07-22-beta" },
+          data: { full_name: fullName.trim(), age_18_confirmed: true, legal_version: LEGAL_VERSION },
           ...captchaOptions,
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         },

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { LEGAL_VERSION } from "@/lib/legal-version";
 import { createLaunchCheckoutSession } from "@/lib/payments/stripe";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (!auth.emailVerified || !hasRequiredMfa(auth)) return NextResponse.json({ error: "mfa_required" }, { status: 403 });
   if (!(await hasCreatorLegalOnboarding(user.id))) return NextResponse.json({ error: "legal_onboarding_required" }, { status: 403 });
   if (!(await hasCompleteEventPrivacyNotice(body.event_id))) return NextResponse.json({ error: "event_privacy_notice_required" }, { status: 409 });
-  if (body.legalAccepted !== true || body.legalVersion !== "2026-07-22-beta") return NextResponse.json({ error: "legal_acceptance_required" }, { status: 400 });
+  if (body.legalAccepted !== true || body.legalVersion !== LEGAL_VERSION) return NextResponse.json({ error: "legal_acceptance_required" }, { status: 400 });
   if (await isPlatformAdmin(user.id)) {
     if (!(await isEventOwner(body.event_id, user.id))) return NextResponse.json({ error: "not_found" }, { status: 404 });
     const client = serviceSupabase();

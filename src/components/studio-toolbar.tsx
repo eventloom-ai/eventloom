@@ -5,6 +5,8 @@ import { ChevronLeft, Eye, Globe2, History, Laptop, Loader2, MessageSquareText, 
 import Link from "next/link";
 import { requestFeedbackDialog } from "@/lib/feedback";
 import { publishErrorPresentation } from "@/lib/publish-errors";
+import { LEGAL_VERSION } from "@/lib/legal-version";
+import { REFUND_RSVP_LIMIT, REFUND_WINDOW_DAYS } from "@/lib/payments/refund-policy";
 import { rateLimitedMessage, retryAfterFrom } from "@/lib/rate-limit-message";
 
 type StudioToolbarProps = {
@@ -20,6 +22,8 @@ type StudioToolbarProps = {
   onRedo: () => void;
   onToggleHistory: () => void;
   showEditingControls?: boolean;
+  /** Custom-domain purchase is off until the registrar flow is launched; the option stays hidden until then. */
+  domainPurchasingAvailable?: boolean;
 };
 
 function eventStatusLabel(status: string) {
@@ -28,7 +32,7 @@ function eventStatusLabel(status: string) {
   return "Draft";
 }
 
-export function StudioToolbar({ eventId, title, status, saveStatus, viewport, canUndo, canRedo, onViewport, onUndo, onRedo, onToggleHistory, showEditingControls = true }: StudioToolbarProps) {
+export function StudioToolbar({ eventId, title, status, saveStatus, viewport, canUndo, canRedo, onViewport, onUndo, onRedo, onToggleHistory, showEditingControls = true, domainPurchasingAvailable = false }: StudioToolbarProps) {
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishRetryAfter, setPublishRetryAfter] = useState<number | null>(null);
@@ -52,7 +56,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
       const response = await fetch(`/api/events/${eventId}/publish`, {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: requestedDomain || null, registrant: requestedDomain ? registrant : undefined, legalAccepted: launchTermsAccepted && (!requestedDomain || domainTermsAccepted), legalVersion: "2026-07-22-beta" }),
+        body: JSON.stringify({ domain: requestedDomain || null, registrant: requestedDomain ? registrant : undefined, legalAccepted: launchTermsAccepted && (!requestedDomain || domainTermsAccepted), legalVersion: LEGAL_VERSION }),
       });
       const payload = await response.json().catch(() => null) as { error?: string; checkout_url?: string; retryAfterSeconds?: number } | null;
       if (!response.ok) {
@@ -223,7 +227,7 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
                         </div>
                       </div>
                       <p className="mt-4 rounded-xl bg-black/20 px-3 py-2 text-xs leading-5 text-white/55">
-                        Recommended. You can add a custom domain later.
+                        {domainPurchasingAvailable ? "Recommended. You can add a custom domain later." : "Your site is shared at its eventloom.co address."}
                       </p>
                     </div>
 
@@ -236,11 +240,15 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
                       />
                       <span>
                         I am 18 or older and accept the{" "}
-                        <Link className="font-medium text-white underline underline-offset-2" href="/legal/terms" target="_blank">Terms</Link>
+                        <Link className="font-medium text-white underline underline-offset-2" href="/legal/terms" target="_blank">Terms</Link>,{" "}
+                        <Link className="font-medium text-white underline underline-offset-2" href="/legal/refunds" target="_blank">Refund Policy</Link>
                         {" "}and{" "}
                         <Link className="font-medium text-white underline underline-offset-2" href="/legal/privacy" target="_blank">Privacy Policy</Link>.
                       </span>
                     </label>
+                    <p className="mt-2 pl-7 text-xs leading-5 text-white/45">
+                      One-time payment, no subscription or automatic renewal. Full refund within {REFUND_WINDOW_DAYS} days if fewer than {REFUND_RSVP_LIMIT} guests have replied and your event hasn&apos;t ended.
+                    </p>
 
                     <button
                       type="button"
@@ -252,16 +260,16 @@ export function StudioToolbar({ eventId, title, status, saveStatus, viewport, ca
                       {publishing ? "Opening secure checkout…" : "Continue to checkout — $20 USD"}
                     </button>
 
-                    <button
+                    {domainPurchasingAvailable ? <button
                       type="button"
                       onClick={() => setShowCustomDomain((current) => !current)}
                       aria-expanded={showCustomDomain}
                       className="mt-3 w-full rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/75 transition hover:bg-white/[0.06]"
                     >
                       {showCustomDomain ? "Hide custom-domain options" : "I want a custom domain"}
-                    </button>
+                    </button> : null}
 
-                    {showCustomDomain ? (
+                    {domainPurchasingAvailable && showCustomDomain ? (
                       <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-5">
                         <p className="text-sm font-semibold">Find your custom domain</p>
                         <p className="mt-1 text-xs leading-5 text-white/45">The registration price is added to the $20 Eventloom service.</p>

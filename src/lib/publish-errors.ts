@@ -20,8 +20,8 @@ export function publishErrorPresentation(code: string, eventId: string, retryAft
       };
     case "legal_onboarding_required":
       return {
-        message: "Confirm the creator terms once before publishing your first event.",
-        actionLabel: "Confirm creator terms",
+        message: "Accept the current Eventloom terms before publishing. We ask again whenever they change.",
+        actionLabel: "Review and accept terms",
         actionHref: "/app/legal-acceptance",
       };
     case "event_privacy_notice_required":
@@ -33,7 +33,7 @@ export function publishErrorPresentation(code: string, eventId: string, retryAft
       };
     case "legal_acceptance_required":
       return {
-        message: "Review and accept the launch terms above before continuing.",
+        message: "Review and accept the launch terms above before continuing. If you already did, refresh the page: our terms may have been updated.",
       };
     case "registrant_invalid":
       return {

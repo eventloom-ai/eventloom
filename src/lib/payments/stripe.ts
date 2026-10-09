@@ -5,6 +5,8 @@ import { LAUNCH_PRICE_CENTS } from "@/lib/payments/billing";
 import { serviceSupabase } from "@/lib/supabase/server";
 import { domainSchema, evaluateDomainQuote } from "@/lib/validation";
 import { domainRegistrantSchema, storeRegistrantPayload, deleteRegistrantPayload, type DomainRegistrant } from "@/lib/domains/registrant";
+import { CHECKOUT_LEGAL_DOCUMENTS, DOMAIN_CHECKOUT_LEGAL_DOCUMENTS } from "@/lib/legal-version";
+import { REFUND_RSVP_LIMIT, REFUND_WINDOW_DAYS } from "@/lib/payments/refund-policy";
 
 export function stripeClient() {
   const key = env.stripeSecretKey();
@@ -34,8 +36,8 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
   if (!event.draft_version_id) return { ok: false as const, error: "site_version_missing" };
 
   if (!input.acceptance) return { ok: false as const, error: "legal_acceptance_required" };
-  const requiredDocuments = input.domain ? ["terms", "privacy", "domains"] : ["terms", "privacy"];
-  const { data: legalDocuments } = await client.from("legal_documents").select("id, document_key, version").eq("status", "active").eq("version", input.acceptance.version).in("document_key", requiredDocuments);
+  const requiredDocuments: readonly string[] = input.domain ? DOMAIN_CHECKOUT_LEGAL_DOCUMENTS : CHECKOUT_LEGAL_DOCUMENTS;
+  const { data: legalDocuments } = await client.from("legal_documents").select("id, document_key, version").eq("status", "active").eq("version", input.acceptance.version).in("document_key", [...requiredDocuments]);
   if (!legalDocuments || legalDocuments.length !== requiredDocuments.length) return { ok: false as const, error: "legal_documents_not_ready" };
 
   const { data: entitlement } = await client
@@ -136,7 +138,7 @@ export async function createLaunchCheckoutSession(input: { eventId: string; owne
     },
     payment_intent_data: { metadata: { event_id: input.eventId, order_id: order.id, version_id: event.draft_version_id, product: "eventloom_launch", ...(domainQuote ? { domain: domainQuote.domain } : {}) } },
     consent_collection: { terms_of_service: "required" },
-    custom_text: { submit: { message: domainQuote ? "The total includes one year of Eventloom service and the displayed one-year domain registration. Domain auto-renewal is off." : "The total includes one year of Eventloom hosted site service." } },
+    custom_text: checkoutPolicyText(Boolean(domainQuote)),
     });
   } catch {
     await deleteRegistrantPayload(order.id);
@@ -173,4 +175,15 @@ async function supersedePendingLaunchCheckouts(stripe: Stripe, client: NonNullab
     await client.from("orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "pending");
   }
   return { ok: true as const };
+}
+
+// Shown on Stripe Checkout next to the required terms checkbox and above the Pay button (Markdown links allowed).
+export function checkoutPolicyText(withDomain: boolean) {
+  const base = appUrl().replace(/\/$/, "");
+  const policies = `[Terms](${base}/legal/terms), [Refund Policy](${base}/legal/refunds)${withDomain ? `, [Domain Policy](${base}/legal/domains)` : ""} and [Privacy Policy](${base}/legal/privacy)`;
+  const term = withDomain ? "One year of Eventloom hosting and the displayed one-year domain registration. Domain auto-renewal is off." : "One year of Eventloom hosting for this event.";
+  return {
+    terms_of_service_acceptance: { message: `I am 18 or older and agree to Eventloom's ${policies}.` },
+    submit: { message: `${term} One-time payment: no subscription and no automatic renewal. Full refund within ${REFUND_WINDOW_DAYS} days if fewer than ${REFUND_RSVP_LIMIT} guests have replied and your event hasn't ended.` },
+  };
 }

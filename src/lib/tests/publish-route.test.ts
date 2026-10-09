@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { LEGAL_VERSION } from "@/lib/legal-version";
 
 const mocks = vi.hoisted(() => ({
   user: null as { id: string; email?: string | null } | null,
@@ -113,7 +114,7 @@ describe("event publishing payment gate", () => {
   it("sends an expired entitlement through checkout instead of publishing", async () => {
     mocks.entitlement = { status: "active", expires_at: "2020-01-01T00:00:00.000Z" };
 
-    const response = await invoke({ legalAccepted: true, legalVersion: "2026-07-22-beta" });
+    const response = await invoke({ legalAccepted: true, legalVersion: LEGAL_VERSION });
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, checkout_url: "https://checkout.stripe.test/cs_launch_1" });
@@ -123,7 +124,7 @@ describe("event publishing payment gate", () => {
       customerEmail: "owner@example.com",
       domain: undefined,
       registrant: undefined,
-      acceptance: { version: "2026-07-22-beta", ipHash: null, userAgentClass: "unknown" },
+      acceptance: { version: LEGAL_VERSION, ipHash: null, userAgentClass: "unknown" },
     });
     expect(mocks.publishedUpdate).toBeNull();
   });

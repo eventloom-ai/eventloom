@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { LEGAL_VERSION, REQUIRED_ACTIVE_LEGAL_DOCUMENTS } from "@/lib/legal-version";
 import { env, externalLaunchReviewsApproved, isOpenSrsConfigured, isStripeConfigured, isSupabaseConfigured, isTurnstileConfigured, isVercelConfigured, legalIdentityConfigured, monitoringConfigured, stripeKeyMatchesDeployment } from "@/lib/env";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { getAuthContext, hasRequiredMfa } from "@/lib/security/auth";
@@ -29,14 +30,14 @@ export async function GET(request: NextRequest) {
     const feedbackSlaCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const [databaseResult, legalResult, fulfillmentResult, privacyResult, feedbackResult, maintenanceResult] = await Promise.all([
       client.from("orders").select("id", { count: "exact", head: true }).limit(1),
-      client.from("legal_documents").select("id", { count: "exact", head: true }).eq("status", "active").eq("version", "2026-07-22-beta").in("document_key", ["terms", "privacy", "domains"]),
+      client.from("legal_documents").select("id", { count: "exact", head: true }).eq("status", "active").eq("version", LEGAL_VERSION).in("document_key", [...REQUIRED_ACTIVE_LEGAL_DOCUMENTS]),
       client.from("fulfillment_jobs").select("id", { count: "exact", head: true }).in("state", ["received", "verified", "domain_pending", "retry"]).lte("next_attempt_at", now),
       client.from("privacy_requests").select("id", { count: "exact", head: true }).not("status", "in", '("completed","denied")').lte("due_at", now),
       client.from("product_feedback").select("id", { count: "exact", head: true }).in("status", ["new", "reviewing", "planned"]).lte("created_at", feedbackSlaCutoff),
       client.from("maintenance_status").select("last_started_at, last_succeeded_at, last_failed_at").eq("job_key", DAILY_MAINTENANCE_JOB).maybeSingle(),
     ]);
     database = !databaseResult.error;
-    activeLegalDocuments = !legalResult.error && legalResult.count === 3;
+    activeLegalDocuments = !legalResult.error && legalResult.count === REQUIRED_ACTIVE_LEGAL_DOCUMENTS.length;
     fulfillmentQueueHealthy = !fulfillmentResult.error && fulfillmentResult.count === 0;
     privacyQueueHealthy = !privacyResult.error && privacyResult.count === 0;
     feedbackQueueHealthy = !feedbackResult.error && feedbackResult.count === 0;

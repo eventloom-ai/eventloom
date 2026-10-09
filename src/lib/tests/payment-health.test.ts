@@ -26,7 +26,7 @@ vi.mock("@/lib/env", () => ({
 vi.mock("@/lib/supabase/server", () => ({ serviceSupabase: () => ({ from: (table: string) => {
   const builder = { select: vi.fn(), limit: vi.fn(), eq: vi.fn(), in: vi.fn(), lte: vi.fn(), not: vi.fn(), maybeSingle: vi.fn() };
   builder.select.mockReturnValue(builder); builder.eq.mockReturnValue(builder); builder.not.mockReturnValue(builder);
-  builder.in.mockImplementation(() => table === "legal_documents" ? Promise.resolve({ error: null, count: 3 }) : builder);
+  builder.in.mockImplementation(() => table === "legal_documents" ? Promise.resolve({ error: null, count: 5 }) : builder);
   builder.lte.mockResolvedValue({ error: null, count: table === "product_feedback" ? mocks.staleFeedbackCount : 0 });
   builder.limit.mockResolvedValue({ error: mocks.databaseError });
   builder.maybeSingle.mockResolvedValue({ error: null, data: mocks.maintenanceData });

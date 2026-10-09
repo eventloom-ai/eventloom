@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { LEGAL_VERSION } from "@/lib/legal-version";
 import { createLaunchCheckoutSession } from "@/lib/payments/stripe";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { serviceSupabase } from "@/lib/supabase/server";
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
   }
 
   if (!publicCheckoutEnabled() || !legalIdentityConfigured()) return NextResponse.json({ error: "checkout_unavailable" }, { status: 503 });
-  if (body?.legalAccepted !== true || body.legalVersion !== "2026-07-22-beta") return NextResponse.json({ error: "legal_acceptance_required" }, { status: 400 });
+  if (body?.legalAccepted !== true || body.legalVersion !== LEGAL_VERSION) return NextResponse.json({ error: "legal_acceptance_required" }, { status: 400 });
   const registrant = body?.domain ? domainRegistrantSchema.safeParse(body.registrant) : null;
   if (body?.domain && !registrant?.success) return NextResponse.json({ error: "registrant_invalid" }, { status: 400 });
   const checkout = await createLaunchCheckoutSession({ eventId, ownerId: user.id, customerEmail: user.email, domain: body?.domain, registrant: registrant?.data, acceptance: { version: body.legalVersion, ipHash: clientIpHash(req), userAgentClass: (req.headers.get("user-agent") ?? "unknown").slice(0, 160) } });

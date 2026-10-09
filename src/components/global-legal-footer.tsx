@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { EventloomLogo } from "@/components/logo";
 
-const links = [["All policies", "/legal"], ["Terms", "/legal/terms"], ["Privacy", "/legal/privacy"], ["Domains", "/legal/domains"], ["Accessibility", "/legal/accessibility"], ["Security", "/legal/security"], ["Contact", "/contact"]] as const;
+export const legalFooterLinks = [["All policies", "/legal"], ["Terms", "/legal/terms"], ["Privacy", "/legal/privacy"], ["Refunds", "/legal/refunds"], ["Acceptable use", "/legal/acceptable-use"], ["Report content", "/legal/reporting"], ["Copyright", "/legal/copyright"], ["Cookies", "/legal/cookies"], ["Accessibility", "/legal/accessibility"], ["Security", "/legal/security"], ["Contact", "/contact"]] as const;
 
 export function shouldRenderGlobalLegalFooter(pathname: string | null) {
   if (pathname === "/app/events/new") return false;
@@ -21,7 +21,7 @@ export function GlobalLegalFooter() {
         <Link href="/" className="font-semibold text-[#302821]">
           <EventloomLogo markClassName="size-6" />
         </Link>
-        {links.map(([label, href]) => (
+        {legalFooterLinks.map(([label, href]) => (
           <Link key={href} href={href} className="underline-offset-4 hover:underline">
             {label}
           </Link>

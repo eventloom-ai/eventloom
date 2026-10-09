@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useRef, useState } from "react";
-import Link from "next/link";
 import { X } from "lucide-react";
 import { optionalFormString, rsvpErrorMessage, rsvpPartySize } from "@/lib/form-values";
 import type { RsvpField } from "@/lib/types";
@@ -153,7 +152,7 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
       {message ? <p className="mt-4 text-sm text-red-700">{message}</p> : null}
 
       <div className="mt-5"><TurnstileWidget siteKey={turnstileSiteKey} action={TURNSTILE_ACTIONS.publicRsvp} onToken={setTurnstileToken} resetKey={turnstileResetKey} /></div>
-      <p className="mt-4 text-xs leading-relaxed text-stone-600">Your reply is collected for this event by its creator and processed by Eventloom. It is not sold or used for advertising. {privacyContact ? <>Privacy contact: {privacyContact}. </> : null}<Link className="underline" href="/legal/privacy">Privacy details</Link>.</p>
+      <p className="mt-4 text-xs leading-relaxed text-stone-600">Your reply is collected for this event by its creator and processed by Eventloom. It is not sold or used for advertising. {privacyContact ? <>Privacy contact: {privacyContact}. </> : null}<a className="underline" href={`${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/legal/privacy`}>Privacy details</a>.</p>
 
       <button disabled={status === "sending" || (Boolean(turnstileSiteKey) && !turnstileToken)} className="mt-6 w-full rounded-full bg-[#405448] px-5 py-4 font-semibold text-white disabled:opacity-60">
         {status === "sending" ? "Sending..." : "Send reply"}
