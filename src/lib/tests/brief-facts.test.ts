@@ -60,3 +60,12 @@ describe("brief-aware intake and grounding", () => {
     expect(groundConfigInPrompt({ ...defaultEventConfig(noVenue), venueName: "Invented Ballroom" }, noVenue).venueName).toBe("Venue to be announced");
   });
 });
+
+describe("stripVisualDirection", () => {
+  it("removes echoed mood instructions from guest-facing copy", async () => {
+    const { stripVisualDirection } = await import("@/lib/event-theme");
+    expect(stripVisualDirection("A full-day gathering for the product and engineering team, composed in a cinematic midnight editorial style.")).toBe("A full-day gathering for the product and engineering team.");
+    expect(stripVisualDirection("Join us for dinner. Visual direction (non-negotiable): soft romantic editorial: blush layers. Bring a smile!")).toBe("Join us for dinner. Bring a smile!");
+    expect(stripVisualDirection("An evening rooftop dinner celebrating Layla's 30th.")).toBe("An evening rooftop dinner celebrating Layla's 30th.");
+  });
+});

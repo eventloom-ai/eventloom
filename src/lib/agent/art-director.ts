@@ -4,6 +4,7 @@ import { MOOD_PALETTE, STYLE_FOR_KIND, chooseDesignStyle, detectMood, paletteFor
 import { DESIGN_STYLES, STYLE_KEYS, type StyleKey } from "@/lib/event-design/styles";
 import type { EventDesignContent } from "@/lib/event-design/types";
 import { env, openaiResponsesOptions } from "@/lib/env";
+import { stripVisualDirection } from "@/lib/event-theme";
 import type { EventConfig } from "@/lib/types";
 
 /**
@@ -74,10 +75,12 @@ const clean = (value: unknown, max: number) => {
 type RawContent = Record<string, unknown>;
 
 /** Turns the model's content into stored copy, dropping anything the brief does not support. */
-export function groundDesignContent(raw: RawContent, prompt: string, config: EventConfig): EventDesignContent {
+export function groundDesignContent(raw: RawContent, enrichedPrompt: string, config: EventConfig): EventDesignContent {
+  // The mood instruction appended to the brief is not a fact guests should read.
+  const prompt = stripVisualDirection(enrichedPrompt);
   const facts = `${prompt}\n${config.title}\n${config.subtitle}\n${config.date}\n${config.venueName}\n${config.venueAddress ?? ""}\n${config.rsvpDeadline ?? ""}\n${config.schedule.map((item) => `${item.title} ${item.time} ${item.location ?? ""} ${item.description ?? ""}`).join("\n")}`;
   const copy = (value: unknown, max: number) => {
-    const text = clean(value, max);
+    const text = stripVisualDirection(clean(value, max) ?? "");
     return text && numbersGrounded(text, facts) ? text : undefined;
   };
   const known = `${config.title} ${config.venueName} ${config.venueAddress ?? ""} ${config.eventType}`;

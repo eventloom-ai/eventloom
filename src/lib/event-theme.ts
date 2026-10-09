@@ -120,6 +120,25 @@ export function paletteForMood(mood: string): string[] | null {
   return MOOD_PALETTES[key] ?? null;
 }
 
+// The planner sees the chosen mood as a "visual direction" instruction and sometimes echoes it into guest-facing copy
+// ("…composed in a cinematic midnight editorial style."). Strip any clause that names a direction.
+const DIRECTION_LABELS = Object.values(VISUAL_DIRECTIONS).map((direction) => direction.split(":")[0]!.trim().toLowerCase());
+
+export function stripVisualDirection(text: string) {
+  if (!text) return text;
+  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) ?? [text];
+  const kept = sentences.map((sentence) => {
+    const lower = sentence.toLowerCase();
+    if (!/visual direction/.test(lower) && !DIRECTION_LABELS.some((label) => lower.includes(label))) return sentence;
+    const clauses = sentence.split(/,\s*/);
+    const clean = clauses.filter((clause) => { const c = clause.toLowerCase(); return !/visual direction/.test(c) && !DIRECTION_LABELS.some((label) => c.includes(label)); });
+    if (!clean.length) return "";
+    const joined = clean.join(", ").trim();
+    return /[.!?]$/.test(joined) ? `${joined} ` : `${joined}. `;
+  });
+  return kept.join("").replace(/\s+/g, " ").trim();
+}
+
 export function visualDirectionForMood(mood: string) {
   return VISUAL_DIRECTIONS[mood.trim().toLowerCase()] ?? null;
 }

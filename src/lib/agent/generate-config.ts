@@ -3,7 +3,7 @@ import { briefFacts } from "@/lib/agent/brief-facts";
 import { aiCallTimeoutMs } from "@/lib/ai/deadline";
 import { env, openaiResponsesOptions } from "@/lib/env";
 import type { ThemeOverrides } from "@/lib/event-theme";
-import { extractPaletteFromPrompt } from "@/lib/event-theme";
+import { extractPaletteFromPrompt, stripVisualDirection } from "@/lib/event-theme";
 import { normalizeGeneratedConfig } from "@/lib/template-policy";
 import type { EventConfig, EventSiteTemplate } from "@/lib/types";
 
@@ -168,7 +168,7 @@ export function groundConfigInPrompt(config: EventConfig, prompt: string): Event
   const hasSeparateHalls = /(?:separate|different)\s+(?:men'?s|women'?s|male|female).{0,50}(?:hall|reception)|(?:men'?s|women'?s).{0,50}(?:separate|different).{0,50}(?:hall|reception)/i.test(prompt);
   const schedule = config.schedule.map((item, index) => {
     const time = hasTime || promptSupportsFact(item.time, prompt) ? item.time : "Time to be announced";
-    return { ...item, time: !hasSeparateHalls && index === 0 && facts.time && TBA_TIME.test(time) ? facts.time : time };
+    return { ...item, description: item.description ? stripVisualDirection(item.description) : item.description, time: !hasSeparateHalls && index === 0 && facts.time && TBA_TIME.test(time) ? facts.time : time };
   });
 
   if (hasSeparateHalls && !schedule.some((item) => /men'?s|women'?s/i.test(`${item.title} ${item.location ?? ""}`))) {
@@ -179,11 +179,12 @@ export function groundConfigInPrompt(config: EventConfig, prompt: string): Event
   }
 
   const titleFromPrompt = promptSupportsFact(config.title, prompt);
-  const genericSubtitle = /custom event page that helps guests reply/i.test(config.subtitle);
+  const subtitle = stripVisualDirection(config.subtitle);
+  const genericSubtitle = !subtitle || /custom event page that helps guests reply/i.test(subtitle);
   return {
     ...config,
     title: titleFromPrompt ? config.title : isWedding ? "Wedding celebration" : config.eventType ? `${config.eventType[0]?.toUpperCase()}${config.eventType.slice(1)}` : "Your event",
-    subtitle: genericSubtitle ? "Details to be announced." : config.subtitle,
+    subtitle: genericSubtitle ? "Details to be announced." : subtitle,
     date: hasDate || promptSupportsFact(config.date, prompt) ? config.date : "Date to be announced",
     venueName: hasVenue ? config.venueName : "Venue to be announced",
     venueAddress: hasVenue ? config.venueAddress : undefined,
