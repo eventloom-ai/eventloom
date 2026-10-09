@@ -88,6 +88,17 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | N19 | Stuck domain order cases remain: register succeeded but recording failed + later step failed, or registrar reports pending — needs a registrar ownership check |
 | N20 | Credit refund rules inconsistent (studio edit keeps credit on fallback; studio create refunds on fallback; main build keeps credit on template fallback); failed builds leave an empty placeholder draft — **fixed**: one rule in `payments/ai-credit-rule.ts` (see DECISIONS.md), failed first builds delete their placeholder |
 
+## User safety (2026-10-09)
+
+| # | Issue | Status |
+| --- | --- | --- |
+| U1 | Moderation, phishing hold at publish, report form, admin takedown (see DECISIONS 2026-10-09) | done (app) · migrations `20261009150000`, `20261009150100` pending |
+| U2 | Owners can still write `events.status` / `published_version_id` directly through the Data API ("Owners update events" + update grant), which skips the publish-time safety check and payment. Needs a column-level grant or trigger like the suspension one; the admin publish path uses the user client, so change it to the service role first | open |
+| U3 | Legacy events whose published version fails the site-document schema fall back to `events.config` (latest draft config), which skips the publish-time check | open |
+| U4 | Abuse report retention: no purge yet. Add to the maintenance cron (e.g. delete `reporter_email` 90 days after a report closes) once the Privacy Policy states the period | open |
+| U5 | Images already stored before moderation shipped were never checked; publish re-checks text only | open |
+| U6 | Reporter emails are stored in plain text (service-role only); encrypt like privacy requests if the encryption key is set everywhere | open |
+
 ## Needs owner
 
 - Confirm Stripe is in live mode and payouts go to the right bank (Dashboard → Settings → Payouts). Check `PUBLIC_CHECKOUT_ENABLED` is `true` in Vercel production env — it defaults to off.
