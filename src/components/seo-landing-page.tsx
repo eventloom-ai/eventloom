@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
+import { JsonLd } from "@/components/json-ld";
 import { StartEventPrompt } from "@/components/start-event-prompt";
-import { publicSignupEnabled } from "@/lib/env";
+import { appUrl, publicSignupEnabled } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { getServerUser } from "@/lib/supabase/server";
 import type { SeoLandingPage } from "@/lib/seo-landing-pages";
+import { absoluteUrl, breadcrumbJsonLd, faqPageJsonLd } from "@/lib/structured-data";
 
 export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
   const user = await getServerUser();
@@ -12,8 +14,14 @@ export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
   const authConfigured = hasSupabasePublicEnv();
   const signupEnabled = publicSignupEnabled();
 
+  const siteUrl = appUrl();
+
   return (
     <main className="overflow-hidden bg-[#e7ecdf] text-[#302821]">
+      <JsonLd data={[
+        faqPageJsonLd(page.faqs, absoluteUrl(siteUrl, `/${page.slug}`)),
+        breadcrumbJsonLd(siteUrl, [{ name: "Eventloom", path: "/" }, { name: page.title, path: `/${page.slug}` }]),
+      ]} />
       <header className="border-b border-[#302821]/10 bg-[#302821] text-white">
         <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="text-[15px] font-semibold text-white" aria-label="Eventloom home">Eventloom</Link>
