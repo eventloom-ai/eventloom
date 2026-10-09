@@ -22,7 +22,7 @@ export default async function DesignPreviewSamplePage({ params, searchParams }: 
     <main data-eventloom-guest-page="">
       <EventSite
         design={design}
-        rsvp={<RsvpForm formToken="design-preview" turnstileSiteKey="" isOpen fields={sample.config.rsvpFields} />}
+        rsvp={<RsvpForm formToken="design-preview" turnstileSiteKey="" isOpen hideHeader fields={sample.config.rsvpFields} />}
       />
     </main>
   );

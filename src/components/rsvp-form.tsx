@@ -9,7 +9,8 @@ import { TURNSTILE_ACTIONS } from "@/lib/security/turnstile-shared";
 
 const defaultFields: RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "note"];
 
-export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, isDraft = false, fields = defaultFields, className = "" }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; isDraft?: boolean; fields?: RsvpField[]; className?: string }) {
+/** `hideHeader` drops the form's own "Guest reply" heading when the surrounding section already titles it. */
+export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, isDraft = false, fields = defaultFields, className = "", hideHeader = false }: { formToken: string; turnstileSiteKey: string; privacyContact?: string; isOpen: boolean; isDraft?: boolean; fields?: RsvpField[]; className?: string; hideHeader?: boolean }) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [attending, setAttending] = useState(true);
   const [partySize, setPartySize] = useState(1);
@@ -87,12 +88,12 @@ export function RsvpForm({ formToken, turnstileSiteKey, privacyContact, isOpen, 
 
   return (
     <form onSubmit={submit} className={`rounded-[8px] border border-black/10 bg-white p-5 shadow-sm ${className}`}>
-      <div>
+      {hideHeader ? null : <div>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a3f]">Guest reply</p>
         <h2 className="mt-2 text-3xl font-semibold">Confirm your details</h2>
-      </div>
+      </div>}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <div className={`${hideHeader ? "" : "mt-6 "}grid gap-4 sm:grid-cols-2`}>
         <label className="grid gap-2 text-sm font-medium">
           First name
           <input required name="first_name" className="rounded-[6px] border border-black/15 px-3 py-3" />
