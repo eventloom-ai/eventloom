@@ -1,5 +1,6 @@
 "use client";
 
+import { useSignedIn } from "@/hooks/use-signed-in";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronDown, Mic, Plus } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -85,7 +86,8 @@ export function StartEventPrompt({
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const selectedEventType = eventTypes.find((type) => type.value === eventType) ?? eventTypes[0];
   const targetPrompt = rotatingPrompts[promptIndex];
-  const ctaLabel = authConfigured && !authenticated && !signupEnabled ? "Sign in" : "Start building";
+  const signedIn = useSignedIn();
+  const ctaLabel = authConfigured && !authenticated && !signedIn && !signupEnabled ? "Sign in" : "Start building";
 
   useEffect(() => () => recognitionRef.current?.stop(), []);
 
@@ -157,7 +159,7 @@ export function StartEventPrompt({
     }
     router.push(eventDraftEntryPath({
       brief: composeLandingBrief({ description, eventTypeLabel: eventType === "other" ? undefined : selectedEventType.label, date, location }),
-      authenticated,
+      authenticated: authenticated || signedIn,
       authConfigured,
       signupEnabled,
     }));

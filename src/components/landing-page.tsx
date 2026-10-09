@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { AccountNavLinks } from "@/components/account-nav-links";
 import { EventloomLogo } from "@/components/logo";
 import { LandingMobileNavigation } from "@/components/landing-mobile-navigation";
 import { StartEventPrompt } from "@/components/start-event-prompt";
@@ -45,9 +46,6 @@ function EventloomShowcase() {
 }
 
 export function LandingPage({ authenticated = false, authConfigured = true, signupEnabled = false }: { authenticated?: boolean; authConfigured?: boolean; signupEnabled?: boolean }) {
-  const accountHref = authenticated || !authConfigured ? "/app" : "/login?next=/app";
-  const accountLabel = authenticated ? "My events" : authConfigured ? "Sign in" : "Open local demo";
-  const createLabel = authenticated ? "New event" : "Create an event";
 
   return (
     <main id="top" className="overflow-hidden bg-[#e7ecdf] text-[#302821]">
@@ -55,7 +53,7 @@ export function LandingPage({ authenticated = false, authConfigured = true, sign
         <div className="mx-auto grid h-[4.25rem] max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-5 sm:px-8">
           <Link href="/" className="justify-self-start text-[15px] font-semibold text-white" aria-label="Eventloom home"><EventloomLogo markClassName="size-7" /></Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-6 text-[13px] text-white/70 md:flex"><Link href="#product" className="transition hover:text-white">Product</Link><Link href="#how-it-works" className="transition hover:text-white">How it works</Link><Link href="#pricing" className="transition hover:text-white">Pricing</Link><Link href="/templates" className="transition hover:text-white">Templates</Link><Link href="#questions" className="transition hover:text-white">Questions</Link><Link href="/contact" className="transition hover:text-white">Contact</Link></nav>
-          <div className="flex items-center justify-end gap-1"><Link href={accountHref} className="rounded-md px-3 py-1.5 text-[13px] font-medium text-white/75 transition hover:text-white">{accountLabel}</Link><Link href="#top" className="hidden rounded-md bg-white px-3.5 py-1.5 text-[13px] font-semibold text-neutral-900 transition hover:bg-white/90 sm:inline-flex">{createLabel}</Link><LandingMobileNavigation /></div>
+          <div className="flex items-center justify-end gap-1"><AccountNavLinks authConfigured={authConfigured} /><LandingMobileNavigation /></div>
         </div>
       </header>
 

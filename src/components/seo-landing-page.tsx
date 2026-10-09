@@ -6,13 +6,10 @@ import { StartEventPrompt } from "@/components/start-event-prompt";
 import { comparisonLinksFor } from "@/lib/comparisons";
 import { appUrl, publicSignupEnabled } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
-import { getServerUser } from "@/lib/supabase/server";
 import type { SeoLandingPage } from "@/lib/seo-landing-pages";
 import { absoluteUrl, breadcrumbJsonLd, faqPageJsonLd } from "@/lib/structured-data";
 
-export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
-  const user = await getServerUser();
-  const authenticated = Boolean(user);
+export function SeoLandingPage({ page }: { page: SeoLandingPage }) {
   const authConfigured = hasSupabasePublicEnv();
   const signupEnabled = publicSignupEnabled();
 
@@ -42,7 +39,7 @@ export async function SeoLandingPage({ page }: { page: SeoLandingPage }) {
               <h2 className="mt-3 font-[family-name:var(--font-playfair)] text-3xl leading-none tracking-[-0.045em]">Describe the event you are planning.</h2>
               <p className="mt-3 text-sm leading-6 text-[#74675d]">Eventloom will help turn the idea into a website and RSVP experience.</p>
               <div className="mt-6">
-                <StartEventPrompt initialEventType={page.eventType} authenticated={authenticated} authConfigured={authConfigured} signupEnabled={signupEnabled} />
+                <StartEventPrompt initialEventType={page.eventType} authConfigured={authConfigured} signupEnabled={signupEnabled} />
               </div>
             </div>
           </div>

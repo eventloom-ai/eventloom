@@ -4,7 +4,6 @@ import { frequentlyAsked, LandingPage } from "@/components/landing-page";
 import { appUrl, publicSignupEnabled } from "@/lib/env";
 import { absoluteUrl, faqPageJsonLd, softwareApplicationJsonLd } from "@/lib/structured-data";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
-import { getServerUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Event Website Builder with RSVPs | Eventloom",
@@ -24,14 +23,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Home() {
-  const user = await getServerUser();
+export default function Home() {
   const siteUrl = appUrl();
   return (
     <>
       <JsonLd data={[softwareApplicationJsonLd(siteUrl), faqPageJsonLd(frequentlyAsked, absoluteUrl(siteUrl))]} />
       <LandingPage
-        authenticated={Boolean(user)}
         authConfigured={hasSupabasePublicEnv()}
         signupEnabled={publicSignupEnabled()}
       />

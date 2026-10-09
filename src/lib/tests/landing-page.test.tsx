@@ -3,9 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { LandingPage } from "@/components/landing-page";
 import { seoLandingPages } from "@/lib/seo-landing-pages";
 
+const session = vi.hoisted(() => ({ signedIn: false }));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
+// The page is static; the signed-in state comes from the session cookie in the browser.
+vi.mock("@/hooks/use-signed-in", () => ({ useSignedIn: () => session.signedIn }));
 
 describe("landing page", () => {
   it("uses only working homepage anchors and application destinations", () => {
@@ -27,7 +31,9 @@ describe("landing page", () => {
   });
 
   it("adapts account and creation calls to the active auth state", () => {
-    const authenticated = renderToStaticMarkup(<LandingPage authenticated authConfigured signupEnabled />);
+    session.signedIn = true;
+    const authenticated = renderToStaticMarkup(<LandingPage authConfigured signupEnabled />);
+    session.signedIn = false;
     const localDemo = renderToStaticMarkup(<LandingPage authConfigured={false} />);
 
     expect(authenticated).toContain('href="/app"');
