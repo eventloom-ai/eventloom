@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { SiteDocumentRenderer } from "@/components/site-document-renderer";
@@ -146,5 +148,10 @@ describe("site document renderer", () => {
     expect(html).toContain("Sample form. Guests can reply once the event is published.");
     expect(html).toContain("Meal preference");
     expect(html.match(/<input disabled=""/g)?.length).toBe(4);
+  });
+
+  it("keeps the static view free of client components so read-only pages ship no reveal or RSVP JavaScript", () => {
+    const source = readFileSync(path.resolve(__dirname, "../../components/site-document-view.tsx"), "utf8");
+    expect(source).not.toMatch(/@\/components\/(?:rsvp-form|site-reveal)|framer-motion|"use client"/);
   });
 });
