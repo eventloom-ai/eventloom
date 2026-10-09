@@ -73,6 +73,14 @@ describe("demo-mode studio state", () => {
     expect(first.ok && afterFirst?.revision.id).toBe(first.ok && first.revision.id);
     expect(afterFirst?.versions).toHaveLength(1);
   });
+
+  it("keeps a sample event's first version in History after an edit, so it can be restored", async () => {
+    const sample = demoEvents[1];
+    const initial = await loadStudioState(sample.id, null);
+    const edited = await commitStudioRevision({ eventId: sample.id, ownerId: null, baseVersionId: initial!.revision.id, document: initial!.revision.document, config: { ...initial!.revision.config, title: "Edited" }, source: "manual", summary: "Edit", prompt: "Manual edit" });
+    const after = await loadStudioState(sample.id, null);
+    expect(after?.versions.map((version) => version.id)).toEqual([edited.ok && edited.revision.id, initial!.revision.id]);
+  });
 });
 
 describe("appendRunEvent", () => {

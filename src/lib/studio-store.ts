@@ -136,12 +136,16 @@ export async function seedInitialRevision(event: EventRecord, ownerId: string | 
 export async function loadStudioState(eventId: string, ownerId: string | null): Promise<StudioState | null> {
   const client = serviceSupabase();
   if (!client) {
-    const found = getLocalDemoEventById(eventId) ?? demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
+    const local = getLocalDemoEventById(eventId);
+    const found = local ?? demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
     if (!found) return null;
     const event = { ...found, id: eventId };
     const saved = getLocalDemoRevisions(eventId);
     const revision = saved[0] ?? demoRevision(event);
-    return { event: { ...event, config: revision.config, document: revision.document, draft_version_id: revision.id }, revision, versions: saved.length ? saved : [revision], messages: [], activeRun: null, persistence: "demo" };
+    // Sample events never save their first version; keep it in History so it can be restored like any other.
+    const seed = local || !saved.length ? null : demoRevision(event);
+    const versions = !saved.length ? [revision] : seed && !saved.some((version) => version.id === seed.id) ? [...saved, seed] : saved;
+    return { event: { ...event, config: revision.config, document: revision.document, draft_version_id: revision.id }, revision, versions, messages: [], activeRun: null, persistence: "demo" };
   }
 
   const full = await client.from("events").select("id, owner_id, slug, status, rsvp_open, config, draft_version_id, published_version_id").eq("id", eventId).maybeSingle();
