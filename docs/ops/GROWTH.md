@@ -22,6 +22,18 @@ Next, in order:
 
 Target long-tail queries: "RSVP page for birthday party", "wedding website with RSVP no app", "guests RSVP without account", "RSVP form with dietary restrictions", "event website with custom domain", "AI wedding website generator", "<occasion> RSVP website", "one-time payment wedding website".
 
+## 2b. AI answers (ChatGPT, Claude, Google AI Overviews) — owner priority (2026-10-08)
+Goal: when someone asks an assistant "what's a good site to make an RSVP / event website", Eventloom is named. Owner does NOT want Bing Webmaster Tools.
+How these engines pick sources (third-party reporting, verify periodically): ChatGPT search blends Bing's index with OpenAI's own crawler (OAI-SearchBot); Claude's web search reportedly uses Brave Search's index (Claude-SearchBot / Claude-User); Google AI Overviews use Google's index. All of them favour brands that many independent sources mention.
+- [x] robots.txt allows all crawlers (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, Claude-User, Google-Extended, PerplexityBot).
+- [x] /llms.txt fact sheet (price, how it works, links to every template/landing page).
+- [ ] Answer-shaped pages: honest comparison pages (vs Zola, The Knot, Joy, Partiful, Evite, Paperless Post, RSVPify) and a "best RSVP website builders" guide that states facts plainly, date-stamped, with Eventloom's trade-offs too.
+- [ ] Consistent one-line entity description everywhere (site, llms.txt, schema, every profile/listing).
+- [ ] Third-party mentions (biggest lever, needs owner accounts/approval): Product Hunt, AlternativeTo, SaaSHub, There's An AI For That, Futurepedia, G2/Capterra free listings, genuinely helpful Reddit answers, Indie Hackers/HN launch post.
+- [ ] Organization schema `sameAs` links once official social profiles exist.
+- [ ] Monthly check: ask ChatGPT, Claude, Gemini/AI Overviews 10 fixed prompts ("best RSVP website", "make a wedding website with RSVP", "free birthday invitation website with RSVP", …) and log whether Eventloom appears.
+- Note: IndexNow (no account needed) would push new URLs to Bing → ChatGPT faster; skipped because owner declined Bing — revisit if ChatGPT visibility lags.
+
 ## 3. Communities & launches (owner approval per post; owner creates accounts)
 - Product Hunt launch (prepare assets: 11-second build demo GIF, before/after).
 - Indie Hackers / Hacker News "Show HN" — build-in-public story.
