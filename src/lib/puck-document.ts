@@ -1,7 +1,36 @@
 import type { ComponentData, Data, UiState } from "@puckeditor/core";
 import { siteDocumentSchema, type SiteDocument, type SiteNode, type SiteStyle } from "@/lib/site-document";
-import { eventDetailsPatchSchema } from "@/lib/site-document-operations";
-import type { EventConfig } from "@/lib/types";
+import { MAX_GALLERY_PHOTOS, eventDetailsPatchSchema, isEventPhotoUrl } from "@/lib/site-document-operations";
+import type { EventConfig, RsvpField } from "@/lib/types";
+
+const RSVP_FIELDS: readonly RsvpField[] = ["name", "attendance", "party_size", "guest_names", "email", "phone", "meal_preference", "note"];
+/** Every RSVP form asks for a name and whether the guest is coming. */
+const REQUIRED_RSVP_FIELDS: readonly RsvpField[] = ["name", "attendance"];
+
+/** The RSVP questions from the studio's checklist: known fields, in the standard order, always with the required two. */
+export function normalizeRsvpFields(value: unknown): RsvpField[] {
+  const picked = new Set(Array.isArray(value) ? value.filter((field): field is RsvpField => RSVP_FIELDS.includes(field as RsvpField)) : []);
+  return RSVP_FIELDS.filter((field) => picked.has(field) || REQUIRED_RSVP_FIELDS.includes(field));
+}
+
+type PhotoProp = { url?: unknown; alt?: unknown } | null | undefined;
+
+/**
+ * Photos from the studio's photo fields → config fields. URLs that are not stored or https photos are dropped
+ * rather than rejected, so an old event with an unusable photo still autosaves.
+ */
+function photoPatch(root: Record<string, unknown>) {
+  if (!("coverPhoto" in root) && !("galleryPhotos" in root)) return {};
+  const cover = root.coverPhoto as PhotoProp;
+  const coverUrl = cover && isEventPhotoUrl(cover.url) ? cover.url : "";
+  const gallery = (Array.isArray(root.galleryPhotos) ? root.galleryPhotos as PhotoProp[] : [])
+    .filter((photo): photo is { url: string; alt?: unknown } => Boolean(photo) && isEventPhotoUrl(photo!.url) && photo!.url !== coverUrl)
+    .filter((photo, index, all) => all.findIndex((other) => other.url === photo.url) === index)
+    .slice(0, MAX_GALLERY_PHOTOS);
+  const described = [...(coverUrl ? [{ url: coverUrl, alt: cover?.alt }] : []), ...gallery]
+    .flatMap((photo) => typeof photo.alt === "string" && photo.alt.trim() ? [[photo.url, photo.alt.trim().slice(0, 300)]] : []);
+  return { heroImageUrl: coverUrl, galleryImageUrls: gallery.map((photo) => photo.url), imageAlts: Object.fromEntries(described) };
+}
 
 const componentTypeForNode = {
   section: "Section",
@@ -149,6 +178,7 @@ export function siteDocumentToPuckData(document: SiteDocument, config?: EventCon
           venueAddress: config.venueAddress ?? "",
           rsvpDeadline: config.rsvpDeadline ?? "",
           schedule: config.schedule,
+          rsvpFields: [...config.rsvpFields],
         } : {}),
       },
     },
@@ -173,6 +203,8 @@ export function puckDataToEventPatch(data: Data) {
     ...(typeof root.venueAddress === "string" ? { venueAddress: root.venueAddress } : {}),
     ...(typeof root.rsvpDeadline === "string" ? { rsvpDeadline: root.rsvpDeadline } : {}),
     ...(schedule ? { schedule } : {}),
+    ...(Array.isArray(root.rsvpFields) ? { rsvpFields: normalizeRsvpFields(root.rsvpFields) } : {}),
+    ...photoPatch(root),
   });
 }
 

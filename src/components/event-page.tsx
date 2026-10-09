@@ -5,6 +5,7 @@ import { SiteDocumentRenderer } from "@/components/site-document-renderer";
 import { designSiteFromConfig } from "@/lib/event-design/design-event-site";
 import { env, publicRsvpEnabled } from "@/lib/env";
 import { guestReferralUrl, rsvpGrowthHref } from "@/lib/growth-links";
+import { rsvpDeadlineState } from "@/lib/rsvp-deadline";
 import { createPublicRsvpToken } from "@/lib/security/rsvp-token";
 
 /**
@@ -13,7 +14,10 @@ import { createPublicRsvpToken } from "@/lib/security/rsvp-token";
  */
 export function EventPage({ event }: { event: EventRecord }) {
   const formToken = createPublicRsvpToken(event.id, event.slug) ?? "";
-  const rsvpEnabled = publicRsvpEnabled() && Boolean(formToken) && event.status === "published" && event.rsvp_open;
+  // events.rsvp_deadline_at is what the RSVP RPC enforces; once it passes the form says when replies closed.
+  const deadline = rsvpDeadlineState(event.rsvp_deadline_at, event.config.rsvpDeadline, event.config.date);
+  const closedOn = deadline.passed ? deadline.closedOn : undefined;
+  const rsvpEnabled = publicRsvpEnabled() && Boolean(formToken) && event.status === "published" && event.rsvp_open && !deadline.passed;
   const growthHref = rsvpGrowthHref(event, env.appUrl());
   const designed = designSiteFromConfig(event.config);
   if (designed) {
@@ -22,7 +26,7 @@ export function EventPage({ event }: { event: EventRecord }) {
         <main>
           <EventSite
             design={designed}
-            rsvp={<RsvpForm hideHeader formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} isDraft={event.status === "draft"} fields={event.config.rsvpFields} growthHref={growthHref} />}
+            rsvp={<RsvpForm hideHeader formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} isDraft={event.status === "draft"} closedOn={closedOn} fields={event.config.rsvpFields} growthHref={growthHref} />}
           />
         </main>
         <GuestFooter slug={event.slug} />
@@ -32,7 +36,7 @@ export function EventPage({ event }: { event: EventRecord }) {
   if (event.document) {
     return (
       <div data-eventloom-guest-page="">
-        <SiteDocumentRenderer document={event.document} config={event.config} status={event.status} rsvpOpen={rsvpEnabled} formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} growthHref={growthHref} />
+        <SiteDocumentRenderer document={event.document} config={event.config} status={event.status} rsvpOpen={rsvpEnabled} rsvpClosedOn={closedOn} formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} growthHref={growthHref} />
         <GuestFooter slug={event.slug} />
       </div>
     );
@@ -45,7 +49,7 @@ export function EventPage({ event }: { event: EventRecord }) {
       <FallbackSite event={event} />
       <section className="eventloom-managed-rsvp px-5 pb-12 sm:px-8" aria-label="Guest reply">
         <div className="mx-auto max-w-2xl">
-          <RsvpForm className="eventloom-managed-rsvp__form" formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} isDraft={event.status === "draft"} fields={event.config.rsvpFields} growthHref={growthHref} />
+          <RsvpForm className="eventloom-managed-rsvp__form" formToken={formToken} turnstileSiteKey={env.turnstileSiteKey()} isOpen={rsvpEnabled} isDraft={event.status === "draft"} closedOn={closedOn} fields={event.config.rsvpFields} growthHref={growthHref} />
         </div>
       </section>
       <GuestFooter slug={event.slug} />

@@ -50,6 +50,7 @@ type EventRow = {
   config: EventConfig;
   draft_version_id?: string | null;
   published_version_id?: string | null;
+  rsvp_deadline_at?: string | null;
 };
 
 export async function resolveEventBySlug(slug: string): Promise<EventRecord | null> {
@@ -60,7 +61,7 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
 
   const { data: event, error } = await client
     .from("events")
-    .select("id, owner_id, slug, status, rsvp_open, config, draft_version_id, published_version_id")
+    .select("id, owner_id, slug, status, rsvp_open, rsvp_deadline_at, config, draft_version_id, published_version_id")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -96,6 +97,7 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
         slug: row.slug,
         status: row.status,
         rsvp_open: row.rsvp_open,
+        rsvp_deadline_at: row.rsvp_deadline_at ?? null,
         config: version.config as EventConfig,
         document: document.data,
         draft_version_id: row.draft_version_id,
@@ -120,6 +122,7 @@ export async function resolveEventBySlug(slug: string): Promise<EventRecord | nu
     slug: row.slug,
     status: row.status,
     rsvp_open: row.rsvp_open,
+    rsvp_deadline_at: row.rsvp_deadline_at ?? null,
     config: row.config,
     draft_version_id: row.draft_version_id,
     published_version_id: row.published_version_id,

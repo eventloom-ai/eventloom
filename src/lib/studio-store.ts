@@ -3,6 +3,8 @@ import "server-only";
 import { assertEventAssetOwnership, composeSiteDocument, siteDocumentSchema, type SiteDocument } from "@/lib/site-document";
 import { getLocalDemoEventById, getLocalDemoRevisions, saveLocalDemoEvent, saveLocalDemoRevision } from "@/lib/local-demo-store";
 import { refundBuildCredit } from "@/lib/payments/billing";
+import { rsvpDeadlineTimestamp } from "@/lib/rsvp-deadline";
+import { syncEventRsvpDeadline } from "@/lib/rsvp-deadline-sync";
 import { demoEvents } from "@/lib/sample-data";
 import { serviceSupabase } from "@/lib/supabase/server";
 import type { BuilderMessage, BuilderRunEvent, EventConfig, EventRecord, SiteRevision } from "@/lib/types";
@@ -134,12 +136,16 @@ export async function seedInitialRevision(event: EventRecord, ownerId: string | 
 export async function loadStudioState(eventId: string, ownerId: string | null): Promise<StudioState | null> {
   const client = serviceSupabase();
   if (!client) {
-    const found = getLocalDemoEventById(eventId) ?? demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
+    const local = getLocalDemoEventById(eventId);
+    const found = local ?? demoEvents.find((item) => item.id === eventId) ?? demoEvents[0];
     if (!found) return null;
     const event = { ...found, id: eventId };
     const saved = getLocalDemoRevisions(eventId);
     const revision = saved[0] ?? demoRevision(event);
-    return { event: { ...event, config: revision.config, document: revision.document, draft_version_id: revision.id }, revision, versions: saved.length ? saved : [revision], messages: [], activeRun: null, persistence: "demo" };
+    // Sample events never save their first version; keep it in History so it can be restored like any other.
+    const seed = local || !saved.length ? null : demoRevision(event);
+    const versions = !saved.length ? [revision] : seed && !saved.some((version) => version.id === seed.id) ? [...saved, seed] : saved;
+    return { event: { ...event, config: revision.config, document: revision.document, draft_version_id: revision.id }, revision, versions, messages: [], activeRun: null, persistence: "demo" };
   }
 
   const full = await client.from("events").select("id, owner_id, slug, status, rsvp_open, config, draft_version_id, published_version_id").eq("id", eventId).maybeSingle();
@@ -193,7 +199,8 @@ export async function commitStudioRevision(input: {
     const revision: SiteRevision = { id: `demo-version-${crypto.randomUUID()}`, event_id: input.eventId, parent_version_id: input.baseVersionId, source: input.source, summary: input.summary, prompt: input.prompt, config: input.config, document, created_at: new Date().toISOString() };
     saveLocalDemoRevision(revision);
     const local = getLocalDemoEventById(input.eventId);
-    if (local) saveLocalDemoEvent({ ...local, config: input.config, document });
+    // Demo events have no timezone setting, so the deadline closes at the end of that day in UTC.
+    if (local) saveLocalDemoEvent({ ...local, config: input.config, document, rsvp_deadline_at: rsvpDeadlineTimestamp(input.config.rsvpDeadline, { eventDate: input.config.date }) });
     return { ok: true as const, revision };
   }
 
@@ -214,6 +221,7 @@ export async function commitStudioRevision(input: {
     await client.from("event_versions").delete().eq("id", inserted.id);
     return { ok: false as const, error: "version_conflict" };
   }
+  await syncEventRsvpDeadline(input.eventId);
   const revision = revisionFromRow(inserted as Record<string, unknown>);
   return revision ? { ok: true as const, revision } : { ok: false as const, error: "invalid_revision" };
 }

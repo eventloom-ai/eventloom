@@ -2,10 +2,13 @@ import type { ReactNode } from "react";
 import type { ComponentConfig, Config, Fields, PuckContext } from "@puckeditor/core";
 import { DesignedSectionView, EventSiteFrame, sectionContext } from "@/components/event-sections/event-site";
 import { RsvpForm } from "@/components/rsvp-form";
+import { coverPhotoPuckField, galleryPhotosPuckField } from "@/components/studio-photo-fields";
+import { rsvpDeadlinePuckField, rsvpQuestionsPuckField } from "@/components/studio-rsvp-fields";
 import { SECTION_VARIANTS, type SectionKey } from "@/lib/event-design/schema";
 import { DESIGN_STYLES, STYLE_KEYS, isStyleKey } from "@/lib/event-design/styles";
 import type { EventSiteDesign } from "@/lib/event-design/types";
 import { DESIGN_COMPONENT_FOR_SECTION } from "@/lib/puck-design";
+import { MAX_GALLERY_PHOTOS } from "@/lib/site-document-operations";
 import type { EventConfig, EventStatus } from "@/lib/types";
 
 /** What the studio passes as Puck metadata: the live config and the design resolved from the current editor data. */
@@ -27,7 +30,7 @@ const SECTION_LABELS: Record<SectionKey, string> = {
 
 const EMPTY_HINTS: Partial<Record<SectionKey, string>> = {
   story: "Add a heading and at least one paragraph to show your story.",
-  gallery: "A gallery appears once the event has at least four photos.",
+  gallery: "Add three or more gallery photos in the page settings to show the gallery.",
   goodToKnow: "Add at least two notes (a dress code counts as one) to show this section.",
   travel: "Add a hotel, transport or parking note to show this section.",
   schedule: "Add at least two schedule items in the page settings to show the schedule.",
@@ -53,14 +56,16 @@ const toneField = {
 };
 
 const text = (label: string, placeholder = "Style default") => ({ type: "text" as const, label, placeholder });
+// Photos belong to the whole page (the cover also shows on link previews), so they are edited in the page settings.
+const photoNote = (text: string) => ({ type: "custom" as const, label: "Photos", render: () => <p className="text-[12px] leading-5 text-[#57534e]">{text}</p> });
 const textarea = (label: string, placeholder = "") => ({ type: "textarea" as const, label, placeholder });
 
 const CONTENT_FIELDS: Record<SectionKey, Fields> = {
-  hero: { eyebrow: text("Line above the title") },
+  hero: { eyebrow: text("Line above the title"), photoNote: photoNote("Add or change the cover photo in the page settings: click an empty area outside the page, then Cover photo.") },
   details: { heading: text("Heading"), dressCode: text("Dress code", "Only if you have one") },
   story: { eyebrow: text("Label"), heading: text("Heading", ""), paragraphs: textarea("Story", "Separate paragraphs with a blank line"), signature: text("Signed", "") },
   schedule: { heading: text("Heading") },
-  gallery: { heading: text("Heading") },
+  gallery: { heading: text("Heading"), photoNote: photoNote("Add, reorder or describe gallery photos in the page settings: click an empty area outside the page, then Gallery photos.") },
   goodToKnow: {
     heading: text("Heading"),
     items: { type: "array", label: "Notes", arrayFields: { title: text("Title", ""), body: textarea("Details") }, defaultItemProps: { title: "", body: "" }, getItemSummary: (item: { title?: string }) => item.title || "Note", max: 6 },
@@ -97,7 +102,7 @@ function sectionComponent(kind: SectionKey): ComponentConfig {
   return {
     label: SECTION_LABELS[kind],
     fields: { variant: variantField(kind), tone: toneField, ...CONTENT_FIELDS[kind] },
-    defaultProps: { variant: "", tone: "", ...Object.fromEntries(Object.entries(CONTENT_FIELDS[kind]).map(([key, field]) => [key, field.type === "array" ? [] : ""])) },
+    defaultProps: { variant: "", tone: "", ...Object.fromEntries(Object.entries(CONTENT_FIELDS[kind]).flatMap(([key, field]) => field.type === "custom" ? [] : [[key, field.type === "array" ? [] : ""]])) },
     // A section is one block of the page: it can be moved or hidden, never duplicated; the opening and RSVP always stay.
     permissions: { duplicate: false, ...(required ? { delete: false } : {}) },
     render: ({ puck }) => <SectionPreview kind={kind} puck={puck} />,
@@ -109,15 +114,18 @@ const paletteOptions = (styleKey: unknown) => {
   return style.palettes.map((palette) => ({ label: palette.name, value: palette.key }));
 };
 
-const rootFields: Fields = {
+const rootFields = (eventId: string): Fields => ({
   styleKey: { type: "select", label: "Style", options: STYLE_KEYS.map((key) => ({ label: DESIGN_STYLES[key].name, value: key })) },
   paletteKey: { type: "select", label: "Palette", options: paletteOptions("editorial") },
   eventTitle: { type: "text", label: "Event title" },
   eventSubtitle: { type: "textarea", label: "Introduction" },
+  coverPhoto: coverPhotoPuckField(eventId),
+  galleryPhotos: galleryPhotosPuckField(eventId, MAX_GALLERY_PHOTOS),
   eventDate: { type: "text", label: "Date and time" },
   venueName: { type: "text", label: "Venue" },
   venueAddress: { type: "text", label: "Venue address" },
-  rsvpDeadline: { type: "text", label: "RSVP deadline" },
+  rsvpDeadline: rsvpDeadlinePuckField(),
+  rsvpFields: rsvpQuestionsPuckField(),
   schedule: {
     type: "array",
     label: "Schedule",
@@ -131,18 +139,18 @@ const rootFields: Fields = {
     getItemSummary: (item: { title?: string; time?: string }) => [item.time, item.title].filter(Boolean).join(" · ") || "Item",
     max: 30,
   },
-};
+});
 
 /**
  * Puck config for designed events: the page is the approved section library, one component per section kind.
  * Hosts pick layouts and backgrounds from closed sets and edit copy; colors, fonts and spacing come from the style.
  */
-export function createDesignPuckConfig(): Config {
+export function createDesignPuckConfig({ eventId }: { eventId: string }): Config {
   const components = Object.fromEntries((Object.keys(DESIGN_COMPONENT_FOR_SECTION) as SectionKey[]).map((kind) => [DESIGN_COMPONENT_FOR_SECTION[kind], sectionComponent(kind)]));
   return {
     categories: { sections: { title: "Sections", components: Object.values(DESIGN_COMPONENT_FOR_SECTION), defaultExpanded: true } },
     root: {
-      fields: rootFields,
+      fields: rootFields(eventId),
       // The palette list follows the chosen style.
       resolveFields: (data: { props?: Record<string, unknown> }, { fields }: { fields: Fields }) => ({ ...fields, paletteKey: { type: "select", label: "Palette", options: paletteOptions(data.props?.styleKey) } }),
       render: ({ children, puck, ...props }: { children: ReactNode; puck: PuckContext } & Record<string, unknown>) => {

@@ -45,6 +45,22 @@ export function GallerySection({ section, ctx }: { section: Of<"gallery">; ctx: 
   const noir = ctx.style.ornament === "deco";
   const radius: CSSProperties = { borderRadius: "var(--ev-radius)" };
   const header = <SectionHeader ctx={ctx} eyebrow="Gallery" heading={props.heading} />;
+  if (props.images.length < 3) {
+    // One or two photos: a single wide frame, or a matched pair, instead of a sparse grid.
+    const pair = props.images.length === 2;
+    return (
+      <SectionShell section={section} ctx={ctx} label={props.heading}>
+        {header}
+        <div className={cx("mx-auto mt-12 grid gap-[clamp(0.6rem,1.5vw,1.25rem)]", pair ? "max-w-5xl sm:grid-cols-2" : "max-w-4xl")}>
+          {props.images.map((image) => (
+            <figure key={image.url} className="relative m-0 w-full overflow-hidden" style={{ ...radius, aspectRatio: pair ? "4 / 5" : "3 / 2" }}>
+              <Image src={image.url} alt={image.alt} fill unoptimized sizes={pair ? "(min-width: 640px) 50vw, 100vw" : "100vw"} className="object-cover" />
+            </figure>
+          ))}
+        </div>
+      </SectionShell>
+    );
+  }
   if (section.variant === "masonry") {
     // Explicit columns (2 on phones, 3 on desktop) whose last tile stretches, so the gallery ends on one line.
     // Equal tile counts per column (extra photos are dropped) and alternating 4:5 / 1:1 tiles keep the columns level.

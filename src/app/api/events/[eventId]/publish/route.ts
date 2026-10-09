@@ -10,6 +10,7 @@ import { legalIdentityConfigured, publicCheckoutEnabled } from "@/lib/env";
 import { domainRegistrantSchema } from "@/lib/domains/registrant";
 import { clientIpHash } from "@/lib/security/request";
 import { hasCompleteEventPrivacyNotice } from "@/lib/privacy/event-privacy";
+import { syncEventRsvpDeadline } from "@/lib/rsvp-deadline-sync";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   if (!isSameOriginMutation(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -65,6 +66,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
         console.error("[publish] failed to promote draft", { eventId, code: publishError.code });
         return NextResponse.json({ error: "publish_failed" }, { status: 500 });
       }
+      // The RSVP deadline guests are held to is the one in the version that just went live.
+      await syncEventRsvpDeadline(eventId);
       if (wantsJson) return NextResponse.json({ ok: true, published: true, free: platformAdmin });
       return NextResponse.redirect(new URL(`/app/events/${eventId}/studio?published=1`, req.url), { status: 303 });
     }

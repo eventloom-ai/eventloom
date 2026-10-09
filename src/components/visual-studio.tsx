@@ -8,11 +8,12 @@ import { createDesignPuckConfig, type DesignPuckMetadata } from "@/components/ev
 import { createEventloomPuckConfig } from "@/components/eventloom-puck-config";
 import { StudioChat } from "@/components/studio-chat";
 import { StudioDrawer } from "@/components/studio-drawer";
+import { photoUploadsInFlight } from "@/components/studio-photo-fields";
 import { StudioToolbar } from "@/components/studio-toolbar";
 import { creatorErrorMessage } from "@/lib/creator-errors";
 import { designEventSite } from "@/lib/event-design/design-event-site";
 import { readEventDesign, type EventDesign } from "@/lib/event-design/schema";
-import { designToPuckData, puckDataToDesign } from "@/lib/puck-design";
+import { designToPuckData, puckDataToDesign, sectionsMissingFromCanvas } from "@/lib/puck-design";
 import { puckDataToEventPatch, puckDataToSiteDocument, selectedPuckNodeId, siteDocumentToPuckData } from "@/lib/puck-document";
 import type { StudioState } from "@/lib/studio-store";
 import type { BuilderMessage, EventConfig, SiteRevision } from "@/lib/types";
@@ -78,16 +79,20 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
   const activeSaveRef = useRef<Promise<void> | null>(null);
   const activeRunRef = useRef<string | null>(initialState.activeRun?.id ?? null);
 
-  const puckConfig = useMemo(() => designed ? createDesignPuckConfig() : createEventloomPuckConfig({
+  const puckConfig = useMemo(() => designed ? createDesignPuckConfig({ eventId: event.id }) : createEventloomPuckConfig({
     document: revision.document,
     config: event.config,
     status: event.status,
     rsvpOpen: false,
+    eventId: event.id,
   // Puck treats a new config identity as a new editing session. Live event data
   // is supplied through metadata, so autosaves must not rebuild this config; only
   // switching between the legacy and the designed editor does.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [designed]);
+
+  // A classic (pre-design) draft while History holds designed versions: the host restored an older version.
+  const hasDesignedVersion = !designed && versions.some((version) => Boolean(readEventDesign(version.config)));
 
   // Designed sections render from the design resolved from the live editor data, so edits show before they save.
   const liveSite = useMemo(() => design ? designEventSite(event.config, design.styleKey, design.content, { paletteKey: design.paletteKey, sections: design.sections }) : null, [design, event.config]);
@@ -164,11 +169,14 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
       const currentDesign = designRef.current;
       if (currentDesign) {
         const liveConfig = { ...event.config, ...eventPatch };
-        const nextDesign = puckDataToDesign(data, currentDesign, liveConfig);
+        // The canvas was built from the config before this edit; a section the edit makes appear isn't "removed".
+        const nextDesign = puckDataToDesign(data, currentDesign, liveConfig, event.config);
         queuedEditRef.current = { design: nextDesign, eventPatch };
         setCurrentDesign(nextDesign);
-        if (nextDesign.styleKey !== currentDesign.styleKey) {
-          // A new style brings its own layouts and palettes: rebuild the canvas so its selects match.
+        // A new style brings its own layouts and palettes, and a details edit can make a section appear (a third
+        // gallery photo, a second schedule item): rebuild the canvas so it matches. Never mid-upload, or it'd be lost.
+        const sectionAppeared = !photoUploadsInFlight() && sectionsMissingFromCanvas(data, liveConfig, nextDesign).length > 0;
+        if (nextDesign.styleKey !== currentDesign.styleKey || sectionAppeared) {
           setEditorData(designToPuckData(liveConfig, nextDesign));
           setEditorKey((current) => current + 1);
         } else setEditorData(data);
@@ -363,9 +371,12 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
        </div> : <button type="button" onClick={() => setChatOpen(true)} className="absolute bottom-4 left-4 z-50 inline-flex items-center gap-2 rounded-full bg-[#155166] px-4 py-2.5 text-xs font-semibold text-white shadow-xl"><MessageSquare className="size-4" /> Ask Eventloom</button>}
       <div className="flex min-w-0 flex-1 flex-col bg-[#f3f3f3]">
         {designed ? null : (
-          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-black/10 bg-[#fffaf3] px-4 py-2.5 text-[13px] text-[#302821]">
+          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-black/10 bg-[#fffaf3] px-4 py-2.5 text-[13px] text-[#302821]" data-studio-notice={hasDesignedVersion ? "classic-version" : "designs-available"}>
             <Sparkles className="size-4 text-[#8a6153]" aria-hidden="true" />
-            <p className="min-w-0 flex-1">New designer-made styles are available for this page. Your current version stays in History.</p>
+            {/* A restored pre-design version edits with the classic editor; say so rather than looking like a regression. */}
+            <p className="min-w-0 flex-1">{hasDesignedVersion
+              ? "This version uses the classic design, so it opens in the classic editor. Your newer designed versions stay in History."
+              : "New designer-made styles are available for this page. Your current version stays in History."}</p>
             <button type="button" onClick={adoptDesigns} disabled={Boolean(activeRunId) || saveStatus === "saving"} className="rounded-full bg-[#302821] px-3.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Switch to the new designs</button>
           </div>
         )}
@@ -387,7 +398,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
           />
         </div>
       </div>
-      {drawerOpen ? <StudioDrawer versions={versions} currentVersionId={revision.id} disabled={Boolean(activeRunId) || saveStatus === "saving"} onRestore={restore} onClose={() => setDrawerOpen(false)} /> : null}
+      {drawerOpen ? <StudioDrawer versions={versions} currentVersionId={revision.id} markClassic={versions.some((version) => Boolean(readEventDesign(version.config)))} disabled={Boolean(activeRunId) || saveStatus === "saving"} onRestore={restore} onClose={() => setDrawerOpen(false)} /> : null}
     </div>
   </main>;
 }

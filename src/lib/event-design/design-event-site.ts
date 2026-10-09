@@ -1,5 +1,6 @@
 import { coupleTitleLines, eventInitials } from "@/lib/couple-title";
 import { parseEventDate, splitScheduleTime } from "@/lib/event-design/date";
+import { displayRsvpDeadline } from "@/lib/rsvp-deadline";
 import { DESIGN_STYLES, pickPalette, type StyleKey, type Tone } from "@/lib/event-design/styles";
 import { SECTION_KEYS, isStyleVariant, readEventDesign, type EventDesignSections, type SectionKey } from "@/lib/event-design/schema";
 import type { DesignImage, DesignedSection, EventDesignContent, EventSiteDesign, HeroProps } from "@/lib/event-design/types";
@@ -71,12 +72,12 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
   const photos: DesignImage[] = [config.heroImageUrl, ...(config.galleryImageUrls ?? [])]
     .filter(isSafeUrl)
     .filter((url, index, all) => all.indexOf(url) === index)
-    .map((url, index) => ({ url, alt: index === 0 ? `${config.title}` : `${config.title}, photo ${index + 1}` }));
+    .map((url, index) => ({ url, alt: config.imageAlts?.[url]?.trim() || (index === 0 ? `${config.title}` : `${config.title}, photo ${index + 1}`) }));
   const heroImage = photos[0];
   const galleryImages = photos.slice(1);
   const venueKnown = !isTba(config.venueName);
   // "To be announced" is not a deadline: leave it off rather than print "Reply by: To be announced".
-  const deadline = config.rsvpDeadline && !isTba(config.rsvpDeadline) ? config.rsvpDeadline.trim() : undefined;
+  const deadline = config.rsvpDeadline && !isTba(config.rsvpDeadline) ? displayRsvpDeadline(config.rsvpDeadline, config.date) : undefined;
   const sections: Omit<DesignedSection, "tone" | "ruled">[] = [];
 
   sections.push({
@@ -136,7 +137,7 @@ export function designEventSite(config: EventConfig, styleKey: StyleKey, content
     });
   }
 
-  if (galleryImages.length >= 3) {
+  if (galleryImages.length >= 1) {
     sections.push({ id: "gallery", kind: "gallery", variant: style.variants.gallery, props: { heading: content.galleryHeading ?? "Moments", images: galleryImages.slice(0, 9) } });
   }
 

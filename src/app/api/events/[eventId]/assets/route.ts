@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processAndStoreEventImage, processEventImageAsDataUrl } from "@/lib/event-assets";
+import { processAndStoreEventImage, storeDemoEventImage } from "@/lib/event-assets";
 import { canEditEvent } from "@/lib/studio-store";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { isSameOriginMutation, requestWithinLimit } from "@/lib/security/request";
@@ -15,7 +15,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ eve
     const form = await req.formData();
     const file = form.get("image");
     if (!(file instanceof File)) return NextResponse.json({ error: "invalid_image" }, { status: 400 });
-    const result = await processEventImageAsDataUrl(file);
+    // Demo mode keeps the processed photo in the in-memory demo store and serves it from /api/assets/<id>,
+    // so it saves like a stored photo (a data: URL is rejected by the page schemas).
+    const result = await storeDemoEventImage(file);
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.error === "invalid_image" ? 400 : 500 });
     return NextResponse.json(result);
   }
