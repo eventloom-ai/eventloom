@@ -31,9 +31,9 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | B6 | Building with reference photos from `/app/events/new` crashes studio permanently (data: URL fails `safeUrl`) | `parse-build-form.ts:84`, `studio-store.ts:85` | fixed |
 | B7 | Stuck AI run/job permanently blocks builds and the studio assistant for that event; no AI fetch timeouts; no reaper | `studio-store.ts:139`, generators | fixed |
 | B8 | Meal-preference and other custom RSVP answers silently dropped | `submit_public_rsvp`, field seeding | fixed · migration pending |
-| B9 | RSVP deadline field does nothing | `config.rsvpDeadline` vs `events.rsvp_deadline_at` | open |
+| B9 | RSVP deadline field does nothing | `config.rsvpDeadline` vs `events.rsvp_deadline_at` | fixed (7e2834d): deadline text → end of that day in the event timezone on save/publish/timezone change; form shows "RSVPs closed on …" |
 | B10 | Puck autosave runs during an AI run → version conflicts, lost edits | `visual-studio.tsx:87-118` | fixed |
-| B11 | Puck studio lost image upload and RSVP-question toggles | `eventloom-puck-config.tsx` | open |
+| B11 | Puck studio lost image upload and RSVP-question toggles | `eventloom-puck-config.tsx` | fixed (dcde999): cover + gallery uploader with descriptions in both editors, RSVP questions checklist |
 | B12 | Run-event sequence race → UI stuck on "Stopping…" | `studio-store.ts:236` | fixed |
 | B13 | Hyphen can't be typed in slug field; non-Latin brief disables Create | `new-event-starter.tsx`, `site-build-studio.tsx:242` | fixed |
 | B14 | Any title with "and"/"&" rendered as a couple layout ("Rock / & / Roll Night") | `site-document.ts:224`, renderer `:87` | fixed |
@@ -75,7 +75,7 @@ Status: `open` · `in progress` · `fixed (<commit>)` · `needs owner`.
 | N6 | `/api/organizations` slug validation ignores the reserved list — **fixed** |
 | N7 | Prompt length unchecked server-side (URL brief up to 8000 + intake answers) — **fixed** |
 | N8 | Monogram turns "Rock and Roll Night" into "R & R" — **fixed** |
-| N9 | Demo-mode image uploads fail to save (data: URL rejected by schema) |
+| N9 | Demo-mode image uploads fail to save (data: URL rejected by schema) — **fixed** (dcde999: demo uploads live in the demo asset store) |
 | N10 | Draft pages say "This event is no longer accepting responses" — should say RSVPs open after publishing — **fixed** |
 | N11 | Hero subtitle wraps off-centre on composed pages |
 | N12 | Supabase migrations are not replayable on a fresh DB (`20260722052902` references a function created later) |
