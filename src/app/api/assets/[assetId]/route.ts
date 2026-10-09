@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerUser, serviceSupabase } from "@/lib/supabase/server";
 import { canEditEvent } from "@/lib/studio-store";
 import { EVENT_ASSET_BUCKET, isEventAssetPath } from "@/lib/asset-paths";
+import { getLocalDemoAsset } from "@/lib/local-demo-store";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   const { assetId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(assetId)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const client = serviceSupabase();
-  if (!client) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!client) {
+    // Demo mode only: images uploaded during a local build live in the in-memory demo store.
+    const demo = getLocalDemoAsset(assetId);
+    return demo
+      ? new NextResponse(Buffer.from(demo), { headers: { "Content-Type": "image/webp", "X-Content-Type-Options": "nosniff", "Cache-Control": "private, no-store" } })
+      : NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
   const { data: asset } = await client.from("assets").select("event_id, metadata").eq("id", assetId).maybeSingle();
   if (!asset?.event_id) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const [{ data: event }, { data: entitlement }, user] = await Promise.all([

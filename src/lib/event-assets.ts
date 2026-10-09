@@ -1,5 +1,6 @@
 import "server-only";
 import sharp from "sharp";
+import { saveLocalDemoAsset } from "@/lib/local-demo-store";
 import type { serviceSupabase } from "@/lib/supabase/server";
 
 export const allowedEventImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -34,6 +35,16 @@ export async function processEventImageAsDataUrl(file: File): Promise<{ id: stri
   const processed = await processEventImageBuffer(file);
   if ("error" in processed) return processed;
   return { id: crypto.randomUUID(), url: `data:image/webp;base64,${processed.output.toString("base64")}` };
+}
+
+// Demo mode (no Supabase): keep the processed image in the in-memory demo store and serve it by id from
+// /api/assets/<id>, so demo events get the same kind of image URL as real ones.
+export async function storeDemoEventImage(file: File): Promise<{ id: string; url: string } | { error: string }> {
+  const processed = await processEventImageBuffer(file);
+  if ("error" in processed) return processed;
+  const id = crypto.randomUUID();
+  saveLocalDemoAsset(id, new Uint8Array(processed.output));
+  return { id, url: `/api/assets/${id}` };
 }
 
 export async function processAndStoreEventImage(client: StorageClient, eventId: string, file: File): Promise<{ id: string; url: string } | { error: string }> {
