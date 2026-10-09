@@ -1,19 +1,41 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MessageSquare, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { MessageSquare, Sparkles, X } from "lucide-react";
 import { Puck, type Data, type Viewports } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
+import { createDesignPuckConfig, type DesignPuckMetadata } from "@/components/eventloom-design-puck-config";
 import { createEventloomPuckConfig } from "@/components/eventloom-puck-config";
 import { StudioChat } from "@/components/studio-chat";
 import { StudioDrawer } from "@/components/studio-drawer";
 import { StudioToolbar } from "@/components/studio-toolbar";
 import { creatorErrorMessage } from "@/lib/creator-errors";
+import { designEventSite } from "@/lib/event-design/design-event-site";
+import { readEventDesign, type EventDesign } from "@/lib/event-design/schema";
+import { designToPuckData, puckDataToDesign } from "@/lib/puck-design";
 import { puckDataToEventPatch, puckDataToSiteDocument, selectedPuckNodeId, siteDocumentToPuckData } from "@/lib/puck-document";
 import type { StudioState } from "@/lib/studio-store";
 import type { BuilderMessage, EventConfig, SiteRevision } from "@/lib/types";
 
 type VisualStudioProps = { initialState: StudioState; initialNotice?: string };
+
+type QueuedEdit = { document?: SiteRevision["document"]; design?: EventDesign; eventPatch: Partial<EventConfig> };
+
+/** Editor data for a revision: designed events edit their sections, legacy events their site document. */
+function editorDataFor(revision: Pick<SiteRevision, "document" | "config">): Data {
+  const design = readEventDesign(revision.config);
+  return design ? designToPuckData(revision.config, design) : siteDocumentToPuckData(revision.document, revision.config);
+}
+
+// The canvas iframe does not inherit <html> classes, which is where next/font defines the font variables.
+function IframeFonts({ children, document: frame }: { children: ReactNode; document?: Document }) {
+  useEffect(() => {
+    const root = frame?.documentElement;
+    if (root) root.setAttribute("class", window.document.documentElement.className);
+  }, [frame]);
+  return <>{children}</>;
+}
+const studioOverrides = { iframe: IframeFonts };
 
 const studioViewports: Viewports = [
   { width: 390, height: "auto", icon: "Smartphone", label: "Phone" },
@@ -43,26 +65,38 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<{ name: string; url: string } | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
-  const [editorData, setEditorData] = useState<Data>(() => siteDocumentToPuckData(initialState.revision.document, initialState.revision.config));
+  const [editorData, setEditorData] = useState<Data>(() => editorDataFor(initialState.revision));
   const [editorKey, setEditorKey] = useState(0);
+  // Designed events (config.design) edit the section library; legacy events keep the site-document editor.
+  const [design, setDesign] = useState<EventDesign | null>(() => readEventDesign(initialState.revision.config));
+  const designRef = useRef(design);
+  const designed = Boolean(design);
   const sourceRef = useRef<EventSource | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const baseVersionIdRef = useRef(initialState.revision.id);
-  const queuedEditRef = useRef<{ document: SiteRevision["document"]; eventPatch: Partial<EventConfig> } | null>(null);
+  const queuedEditRef = useRef<QueuedEdit | null>(null);
   const activeSaveRef = useRef<Promise<void> | null>(null);
   const activeRunRef = useRef<string | null>(initialState.activeRun?.id ?? null);
 
-  const puckConfig = useMemo(() => createEventloomPuckConfig({
+  const puckConfig = useMemo(() => designed ? createDesignPuckConfig() : createEventloomPuckConfig({
     document: revision.document,
     config: event.config,
     status: event.status,
     rsvpOpen: false,
   // Puck treats a new config identity as a new editing session. Live event data
-  // is supplied through metadata, so autosaves must not rebuild this config.
+  // is supplied through metadata, so autosaves must not rebuild this config; only
+  // switching between the legacy and the designed editor does.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), []);
+  }), [designed]);
 
-  const puckMetadata = useMemo(() => ({ config: event.config }), [event.config]);
+  // Designed sections render from the design resolved from the live editor data, so edits show before they save.
+  const liveSite = useMemo(() => design ? designEventSite(event.config, design.styleKey, design.content, { paletteKey: design.paletteKey, sections: design.sections }) : null, [design, event.config]);
+  const puckMetadata = useMemo(() => designed ? ({ config: event.config, site: liveSite, status: event.status } satisfies DesignPuckMetadata) : { config: event.config }, [designed, event.config, event.status, liveSite]);
+
+  const setCurrentDesign = useCallback((next: EventDesign | null) => {
+    designRef.current = next;
+    setDesign(next);
+  }, []);
 
   const applyCommittedRevision = useCallback((next: SiteRevision, updateEditor = false) => {
     baseVersionIdRef.current = next.id;
@@ -74,10 +108,11 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     setVersions((current) => [next, ...current.filter((version) => version.id !== next.id)]);
     setSaveStatus("saved");
     if (updateEditor) {
-      setEditorData(siteDocumentToPuckData(next.document, next.config));
+      setCurrentDesign(readEventDesign(next.config));
+      setEditorData(editorDataFor(next));
       setEditorKey((current) => current + 1);
     }
-  }, []);
+  }, [setCurrentDesign]);
 
   const refreshState = useCallback(async () => {
     const response = await fetch(`/api/events/${event.id}/studio`, { cache: "no-store" });
@@ -102,7 +137,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
         const response = await fetch(`/api/events/${event.id}/studio`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ baseVersionId: baseVersionIdRef.current, document: edit.document, eventPatch: edit.eventPatch, summary: "Edited in the visual studio" }),
+          body: JSON.stringify({ baseVersionId: baseVersionIdRef.current, ...(edit.design ? { design: edit.design } : { document: edit.document }), eventPatch: edit.eventPatch, summary: "Edited in the visual studio" }),
         });
         const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; state?: StudioState } | null;
         if (!response.ok || !payload?.revision) {
@@ -126,8 +161,21 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
   const queueSave = useCallback((data: Data, immediate = false) => {
     try {
       const eventPatch = puckDataToEventPatch(data);
-      setEditorData(data);
-      queuedEditRef.current = { document: puckDataToSiteDocument(data), eventPatch };
+      const currentDesign = designRef.current;
+      if (currentDesign) {
+        const liveConfig = { ...event.config, ...eventPatch };
+        const nextDesign = puckDataToDesign(data, currentDesign, liveConfig);
+        queuedEditRef.current = { design: nextDesign, eventPatch };
+        setCurrentDesign(nextDesign);
+        if (nextDesign.styleKey !== currentDesign.styleKey) {
+          // A new style brings its own layouts and palettes: rebuild the canvas so its selects match.
+          setEditorData(designToPuckData(liveConfig, nextDesign));
+          setEditorKey((current) => current + 1);
+        } else setEditorData(data);
+      } else {
+        setEditorData(data);
+        queuedEditRef.current = { document: puckDataToSiteDocument(data), eventPatch };
+      }
       if (Object.keys(eventPatch).length) {
         setEvent((current) => {
           const nextConfig = { ...current.config, ...eventPatch };
@@ -148,7 +196,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
       setSaveStatus("error");
       setError(creatorErrorMessage(saveError instanceof Error ? saveError.message : "invalid_edit"));
     }
-  }, [persistQueuedDocuments]);
+  }, [event.config, persistQueuedDocuments, setCurrentDesign]);
 
   const handlePuckChange = useCallback((data: Data) => queueSave(data), [queueSave]);
   const handlePuckPublish = useCallback((data: Data) => queueSave(data, true), [queueSave]);
@@ -179,7 +227,11 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     });
     source.addEventListener("patch", (raw) => {
       const data = JSON.parse((raw as MessageEvent).data) as { document?: SiteRevision["document"]; config?: EventConfig; summary?: string };
-      if (data.document) setEditorData(siteDocumentToPuckData(data.document, data.config ?? event.config));
+      const patchedDesign = data.config ? readEventDesign(data.config) : null;
+      if (patchedDesign && data.config) {
+        setCurrentDesign(patchedDesign);
+        setEditorData(designToPuckData(data.config, patchedDesign));
+      } else if (data.document) setEditorData(siteDocumentToPuckData(data.document, data.config ?? event.config));
       if (data.config) setEvent((current) => ({ ...current, config: data.config! }));
       if (data.summary) setActivity(data.summary);
     });
@@ -207,7 +259,7 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
       source.close();
       void endRunWithoutCommit();
     });
-  }, [applyCommittedRevision, endRunWithoutCommit, event.config, event.id, startRun]);
+  }, [applyCommittedRevision, endRunWithoutCommit, event.config, event.id, setCurrentDesign, startRun]);
 
   useEffect(() => {
     if (activeRunId) connectRun(activeRunId);
@@ -271,6 +323,23 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
     setActivity("Stopping after the current step…");
   }
 
+  // Legacy events can opt into the design system; the server derives a design from the event's own details.
+  async function adoptDesigns() {
+    if (activeRunId || saveStatus === "saving") return;
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    await persistQueuedDocuments();
+    setSaveStatus("saving");
+    setError("");
+    const response = await fetch(`/api/events/${event.id}/studio`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ baseVersionId: baseVersionIdRef.current, adoptDesign: true, summary: "Switched to the new designs" }) });
+    const payload = await response.json().catch(() => null) as { revision?: SiteRevision; error?: string; state?: StudioState } | null;
+    if (response.ok && payload?.revision) applyCommittedRevision(payload.revision, true);
+    else {
+      setSaveStatus("error");
+      setError(creatorErrorMessage(payload?.error, "We couldn’t switch designs. Your current version is unchanged."));
+      if (payload?.state) applyCommittedRevision(payload.state.revision, true);
+    }
+  }
+
   async function restore(versionId: string) {
     if (activeRunId || saveStatus === "saving") return;
     setSaveStatus("saving");
@@ -292,21 +361,31 @@ export function VisualStudio({ initialState, initialNotice }: VisualStudioProps)
          <button type="button" onClick={() => setChatOpen(false)} aria-label="Close AI assistant" className="absolute right-2 top-2 z-10 grid size-7 place-items-center rounded-md text-white/45 hover:bg-white/10 hover:text-white"><X className="size-4" /></button>
          <StudioChat messages={messages} value={composer} selectedLabel={selectedNodeId ? "selected page element" : null} isRunning={Boolean(activeRunId)} activity={activity} error={error} onChange={setComposer} onSubmit={sendMessage} onStop={stopRun} onClearSelection={() => setSelectedNodeId(null)} onAttachment={uploadAttachment} attachmentName={attachment?.name} uploadingAttachment={uploadingAttachment} />
        </div> : <button type="button" onClick={() => setChatOpen(true)} className="absolute bottom-4 left-4 z-50 inline-flex items-center gap-2 rounded-full bg-[#155166] px-4 py-2.5 text-xs font-semibold text-white shadow-xl"><MessageSquare className="size-4" /> Ask Eventloom</button>}
-      <div className="min-w-0 flex-1 bg-[#f3f3f3]">
-        <Puck
-          key={editorKey}
-          config={puckConfig}
-          data={editorData}
-          metadata={puckMetadata}
-          height="100%"
-          onChange={handlePuckChange}
-          onPublish={handlePuckPublish}
-          onAction={handlePuckAction}
-          headerTitle={event.config.title}
-          dictionary={studioDictionary}
-          viewports={studioViewports}
-          permissions={activeRunId ? lockedPermissions : editablePermissions}
-        />
+      <div className="flex min-w-0 flex-1 flex-col bg-[#f3f3f3]">
+        {designed ? null : (
+          <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-black/10 bg-[#fffaf3] px-4 py-2.5 text-[13px] text-[#302821]">
+            <Sparkles className="size-4 text-[#8a6153]" aria-hidden="true" />
+            <p className="min-w-0 flex-1">New designer-made styles are available for this page. Your current version stays in History.</p>
+            <button type="button" onClick={adoptDesigns} disabled={Boolean(activeRunId) || saveStatus === "saving"} className="rounded-full bg-[#302821] px-3.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Switch to the new designs</button>
+          </div>
+        )}
+        <div className="min-h-0 flex-1">
+          <Puck
+            key={editorKey}
+            config={puckConfig}
+            data={editorData}
+            metadata={puckMetadata}
+            height="100%"
+            onChange={handlePuckChange}
+            onPublish={handlePuckPublish}
+            onAction={handlePuckAction}
+            headerTitle={event.config.title}
+            dictionary={studioDictionary}
+            viewports={studioViewports}
+            overrides={studioOverrides}
+            permissions={activeRunId ? lockedPermissions : editablePermissions}
+          />
+        </div>
       </div>
       {drawerOpen ? <StudioDrawer versions={versions} currentVersionId={revision.id} disabled={Boolean(activeRunId) || saveStatus === "saving"} onRestore={restore} onClose={() => setDrawerOpen(false)} /> : null}
     </div>
